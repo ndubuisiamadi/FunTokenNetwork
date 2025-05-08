@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-[#212121] text-white max-w-md mx-auto rounded-2xl overflow-hidden">
+    <div class="bg-[#212121] text-white mx-auto rounded-2xl">
 
 <!-- Post -->
   <div class="flex items-center justify-between p-4">
