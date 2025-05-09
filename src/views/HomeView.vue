@@ -9,7 +9,7 @@ import MessagesCard from '@/components/MessagesCard.vue';
 
 <template>
     <!-- Outer wrapper ensures full screen height -->
-    <div class="h-full flex gap-8">
+    <div class="h-full flex gap-8 ">
       
       <!-- Left Column -->
       <div class="hidden md:flex flex-1 flex-col gap-4 w-[300px]">
