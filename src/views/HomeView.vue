@@ -9,12 +9,12 @@ import MessagesCard from '@/components/MessagesCard.vue';
 
 <template>
     <!-- Outer wrapper ensures full screen height -->
-    <div class="h-full flex gap-8 ">
+    <div class="h-3/4 grow flex gap-8 ">
       
       <!-- Left Column -->
-      <div class="hidden md:flex flex-1 flex-col gap-4 w-[300px]">
-        <TasksCard />
-        <CommunitiesCard />
+      <div class="hidden md:flex flex-1 flex-col gap-4 w-[300px] h-full">
+        <TasksCard class="grow"/>
+        <CommunitiesCard class="grow"/>
       </div>
   
       <!-- Scrollable Middle Column -->
@@ -24,9 +24,9 @@ import MessagesCard from '@/components/MessagesCard.vue';
       </div>
   
       <!-- Right Column -->
-      <div class="hidden lg:flex flex-1 flex-col gap-4 w-[300px]">
-        <LeaderboardCard />
-        <MessagesCard />
+      <div class="hidden lg:flex flex-1 flex-col gap-4 w-[300px] h-full">
+        <LeaderboardCard class="flex-1"/>
+        <MessagesCard class="flex-2"/>
       </div>
 
     </div>

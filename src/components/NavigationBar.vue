@@ -9,17 +9,18 @@
             <RouterLink to="/"><img class="size-[36px] p-2 bg-black rounded-full" src="@/components/icons/house.svg"></RouterLink>
             <RouterLink to="/tasks"><img class="size-[36px] p-2" src="@/components/icons/checkfat.svg"></RouterLink>
             <RouterLink to="/messages"><img class="size-[36px] p-2" src="@/components/icons/chatsteardrop.svg"></RouterLink>
-            <a href="#"><img class="size-[36px] p-2" src="@/components/icons/usersfour.svg"></a>
-            <a href="#"><img class="size-[36px] p-2" src="@/components/icons/users.svg"></a>
+            <RouterLink to="/communities"><img class="size-[36px] p-2" src="@/components/icons/usersfour.svg"></RouterLink>
+            <RouterLink to="/friends"><img class="size-[36px] p-2" src="@/components/icons/users.svg"></RouterLink>
         </div>
     </nav>
-    <nav class="absolute sm:hidden z-2 bottom-4 items-center rounded-full bg-[#242424] p-4 w-full">
+    
+    <nav class="absolute sm:hidden z-2 bottom-4 items-center rounded-full bg-[#242424] p-4">
         <div class="flex justify-between gap-[16px]" >
             <RouterLink to="/"><img class="size-[36px] p-2 bg-black rounded-full" src="@/components/icons/house.svg"></RouterLink>
             <RouterLink to="/tasks"><img class="size-[36px] p-2" src="@/components/icons/checkfat.svg"></RouterLink>
             <RouterLink to="/messages"><img class="size-[36px] p-2" src="@/components/icons/chatsteardrop.svg"></RouterLink>
-            <a href="#"><img class="size-[36px] p-2" src="@/components/icons/usersfour.svg"></a>
-            <a href="#"><img class="size-[36px] p-2" src="@/components/icons/users.svg"></a>
+            <RouterLink to="/communities"><img class="size-[36px] p-2" src="@/components/icons/usersfour.svg"></RouterLink>
+            <RouterLink to="/friends"><img class="size-[36px] p-2" src="@/components/icons/users.svg"></RouterLink>
         </div>
     </nav>
 </template>

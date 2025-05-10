@@ -5,7 +5,10 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <NavBar/>
+
+<NavBar class="flex flex-col gap-4 w-full h-full"/>
+  
+  
   <div class="flex flex-col gap-4 w-full h-full">
     <Header/>
     <RouterView/>

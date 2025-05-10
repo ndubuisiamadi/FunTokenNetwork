@@ -18,10 +18,10 @@
     <img src="https://random-image-pepebigotes.vercel.app/api/random-image" alt="Post content" class="w-full" />
     <!-- Navigation arrows -->
     <button class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 p-1 rounded-full">
-      <img src="@/components/icons/arrowleft.svg" alt="Prev" class="w-3 h-3" />
+      <img src="@/components/icons/arrowleft.svg" alt="Prev" class="size-5" />
     </button>
     <button class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 p-1 rounded-full">
-      <img src="@/components/icons/arrowright.svg" alt="Next" class="w-3 h-3" />
+      <img src="@/components/icons/arrowright.svg" alt="Next" class="size-5" />
     </button>
   </div>
 
