@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* Ensure the app container takes full height */
+#app {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Mobile responsive layout for messages */
+@media (max-width: 767px) {
+  #app {
+    gap: 0;
+  }
+}
+
+/* Ensure body and html take full height */
+html, body {
+  background-color: #101010;
+  font-family: Open Sans;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+h1{
+  font-family: Cherry Bomb One;
+  font-size: 2.5em;
+}
+
+/* Update scrollbar hide to work better */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Ensure proper flex behavior */
+.grow {
+  flex-grow: 1;
+  min-height: 0; /* Important for flex children to shrink */
+}
+
+/* Add safe area support for mobile devices */
+/* .safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+} */
+
+/* Ensure mobile nav doesn't interfere with content */
+@media (max-width: 640px) {
+  .main-content {
+    padding-bottom: 80px; 
+  }
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 767px) {
+  
+  /* Better mobile textarea handling */
+  textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Ensure mobile chat area takes full height */
+  .mobile-chat-container {
+    height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height when supported */
+  }
+}
+
+/* Smooth transitions for mobile navigation */
+.mobile-slide-enter-active,
+.mobile-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.mobile-slide-enter-from {
+  transform: translateX(100%);
+}
+
+.mobile-slide-leave-to {
+  transform: translateX(-100%);
+}

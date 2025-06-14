@@ -1,0 +1,375 @@
+// schema.prisma - COMPLETE SCHEMA WITH MESSAGES SYSTEM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================
+// USER MODEL
+// ===================================
+model User {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  username    String   @unique
+  password    String
+  firstName   String?  @map("first_name")
+  lastName    String?  @map("last_name")
+  bio         String?
+  location    String?
+  birthDate   DateTime? @map("birth_date")
+  avatarUrl   String?  @map("avatar_url")
+  bannerUrl   String?  @map("banner_url")
+  gumballs    Int      @default(0)
+  isOnline    Boolean  @default(false) @map("is_online")
+  lastSeen    DateTime @default(now()) @map("last_seen")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Level system fields
+  level        String   @default("Novice")
+  globalRank   Int?     @map("global_rank")
+  weeklyRank   Int?     @map("weekly_rank") 
+  monthlyRank  Int?     @map("monthly_rank")
+  rankChange   Int      @default(0) @map("rank_change")
+  weeklyRankChange   Int?  @map("weekly_rank_change") @default(0)
+  monthlyRankChange  Int?  @map("monthly_rank_change") @default(0)
+
+  // Relations
+  posts              Post[]
+  comments           Comment[]
+  likes              Like[]
+  commentLikes       CommentLike[]
+  
+  // Friends system
+  sentFriendRequests     FriendRequest[] @relation("RequestSender")
+  receivedFriendRequests FriendRequest[] @relation("RequestReceiver")
+  friendships1           Friendship[] @relation("User1")
+  friendships2           Friendship[] @relation("User2")
+
+  // Communities
+  communities        CommunityMember[]
+  ownedCommunities   Community[] @relation("CommunityOwner")
+
+  // NEW: Messages system
+  sentMessages           Message[] @relation("MessageSender")
+  conversations          ConversationParticipant[]
+
+  // Level system relations
+  gumballHistory GumballHistory[]
+  rankHistory    RankHistory[]
+
+  // Notifications
+  notifications  Notification[]
+
+  // Indexes for performance
+  @@index([gumballs])
+  @@index([level, gumballs])
+  @@index([globalRank])
+  @@index([isOnline])
+  @@index([createdAt])
+  @@index([lastSeen])
+  @@map("users")
+}
+
+// ===================================
+// FRIENDS SYSTEM
+// ===================================
+model FriendRequest {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  status    String   @default("pending") // pending, accepted, declined
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  senderId   String @map("sender_id") @db.ObjectId
+  sender     User   @relation("RequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String @map("receiver_id") @db.ObjectId
+  receiver   User   @relation("RequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, status])
+  @@index([senderId, status])
+  @@index([createdAt])
+  @@map("friend_requests")
+}
+
+model Friendship {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user1Id String @map("user1_id") @db.ObjectId
+  user1   User   @relation("User1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2Id String @map("user2_id") @db.ObjectId
+  user2   User   @relation("User2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([createdAt])
+  @@map("friendships")
+}
+
+// ===================================
+// POSTS & SOCIAL CONTENT
+// ===================================
+model Post {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  content       String?
+  mediaUrls     String[] @map("media_urls")
+  postType      String   @default("text") @map("post_type")
+  linkPreview   Json?    @map("link_preview")
+  likesCount    Int      @default(0) @map("likes_count")
+  commentsCount Int      @default(0) @map("comments_count")
+  sharesCount   Int      @default(0) @map("shares_count")
+  isPublic      Boolean  @default(true) @map("is_public")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userId      String    @map("user_id") @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId String?   @map("community_id") @db.ObjectId
+  community   Community? @relation(fields: [communityId], references: [id])
+  comments    Comment[]
+  likes       Like[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([communityId])
+  @@index([userId, createdAt])
+  @@index([isPublic, createdAt])
+  @@map("posts")
+}
+
+model Comment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  content     String
+  likesCount  Int      @default(0) @map("likes_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userId    String        @map("user_id") @db.ObjectId
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String        @map("post_id") @db.ObjectId
+  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId  String?       @map("parent_id") @db.ObjectId
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   Comment[]     @relation("CommentReplies")
+  likes     CommentLike[]
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([postId, createdAt])
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId String @map("user_id") @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String @map("post_id") @db.ObjectId
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("likes")
+}
+
+model CommentLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId    String  @map("user_id") @db.ObjectId
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentId String  @map("comment_id") @db.ObjectId
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@map("comment_likes")
+}
+
+// ===================================
+// COMMUNITIES
+// ===================================
+model Community {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  rules       String?
+  avatarUrl   String?  @map("avatar_url")
+  bannerUrl   String?  @map("banner_url")
+  memberCount Int      @default(0) @map("member_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  createdById String            @map("created_by_id") @db.ObjectId
+  createdBy   User              @relation("CommunityOwner", fields: [createdById], references: [id])
+  members     CommunityMember[]
+  posts       Post[]
+
+  @@index([name])
+  @@index([createdAt])
+  @@index([memberCount])
+  @@map("communities")
+}
+
+model CommunityMember {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  role      String   @default("member") // member, admin, owner
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  userId      String    @map("user_id") @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId String    @map("community_id") @db.ObjectId
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+  @@index([communityId])
+  @@index([userId])
+  @@map("community_members")
+}
+
+// ===================================
+// MESSAGING SYSTEM
+// ===================================
+model Conversation {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String?  // For group chats
+  avatarUrl    String?  @map("avatar_url")
+  isGroup      Boolean  @default(false) @map("is_group")
+  lastMessage  String?  @map("last_message")
+  lastActivity DateTime @default(now()) @map("last_activity")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([lastActivity])
+  @@index([isGroup])
+  @@index([createdAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  joinedAt     DateTime @default(now()) @map("joined_at")
+  lastReadAt   DateTime @default(now()) @map("last_read_at")
+  isActive     Boolean  @default(true) @map("is_active") // For soft leaving groups
+
+  userId         String       @map("user_id") @db.ObjectId
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId String       @map("conversation_id") @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@index([conversationId])
+  @@index([userId])
+  @@index([lastReadAt])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  content     String?
+  mediaUrls   String[] @map("media_urls")
+  messageType String   @default("text") @map("message_type") // text, image, video, file, audio
+  isRead      Boolean  @default(false) @map("is_read")
+  isDelivered Boolean  @default(false) @map("is_delivered")
+  isEdited    Boolean  @default(false) @map("is_edited")
+  editedAt    DateTime? @map("edited_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  senderId       String       @map("sender_id") @db.ObjectId
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  conversationId String       @map("conversation_id") @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // For message replies (optional feature)
+  replyToId String?  @map("reply_to_id") @db.ObjectId
+  replyTo   Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   Message[] @relation("MessageReplies")
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([conversationId, isRead])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ===================================
+// LEVEL SYSTEM
+// ===================================
+model GumballHistory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @map("user_id") @db.ObjectId
+  gumballs  Int      // Snapshot of total gumballs
+  change    Int      // +10, -5, etc
+  reason    String   // "post_created", "received_like", "task_completed", "message_sent"
+  week      String   // "2024-W23" (ISO week)
+  month     String   // "2024-06"
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([week])
+  @@index([month])
+  @@index([createdAt])
+  @@index([reason])
+  @@map("gumball_history")
+}
+
+model RankHistory {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @map("user_id") @db.ObjectId
+  globalRank Int      @map("global_rank")
+  weeklyRank Int?     @map("weekly_rank")
+  monthlyRank Int?    @map("monthly_rank")
+  gumballs   Int      // Snapshot of gumballs at this time
+  week       String   // "2024-W23"
+  month      String   // "2024-06"
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([week])
+  @@index([month])
+  @@index([globalRank])
+  @@map("rank_history")
+}
+
+// ===================================
+// OPTIONAL: NOTIFICATIONS SYSTEM
+// ===================================
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String   // "message", "friend_request", "like", "comment", "mention"
+  title     String
+  content   String
+  data      Json?    // Additional data (IDs, URLs, etc.)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId String @map("user_id") @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@index([type])
+  @@map("notifications")
+}
