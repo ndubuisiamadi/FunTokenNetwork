@@ -1,5 +1,6 @@
 <template>
-  <div class="bg-[#212121] bg-[url(@/assets/task-card-bg.png)] bg-cover text-white p-5 rounded-[18px] shadow-[0_4px_0px_#12BE32]">
+  <div class="bg-linear-to-tr from-[#9E03FF]/20 to-[#082CFC]/20 backdrop-blur-xl border border-[#082CFC]/50 shadow-2xl 
+   text-white p-5 rounded-[18px] ">
     <div class="flex justify-between items-center mb-5">
       <div class="flex items-center gap-2 text-lg font-medium">
         <img src="@/components/icons/checkfat.svg" alt="Check" class="size-6" />

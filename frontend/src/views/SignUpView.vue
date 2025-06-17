@@ -110,7 +110,7 @@ watch(usernamePrefix, () => {
     <div class="hidden lg:block flex-1 p-8 xl:p-12 content-center bg-black/30">
       <div class="max-w-md text-white">
         <div class="mb-8">
-          <img src="@/assets/logo.svg" alt="Logo" class="h-8 xl:h-10 w-auto mb-6 xl:mb-8">
+          <img src="@/assets/logo.png" alt="Logo" class="h-8 xl:h-10 w-auto mb-6 xl:mb-8">
         </div>
         <h1 class="text-3xl xl:text-4xl font-bold mb-4 xl:mb-6 leading-tight text-shadow-[0_4px_0px_#101010]">
           Join the Future of the Web
@@ -123,11 +123,11 @@ watch(usernamePrefix, () => {
     
     <!-- Right Panel - Full width on mobile, half width on desktop -->
     <div class="flex flex-col w-full lg:flex-1 min-h-screen justify-center items-center bg-black/60 backdrop-blur-xl lg:border lg:border-white/20 lg:shadow-2xl">
-      <div class="w-full flex flex-col items-center justify-center px-6 sm:px-8 lg:px-6 py-12 lg:py-0">
+      <div class="w-full flex flex-col items-center justify-center px-6 sm:px-8 lg:px-6 lg:py-0">
         
         <!-- Mobile Logo - Only shown on mobile -->
         <div class="lg:hidden mb-12 text-center">
-          <img src="@/assets/logo.svg" alt="Logo" class="h-6 w-auto mx-auto mb-6">
+          <img src="@/assets/logo.png" alt="Logo" class="size-10 mx-auto mb-6">
           <h2 class="text-xl sm:text-2xl font-bold mb-3 leading-tight">
             Join the Future
           </h2>

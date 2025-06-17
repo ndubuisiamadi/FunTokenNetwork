@@ -231,7 +231,7 @@ onMounted(async () => {
         @click="changeTab('friends')"
         :class="[
           'text-sm px-2 pb-2 truncate transition-colors whitespace-nowrap',
-          activeTab === 'friends' ? 'border-b-2 border-[#055CFF] text-[#055CFF]' : 'hover:text-white/80'
+          activeTab === 'friends' ? 'border-b-2 border-[#FA7D7D] text-[#FA7D7D]' : 'hover:text-white/80'
         ]"
       >
         Friends
@@ -242,12 +242,12 @@ onMounted(async () => {
         @click="changeTab('requests')"
         :class="[
           'text-sm px-2 pb-2 truncate transition-colors whitespace-nowrap relative',
-          activeTab === 'requests' ? 'border-b-2 border-[#055CFF] text-[#055CFF]' : 'hover:text-white/80'
+          activeTab === 'requests' ? 'border-b-2 border-[#FA7D7D] text-[#FA7D7D]' : 'hover:text-white/80'
         ]"
       >
         Requests
-        <span v-if="receivedRequests.length > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-          {{ receivedRequests.length }}
+        <span v-if="receivedRequests.length > 0" class="ml-1 text-xs opacity-70">
+          ({{ receivedRequests.length }})
         </span>
       </button>
       
@@ -255,7 +255,7 @@ onMounted(async () => {
         @click="changeTab('discover')"
         :class="[
           'text-sm px-2 pb-2 truncate transition-colors whitespace-nowrap',
-          activeTab === 'discover' ? 'border-b-2 border-[#055CFF] text-[#055CFF]' : 'hover:text-white/80'
+          activeTab === 'discover' ? 'border-b-2 border-[#FA7D7D] text-[#FA7D7D]' : 'hover:text-white/80'
         ]"
       >
         Discover

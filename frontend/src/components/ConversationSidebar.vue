@@ -336,10 +336,10 @@ const getLastMessageStatus = (conversation) => {
 <template>
   <aside class="w-full md:w-80 bg-[#1A1A1A] md:bg[#101010] flex flex-col" :class="isMobile ? 'h-full' : 'rounded-l-2xl'">
     <!-- Tab-Style Header -->
-    <div class="p-6 md:p-4 border-b border-white/10">
+    <div class="p-3 md:p-4 border-b border-white/10">
       <!-- Mobile Header -->
       <div v-if="isMobile" class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-semibold text-white">Messages</h1>
+        <h1 class="text-[1.8em]! font-semibold text-[#00BFFF]">Messages</h1>
         <button 
           @click="openNewConversationModal"
           class="w-8 h-8 bg-[#055CFF] hover:bg-[#0550e5] rounded-lg flex items-center justify-center transition-colors" 
@@ -356,9 +356,9 @@ const getLastMessageStatus = (conversation) => {
         <button
           @click="messagesStore.selectedChatType = 'direct'"
           :class="[
-            'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 relative',
+            'flex-1 py-1.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 relative',
             messagesStore.selectedChatType === 'direct'
-              ? 'bg-[#055CFF] text-white shadow-lg'
+              ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
               : 'text-white/70 hover:text-white hover:bg-white/5'
           ]"
         >
@@ -379,9 +379,9 @@ const getLastMessageStatus = (conversation) => {
         <button
           @click="messagesStore.selectedChatType = 'group'"
           :class="[
-            'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 relative',
+            'flex-1 py-1.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 relative',
             messagesStore.selectedChatType === 'group'
-              ? 'bg-[#055CFF] text-white shadow-lg'
+              ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
               : 'text-white/70 hover:text-white hover:bg-white/5'
           ]"
         >
@@ -471,7 +471,7 @@ const getLastMessageStatus = (conversation) => {
           :key="conversation.id" 
           @click="selectConversation(conversation)"
           :class="[
-            'flex items-center gap-3 py-4 px-6 hover:bg-[#2C2F36] cursor-pointer transition-colors',
+            'flex items-center gap-3 py-4 px-3 hover:bg-[#2C2F36] cursor-pointer transition-colors',
             currentConversation?.id === conversation.id ? 'bg-[#2C2F36]' : ''
           ]"
         >

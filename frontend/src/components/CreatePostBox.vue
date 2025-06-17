@@ -407,15 +407,17 @@ const previewMedia = (media) => {
 </script>
 
 <template>
-  <div class="bg-[#212121] rounded-2xl transition-all duration-300">
+  <div class="bg-[#030712]/20 rounded-2xl transition-all duration-300">
     
     <!-- Collapsed State -->
     <div 
       v-if="!isExpanded"
       @click="expandComposer"
-      class="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition-colors duration-200"
+      class="flex items-center gap-3 p-4 cursor-pointer transition-colors duration-200"
     >
-      <div class="size-10 rounded-full bg-black flex items-center justify-center">
+      <div class="size-10 rounded-full 
+      bg-linear-to-tr from-[#9E03FF] to-[#082CFC] backdrop-blur-xl
+       flex items-center justify-center">
         <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>

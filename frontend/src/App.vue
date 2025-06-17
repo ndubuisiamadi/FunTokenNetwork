@@ -15,8 +15,8 @@ const removeAllPadding = computed(() => ['/messages', '/login', '/signup', '/cre
 <div :class="[
   !hideNavbar ? 'flex md:p-6 gap-6 w-full h-full max-h-screen overflow-hidden' : 'w-full h-full',
   !hideHeader ? 'flex md:p-6 gap-6 w-full h-full max-h-screen overflow-hidden' : 'w-full h-full',
-  removeAllPadding ? 'p-0' : 'px-6 pt-6',
-]">
+  removeAllPadding ? 'p-0' : 'px-3 pt-6',
+]" class="bg-[#262624]">
   <NavBar v-if="!hideNavbar" class="flex-shrink-0"/>
   
   <div class="flex flex-col gap-4 flex-1 min-w-0 overflow-hidden" :class="{'pb-16.5 sm:pb-0': !hideNavbar}">

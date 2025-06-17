@@ -391,7 +391,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-[#212121] text-white mx-auto rounded-2xl w-full">
+  <div class="bg-[#030712]/20
+  text-white mx-auto rounded-2xl w-full">
     
     <!-- Post Header -->
     <div class="flex items-center justify-between p-4">

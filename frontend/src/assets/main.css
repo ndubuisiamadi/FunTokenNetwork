@@ -19,7 +19,7 @@
 
 /* Ensure body and html take full height */
 html, body {
-  background-color: #101010;
+  
   font-family: Open Sans;
   height: 100vh;
   width: 100%;
@@ -88,3 +88,4 @@ h1{
 .mobile-slide-leave-to {
   transform: translateX(-100%);
 }
+

@@ -81,7 +81,7 @@ onMounted(async () => {
         @click="setFilter('all')"
         :class="[
           'text-sm px-2 pb-2 truncate transition-colors whitespace-nowrap',
-          activeFilter === 'all' ? 'border-b-2 border-[#055CFF] text-[#055CFF]' : 'hover:text-white/80'
+          activeFilter === 'all' ? 'border-b-2 border-[#FFA02B] text-[#FFA02B]' : 'hover:text-white/80'
         ]"
       >
         All ({{ communitiesStore.userCommunities.length }})
@@ -90,7 +90,7 @@ onMounted(async () => {
         @click="setFilter('owned')"
         :class="[
           'text-sm px-2 pb-2 transition-colors whitespace-nowrap',
-          activeFilter === 'owned' ? 'border-b-2 border-[#055CFF] text-[#055CFF]' : 'hover:text-white/80'
+          activeFilter === 'owned' ? 'border-b-2 border-[#FFA02B] text-[#FFA02B]' : 'hover:text-white/80'
         ]"
       >
         Owned
@@ -99,7 +99,7 @@ onMounted(async () => {
         @click="setFilter('admin')"
         :class="[
           'text-sm px-2 pb-2 transition-colors whitespace-nowrap',
-          activeFilter === 'admin' ? 'border-b-2 border-[#055CFF] text-[#055CFF]' : 'hover:text-white/80'
+          activeFilter === 'admin' ? 'border-b-2 border-[#FFA02B] text-[#FFA02B]' : 'hover:text-white/80'
         ]"
       >
         Admin
@@ -108,7 +108,7 @@ onMounted(async () => {
         @click="setFilter('member')"
         :class="[
           'text-sm px-2 pb-2 transition-colors whitespace-nowrap',
-          activeFilter === 'member' ? 'border-b-2 border-[#055CFF] text-[#055CFF]' : 'hover:text-white/80'
+          activeFilter === 'member' ? 'border-b-2 border-[#FFA02B] text-[#FFA02B]' : 'hover:text-white/80'
         ]"
       >
         Member

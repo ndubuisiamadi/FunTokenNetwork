@@ -83,7 +83,7 @@ const getAllCommunities = async (req, res) => {
   }
 }
 
-// Search communities - UPDATED to exclude joined communities
+// Search communities
 const searchCommunities = async (req, res) => {
   try {
     const { q: searchQuery } = req.query
@@ -92,7 +92,7 @@ const searchCommunities = async (req, res) => {
     const skip = (page - 1) * limit
     const currentUserId = req.user?.id
 
-    // Build the where clause
+    // Build the where clause - REMOVED THE EXCLUSION LOGIC
     const whereClause = {}
     
     // Add search conditions
@@ -103,16 +103,17 @@ const searchCommunities = async (req, res) => {
       ]
     }
     
-    // If user is authenticated, exclude communities they're already members of
-    if (currentUserId) {
-      whereClause.NOT = {
-        members: {
-          some: {
-            userId: currentUserId
-          }
-        }
-      }
-    }
+    // REMOVED: No longer exclude communities the user is a member of
+    // This was the problematic code:
+    // if (currentUserId) {
+    //   whereClause.NOT = {
+    //     members: {
+    //       some: {
+    //         userId: currentUserId
+    //       }
+    //     }
+    //   }
+    // }
 
     const communities = await prisma.community.findMany({
       where: whereClause,
@@ -132,6 +133,10 @@ const searchCommunities = async (req, res) => {
             avatarUrl: true
           }
         },
+        members: currentUserId ? {
+          where: { userId: currentUserId },
+          select: { id: true }
+        } : false,
         _count: {
           select: {
             posts: {
@@ -140,7 +145,8 @@ const searchCommunities = async (req, res) => {
                   gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
                 }
               }
-            }
+            },
+            members: true
           }
         }
       }
@@ -148,10 +154,9 @@ const searchCommunities = async (req, res) => {
 
     const formattedCommunities = communities.map(community => ({
       ...community,
-      postsThisWeek: community._count.posts,
-      userRole: null, // User is not a member of any of these
-      isMember: false, // User is not a member of any of these
-      _count: undefined
+      isMember: currentUserId ? community.members?.length > 0 : false,
+      memberCount: community._count?.members || 0,
+      postsThisWeek: community._count?.posts || 0
     }))
 
     res.json({

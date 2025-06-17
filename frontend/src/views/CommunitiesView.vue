@@ -85,7 +85,7 @@ onUnmounted(() => {
           :class="[
             'flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200',
             activeTab === 'my-communities'
-              ? 'bg-[#055CFF] text-white shadow-lg'
+              ? 'bg-linear-to-tr from-[#FFA02B] to-[#FF1E00] text-white shadow-lg'
               : 'text-white/70 hover:text-white hover:bg-white/5'
           ]"
         >
@@ -101,7 +101,7 @@ onUnmounted(() => {
           :class="[
             'flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200',
             activeTab === 'explore'
-              ? 'bg-[#055CFF] text-white shadow-lg'
+              ? 'bg-linear-to-tr from-[#FFA02B] to-[#FF1E00] text-white shadow-lg'
               : 'text-white/70 hover:text-white hover:bg-white/5'
           ]"
         >

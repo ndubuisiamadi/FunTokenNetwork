@@ -108,7 +108,8 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="bg-[#212121] bg-[url(@/assets/messages-card-bg.png)] bg-cover text-white p-5 rounded-[18px] shadow-[0_4px_0px_#055CFF]">
+    <div class="bg-linear-to-tr from-[#055DFF]/20 to-[#00BFFF]/20 backdrop-blur-xl border border-[#055CFF]/50 shadow-2xl
+    text-white p-5 rounded-[18px] ">
         <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-2 text-lg font-medium">
             <img src="@/components/icons/chatsteardrop.svg" alt="Check" class="size-6" />

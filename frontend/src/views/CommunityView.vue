@@ -103,7 +103,7 @@ const handlePostCreated = (newPost) => {
 </script>
 
 <template>
-  <div class="flex h-3/4 grow text-white gap-6">
+  <div class="flex h-full text-white gap-6">
     <!-- Loading State -->
     <div v-if="loading" class="flex-1 bg-[#212121] rounded-2xl p-8 animate-pulse">
       <div class="h-64 bg-white/20 rounded mb-4"></div>

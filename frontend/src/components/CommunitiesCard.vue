@@ -34,7 +34,8 @@ const getPostsText = (community) => {
 </script>
 
 <template>
-  <div class="bg-[#212121] bg-[url(@/assets/communities-card-bg.png)] bg-cover text-white p-5 rounded-[18px] shadow-[0_4px_0px_#B72828] relative">
+  <div class="bg-linear-to-tr from-[#FFA02B]/20 to-[#FF1E00]/20 backdrop-blur-xl border border-[#B72828]/50 shadow-2xl 
+  text-white p-5 rounded-[18px] relative">
     <div class="flex justify-between items-center mb-5">
       <div class="flex items-center gap-2 text-lg font-medium">
         <img src="@/components/icons/usersfour.svg" alt="Communities" class="size-6" />

@@ -1,15 +1,31 @@
 <script setup>
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { ref, onMounted } from 'vue'
+import { useSearchStore } from '@/stores/search'
+import { ref, onMounted, watch } from 'vue'
 
 import userPlaceholderImage from '@/assets/user-placeholder-image.jpg'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const searchStore = useSearchStore()
 
 const isOpen = ref(false)
+const searchQuery = ref('')
+const isMobileSearchOpen = ref(false)
+
+// Watch for route changes to update search query
+watch(() => route.query.q, (newQuery) => {
+  searchQuery.value = newQuery || ''
+})
+
+// Initialize search query from URL
+onMounted(() => {
+  if (route.query.q) {
+    searchQuery.value = route.query.q
+  }
+})
 
 const currentPage = (routePath) => {
   return route.path === routePath
@@ -30,54 +46,104 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
+// Search functionality
+const handleSearch = (event) => {
+  if (event.key === 'Enter' || event.type === 'click') {
+    performSearch()
+  }
+}
+
+const performSearch = () => {
+  const query = searchQuery.value.trim()
+  if (query) {
+    // Navigate to search page with query
+    router.push({ path: '/search', query: { q: query } })
+    // Close mobile search if open
+    isMobileSearchOpen.value = false
+  }
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  if (route.path === '/search') {
+    router.push({ path: '/search' })
+  }
+}
+
+const toggleMobileSearch = () => {
+  isMobileSearchOpen.value = !isMobileSearchOpen.value
+  if (isMobileSearchOpen.value) {
+    // Focus the input after Vue updates the DOM
+    setTimeout(() => {
+      const input = document.querySelector('#mobile-search-input')
+      if (input) input.focus()
+    }, 100)
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', closeOnClickOutside)
 })
 </script>
 
 <template>
-  <div v-if="!currentPage('/messages')" class="flex items-center justify-between w-full">
+  <div v-if="!currentPage('/messages')" class="flex items-center justify-between w-full text-xs md:text-base">
     <!-- Left: Page Title -->
     
-    <h1 v-if="currentPage('/tasks')" class="text-white">Tasks</h1>
-    <h1 v-if="currentPage('/messages')" class="text-white">Messages</h1>
-    <h1 v-if="currentPage('/communities')" class="text-white">Communities</h1>
-    <h1 v-if="currentPage('/friends')" class="text-white">Friends</h1>
-    <h1 v-if="currentPage('/profile')" class="text-white">My Profile</h1>
+    <h1 v-if="currentPage('/tasks')" class="text-[#00B043]">Tasks</h1>
+    <h1 v-if="currentPage('/messages')" class="text-[#055DFF]">Messages</h1>
+    <h1 v-if="currentPage('/communities')" class="text-[#FFA02B]">Communities</h1>
+    <h1 v-if="currentPage('/friends')" class="text-[#FA7D7D]">Friends</h1>
+    <h1 v-if="currentPage('/profile')" class="text-[#082CFC]">My Profile</h1>
     <h1 v-if="currentPage('/profile/edit')" class="text-white">Edit Profile</h1>
-    <h1 v-if="currentPage('/leaderboard')" class="text-white">Leaderboard</h1>
+    <h1 v-if="currentPage('/leaderboard')" class="text-[#FCCA00]">Leaderboard</h1>
+    <h1 v-if="currentPage('/search')" class="text-white hidden md:block">Search</h1>
 
-    <RouterLink to="/" v-if="currentPage('/')" class="block md:hidden">
-            <img class="size-12" src="@/assets/logo.svg" alt="FunToken Logo">
-        </RouterLink>
+    <RouterLink to="/" v-if="currentPage('/') || currentPage('/search')" class="block md:hidden">
+      <img class="size-10" src="@/assets/logo.png" alt="FunToken Logo">
+    </RouterLink>
 
     <!-- Right: Controls -->
     <div class="flex grow justify-end items-center gap-3 md:gap-4">
-      <!-- Search Bar -->
-      <div class="hidden lg:flex items-center bg-[#212121] text-white rounded-full px-4 py-2 w-72 shadow-[0_4px_0px_black]">
+      <!-- Desktop Search Bar -->
+      <div class="hidden lg:flex items-center
+      bg-linear-to-tr from-[#055DFF] to-[#00BFFF] backdrop-blur-xl
+       text-white rounded-full px-4 py-2 w-72">
         <input
+          v-model="searchQuery"
+          @keyup.enter="handleSearch"
           type="text"
           placeholder="Search"
           class="bg-transparent outline-none flex-grow text-sm placeholder-white"
         />
-        <img src="@/components/icons/magnifyingglass.svg">
+        <button @click="performSearch" class="ml-2">
+          <img src="@/components/icons/magnifyingglass.svg" alt="Search">
+        </button>
       </div>
 
-      <!-- Search Icon -->
-      <button class="size-10 md:size-11 p-3 rounded-full bg-[#212121] flex lg:hidden items-center justify-center text-white shadow-[0_4px_0px_black]">
-        <img src="@/components/icons/magnifyingglass.svg">
+      <!-- Mobile Search Icon -->
+      <button 
+        @click="toggleMobileSearch"
+        class="size-10 md:size-11 p-3 rounded-full 
+        bg-linear-to-tr from-[#055DFF] to-[#00BFFF] backdrop-blur-xl
+        flex lg:hidden items-center justify-center text-white">
+        <img src="@/components/icons/magnifyingglass.svg" alt="Search">
       </button>
 
       <!-- Notification Icon -->
-      <button class="size-10 md:size-11 p-3 rounded-full bg-[#212121] flex items-center justify-center text-white shadow-[0_4px_0px_black]">
-        <img src="@/components/icons/bell.svg">
+      <button class="size-10 md:size-11 p-3 rounded-full 
+      bg-linear-to-tr from-[#FFA02B] to-[#FF1E00] backdrop-blur-xl
+      flex items-center justify-center text-white">
+        <img src="@/components/icons/bell.svg" alt="Notifications">
       </button>
 
       <!-- Profile Dropdown -->
       <div class="relative inline-block text-left">
         <div
           @click="toggleDropdown"
-          class="cursor-pointer flex items-center gap-2 bg-[#1E1E1E] text-white rounded-full md:px-2 md:py-1 md:pr-3 shadow-[0_4px_0px_black]"
+          class="cursor-pointer flex items-center gap-2 
+          bg-linear-to-tr from-[#9E03FF] to-[#082CFC] backdrop-blur-xl
+           text-white rounded-full md:px-2 md:py-1 md:pr-3"
         >
           <img
     :src="authStore.currentUser?.avatarUrl || userPlaceholderImage"
@@ -86,7 +152,7 @@ onMounted(() => {
   />
           <div class="hidden md:block text-left leading-tight">
             <p class="text-sm font-semibold">{{ authStore.userFullName || authStore.currentUser?.username }}</p>
-            <p class="text-xs text-gray-400">{{ authStore.currentUser?.gumballs || 0 }} Gumballs</p>
+            <p class="text-xs">{{ authStore.currentUser?.gumballs || 0 }} Gumballs</p>
           </div>
           <img class="hidden md:block" src="@/components/icons/caretdown.svg">
         </div>
@@ -103,6 +169,32 @@ onMounted(() => {
           </div>
         </div>
       </div>
-    </div>
-  </div>
+   </div>
+ </div>
+
+ <!-- Mobile Search Overlay -->
+ <div v-if="isMobileSearchOpen" class="fixed inset-0 bg-black/50 z-50 lg:hidden" @click="toggleMobileSearch">
+   <div class="absolute top-0 left-0 right-0 bg-[#1a1a1a] p-4" @click.stop>
+     <div class="flex items-center gap-3">
+       <div class="flex-1 flex items-center bg-white/10 rounded-full px-4 py-2">
+         <input
+           id="mobile-search-input"
+           v-model="searchQuery"
+           @keyup.enter="handleSearch"
+           type="text"
+           placeholder="Search posts, users, communities..."
+           class="bg-transparent outline-none flex-grow text-sm placeholder-white text-white"
+         />
+         <button @click="performSearch" class="ml-2">
+           <img src="@/components/icons/magnifyingglass.svg" alt="Search">
+         </button>
+       </div>
+       <button @click="toggleMobileSearch" class="text-white">
+         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+         </svg>
+       </button>
+     </div>
+   </div>
+ </div>
 </template>

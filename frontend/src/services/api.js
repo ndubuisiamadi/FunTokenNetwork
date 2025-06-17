@@ -316,13 +316,12 @@ export const tasksAPI = {
 export const searchAPI = {
   // Global search across all content types
   globalSearch: async (query, options = {}) => {
-    const { types = ['users', 'communities', 'conversations'], limit = 5 } = options
+    const { types = ['users', 'communities', 'posts'], limit = 5 } = options
     
     const promises = []
     const results = {
       users: [],
       communities: [],
-      conversations: [],
       posts: []
     }
 
@@ -330,8 +329,9 @@ export const searchAPI = {
       // Search users
       if (types.includes('users')) {
         promises.push(
-          usersAPI.searchUsers(query, 1, limit)
-            .then(response => ({ type: 'users', data: response.data.users }))
+          // Use the new search endpoint instead of usersAPI
+          api.get(`/search/users?q=${encodeURIComponent(query)}&page=1&limit=${limit}`)
+            .then(response => ({ type: 'users', data: response.data.data }))
             .catch(() => ({ type: 'users', data: [] }))
         )
       }
@@ -339,18 +339,19 @@ export const searchAPI = {
       // Search communities  
       if (types.includes('communities')) {
         promises.push(
-          communitiesAPI.searchCommunities(query, 1, limit)
-            .then(response => ({ type: 'communities', data: response.data.communities }))
+          // Use the new search endpoint instead of communitiesAPI
+          api.get(`/search/communities?q=${encodeURIComponent(query)}&page=1&limit=${limit}`)
+            .then(response => ({ type: 'communities', data: response.data.data }))
             .catch(() => ({ type: 'communities', data: [] }))
         )
       }
 
-      // Search conversations
-      if (types.includes('conversations')) {
+      // Search posts
+      if (types.includes('posts')) {
         promises.push(
-          messagesAPI.searchConversations(query)
-            .then(response => ({ type: 'conversations', data: response.data.conversations?.slice(0, limit) || [] }))
-            .catch(() => ({ type: 'conversations', data: [] }))
+          api.get(`/search/posts?q=${encodeURIComponent(query)}&page=1&limit=${limit}`)
+            .then(response => ({ type: 'posts', data: response.data.data }))
+            .catch(() => ({ type: 'posts', data: [] }))
         )
       }
 
@@ -365,7 +366,17 @@ export const searchAPI = {
       console.error('Global search error:', error)
       return { success: false, error: error.message, results }
     }
-  }
+  },
+
+  // Individual search methods for pagination - use new endpoints
+  searchPosts: (query, page = 1, limit = 10) => 
+    api.get(`/search/posts?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
+    
+  searchUsers: (query, page = 1, limit = 10) => 
+    api.get(`/search/users?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
+    
+  searchCommunities: (query, page = 1, limit = 10) => 
+    api.get(`/search/communities?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
 }
 
 export default api

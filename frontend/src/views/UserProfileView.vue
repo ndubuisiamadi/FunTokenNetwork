@@ -388,7 +388,7 @@ onMounted(() => {
         <div class="flex items-start gap-3 -mt-8 mb-3">
           <img 
             :src="getAvatarUrl(profileUser?.avatarUrl)" 
-            class="size-16 rounded-full border-3 border-[#212121] bg-[#212121] z-20" 
+            class="size-16 rounded-full border-3 border-[#212121] bg-[#212121] object-cover z-20" 
             alt="Profile"
           />
           <div class="flex-1 pt-6">

@@ -277,7 +277,9 @@ const loadRoutes = () => {
       { path: '/api/communities', file: './src/routes/communities', name: 'communities' },
     { path: '/api/upload', file: './src/routes/upload', name: 'upload' },
     { path: '/api/messages', file: './src/routes/messages', name: 'messages' },
-    { path: '/api/leaderboard', file: './src/routes/leaderboard', name: 'leaderboard' }
+    { path: '/api/leaderboard', file: './src/routes/leaderboard', name: 'leaderboard' },
+    { path: '/api/search', file: './src/routes/search', name: 'search' }
+
   ]
 
   routeConfigs.forEach(({ path, file, name }) => {

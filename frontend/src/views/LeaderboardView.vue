@@ -193,7 +193,7 @@
                 :class="[
                   'px-3 py-1 rounded-sm text-xs font-medium transition-colors flex items-center gap-2',
                   selectedPeriod === option.value 
-                    ? 'bg-[#055CFF] text-white' 
+                    ? 'bg-[#FCCA00] text-white' 
                     : 'text-white/70 hover:text-white hover:bg-white/10'
                 ]"
               >

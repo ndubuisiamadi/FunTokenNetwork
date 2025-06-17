@@ -16,6 +16,8 @@ import LogInView from '@/views/LogInView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 import EditProfileView from '@/views/EditProfileView.vue'
+import SearchView from '@/views/SearchView.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -116,6 +118,12 @@ const router = createRouter({
   component: EditProfileView,
   meta: { requiresAuth: true, requiresCompleteProfile: true }
 },
+{
+  path: '/search',
+  name: 'search',
+  component: SearchView,
+  meta: { requiresAuth: true, requiresCompleteProfile: true }
+}
   ],
 })
 
