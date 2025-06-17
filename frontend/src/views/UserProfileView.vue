@@ -394,9 +394,8 @@ onMounted(() => {
           <div class="flex-1 pt-6">
             <h2 class="text-lg font-bold leading-tight">{{ displayName }}</h2>
             <div class="flex items-center gap-1 text-white/70">
-              <img class="size-3" src="@/components/icons/mappinline.svg" alt="" />
-              <p class="text-xs">{{ profileUser.location || 'Location not set' }}</p>
-            </div>
+  <p class="text-xs">@{{ profileUser.username }}</p>
+</div>
           </div>
         </div>
 

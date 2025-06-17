@@ -24,7 +24,7 @@ const fullUsername = computed(() => {
 })
 
 const isUsernameValid = computed(() => {
-  return usernamePrefix.value.length >= 3 && /^[a-zA-Z0-9_]+$/.test(usernamePrefix.value)
+  return usernamePrefix.value.length >= 3 && /^[a-z0-9_]+$/.test(usernamePrefix.value)
 })
 
 // Methods
@@ -38,8 +38,8 @@ const validateUsernameInput = () => {
     usernamePrefix.value = usernamePrefix.value.replace('.fun', '')
   }
   
-  // Only allow valid characters
-  usernamePrefix.value = usernamePrefix.value.replace(/[^a-zA-Z0-9_]/g, '')
+  // Only allow valid characters AND automatically convert to lowercase
+  usernamePrefix.value = usernamePrefix.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()
   
   // Update the full username
   updateUsername()
@@ -73,7 +73,7 @@ const handleRegister = async () => {
     return
   }
 
-  if (!/^[a-zA-Z0-9_]+$/.test(usernamePrefix.value)) {
+  if (!/^[a-z0-9_]+$/.test(usernamePrefix.value)) {
     error.value = 'Username can only contain letters, numbers, and underscores'
     return
   }
@@ -156,7 +156,7 @@ watch(usernamePrefix, () => {
       type="text" 
       placeholder="johndoe"
       v-model="usernamePrefix"
-      @input="updateUsername"
+      @input="validateUsernameInput"
       :disabled="loading"
       autocomplete="username"
       class="w-full text-sm px-3 py-2.5 pr-12 rounded-lg bg-black/20 border border-white/10 placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 disabled:opacity-50 transition-all" 

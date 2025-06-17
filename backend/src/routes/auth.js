@@ -8,9 +8,9 @@ const router = express.Router()
 // SIMPLIFIED validation rules - NO EMAIL, NO VERIFICATION
 const registerValidation = [
   body('username')
-    .isLength({ min: 3, max: 30 })
-    .matches(/^[a-zA-Z0-9_.]+$/)
-    .withMessage('Username must be 3-30 characters and contain only letters, numbers, and underscores'),
+    .isLength({ min: 7, max: 34 }) // Minimum 3 chars + '.fun' = 7, max 30 + '.fun' = 34
+    .matches(/^[a-zA-Z0-9_]+\.fun$/) // Must be lowercase/uppercase letters, numbers, underscores, ending with .fun
+    .withMessage('Username must be 3-30 characters (before .fun), contain only letters, numbers, and underscores, and end with .fun'),
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters'),

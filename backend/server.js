@@ -82,6 +82,8 @@ const createRateLimit = (windowMs, max, message) => rateLimit({
   legacyHeaders: false,
 })
 
+// Only apply rate limiting in production
+if (process.env.NODE_ENV === 'production') {
 // General API rate limit
 app.use('/api/', createRateLimit(15 * 60 * 1000, 1000, 'Too many API requests'))
 
@@ -90,7 +92,9 @@ app.use('/api/auth/login', createRateLimit(15 * 60 * 1000, 5, 'Too many login at
 app.use('/api/auth/register', createRateLimit(60 * 60 * 1000, 3, 'Too many registration attempts'))
 
 // Messages rate limit (more generous for real-time chat)
-app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 100, 'Too many message requests'))
+app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 100, 'Too many message requests'))}
+
+
 
 // CORS configuration
 app.use(cors({

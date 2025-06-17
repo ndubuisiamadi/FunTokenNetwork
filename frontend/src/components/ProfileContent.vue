@@ -82,10 +82,9 @@ const getRoleText = (role) => {
         <div class="flex items-center justify-between grow pb-2">
           <div>
             <h2 class="text-xl font-bold">{{ displayName }}</h2>
-            <div class="flex items-center gap-1">
-              <img class="size-5" src="@/components/icons/mappinline.svg" alt="" />
-              <p class="text-xs">{{ profileUser.location || 'Location not set' }}</p>
-            </div>
+            <div class="flex items-center gap-1 text-white/70">
+  <p class="text-xs">@{{ profileUser.username }}</p>
+</div>
           </div>
           
           <!-- Action buttons based on profile type -->

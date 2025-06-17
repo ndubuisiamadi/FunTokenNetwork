@@ -29,9 +29,12 @@ const register = async (req, res) => {
 
     const { username, password, firstName, lastName } = req.body
 
-    // Check if username already exists
+    // Normalize username to lowercase
+    const normalizedUsername = username.toLowerCase()
+
+    // Check if username already exists (now case-insensitive)
     const existingUser = await prisma.user.findUnique({
-      where: { username }
+      where: { username: normalizedUsername }
     })
 
     if (existingUser) {
@@ -44,11 +47,11 @@ const register = async (req, res) => {
     // Create user - REMOVED email and isVerified
     const user = await prisma.user.create({
       data: {
-        username,
+        username: normalizedUsername,
         password: hashedPassword,
         firstName: firstName || null,
         lastName: lastName || null,
-        gumballs: 100 // Starting gumballs
+        gumballs: 0 // Starting gumballs
       },
       select: {
         id: true,
