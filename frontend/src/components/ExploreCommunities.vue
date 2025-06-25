@@ -173,7 +173,7 @@ onMounted(async () => {
 
       <!-- Empty State -->
       <div v-else-if="displayedCommunities.length === 0" class="text-center py-12">
-        <img src="@/components/icons/usersfour.svg" alt="No communities" class="size-16 mx-auto mb-4 opacity-50" />
+        <img src="@/components/icons/users-four.svg" alt="No communities" class="size-16 mx-auto mb-4 opacity-50" />
         <h3 class="text-lg font-semibold mb-2">
           {{ isSearching ? 'No communities found' : 'No communities yet' }}
         </h3>

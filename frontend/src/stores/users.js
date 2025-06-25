@@ -142,74 +142,123 @@ export const useUsersStore = defineStore('users', {
     },
 
     // Send friend request
-async sendFriendRequest(userId) {
-  this.sendingRequest = true
-  this.error = null
+    async sendFriendRequest(userId) {
+      this.sendingRequest = true
+      this.error = null
 
-  try {
-    const response = await friendsAPI.sendRequest(userId)
+      try {
+        const response = await friendsAPI.sendRequest(userId)
 
-    // Update user status in local lists immediately
-    this.updateUserFriendshipStatus(userId, 'request_sent')
+        // Update user status in local lists immediately
+        this.updateUserFriendshipStatus(userId, 'request_sent')
 
-    // Refresh friend requests to get the new request
-    await this.getFriendRequests()
+        // Refresh friend requests to get the new request
+        await this.getFriendRequests()
 
-    return { success: true, request: response.data.request }
-  } catch (error) {
-    console.error('Send friend request error:', error)
-    this.error = error.response?.data?.message || 'Failed to send friend request'
-    return { success: false, error: this.error }
-  } finally {
-    this.sendingRequest = false
-  }
-},
+        return { success: true, request: response.data.request }
+      } catch (error) {
+        console.error('Send friend request error:', error)
+        this.error = error.response?.data?.message || 'Failed to send friend request'
+        return { success: false, error: this.error }
+      } finally {
+        this.sendingRequest = false
+      }
+    },
 
     // Respond to friend request
-async respondToFriendRequest(requestId, action) {
-  this.respondingToRequest = true
+    async respondToFriendRequest(requestId, action) {
+      this.respondingToRequest = true
+      this.error = null
+
+      try {
+        const response = await friendsAPI.respondToRequest(requestId, action)
+
+        // Refresh friend requests and friends list
+        await this.getFriendRequests()
+        if (action === 'accept') {
+          await this.getFriends()
+        }
+
+        return { success: true, message: response.data.message }
+      } catch (error) {
+        console.error('Respond to friend request error:', error)
+        this.error = error.response?.data?.message || 'Failed to respond to friend request'
+        return { success: false, error: this.error }
+      } finally {
+        this.respondingToRequest = false
+      }
+    },
+
+    // Add this method to your users.js store actions
+// Replace your cancelFriendRequest method with this simpler version
+async cancelFriendRequest(userId) {
+  this.actionLoading = true
   this.error = null
 
   try {
-    const response = await friendsAPI.respondToRequest(requestId, action)
-
-    // Refresh friend requests and friends list
+    // First, refresh requests to get the latest data
     await this.getFriendRequests()
-    if (action === 'accept') {
-      await this.getFriends()
+    
+    // Find the request in the current sentRequests
+    const sentRequest = this.sentRequests.find(
+      req => req.receiver?.id === userId || req.receiverId === userId
+    )
+
+    if (!sentRequest) {
+      // If no sent request found, the UI state is out of sync
+      // Reset the user's friendship status and refresh data
+      this.updateUserFriendshipStatus(userId, 'none')
+      await this.getFriendRequests()
+      return { success: true, message: 'Request already cancelled or does not exist' }
     }
+
+    const response = await friendsAPI.cancelRequest(sentRequest.id)
+
+    // Update user status in local lists immediately
+    this.updateUserFriendshipStatus(userId, 'none')
+
+    // Refresh friend requests to remove the cancelled request
+    await this.getFriendRequests()
 
     return { success: true, message: response.data.message }
   } catch (error) {
-    console.error('Respond to friend request error:', error)
-    this.error = error.response?.data?.message || 'Failed to respond to friend request'
+    console.error('Cancel friend request error:', error)
+    
+    // If request not found on server, sync the UI state
+    if (error.response?.status === 404) {
+      this.updateUserFriendshipStatus(userId, 'none')
+      await this.getFriendRequests()
+      return { success: true, message: 'Request already cancelled' }
+    }
+    
+    this.error = error.response?.data?.message || 'Failed to cancel friend request'
     return { success: false, error: this.error }
   } finally {
-    this.respondingToRequest = false
+    this.actionLoading = false
   }
 },
 
-    // Get friend requests - fetch both types
-async getFriendRequests() {
-  try {
-    const [receivedResponse, sentResponse] = await Promise.all([
-      friendsAPI.getRequests('received'),
-      friendsAPI.getRequests('sent')
-    ])
+        // Get friend requests - fetch both types
+    async getFriendRequests() {
+      try {
+        const [receivedResponse, sentResponse] = await Promise.all([
+          friendsAPI.getRequests('received'),
+          friendsAPI.getRequests('sent')
+        ])
 
-    // Combine both arrays
-    this.friendRequests = [
-      ...receivedResponse.data.requests,
-      ...sentResponse.data.requests
-    ]
+        // Combine both arrays
+        this.friendRequests = [
+          ...receivedResponse.data.requests,
+          ...sentResponse.data.requests
+        ]
 
-    return { success: true }
-  } catch (error) {
-    console.error('Get friend requests error:', error)
-    this.error = error.response?.data?.message || 'Failed to load friend requests'
-    return { success: false, error: this.error }
-  }
-},
+        return { success: true }
+      } catch (error) {
+        console.error('Get friend requests error:', error)
+        this.error = error.response?.data?.message || 'Failed to load friend requests'
+        return { success: false, error: this.error }
+      }
+    },
 
     // Get friends list
     async getFriends(userId = null) {
@@ -254,29 +303,28 @@ async getFriendRequests() {
       }
     },
 
-    // Add to existing users.js store actions
-async removeFriend(userId) {
-  this.actionLoading = true
-  try {
-    const response = await friendsAPI.removeFriend(userId)
-    
-    // Update local data
-    this.updateUserInLists({ 
-      id: userId, 
-      friendshipStatus: 'none' 
-    })
-    
-    return { success: true }
-  } catch (error) {
-    console.error('Remove friend error:', error)
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Failed to remove friend' 
-    }
-  } finally {
-    this.actionLoading = false
-  }
-},
+    async removeFriend(userId) {
+      this.actionLoading = true
+      try {
+        const response = await friendsAPI.removeFriend(userId)
+        
+        // Update local data
+        this.updateUserInLists({ 
+          id: userId, 
+          friendshipStatus: 'none' 
+        })
+        
+        return { success: true }
+      } catch (error) {
+        console.error('Remove friend error:', error)
+        return { 
+          success: false, 
+          error: error.response?.data?.message || 'Failed to remove friend' 
+        }
+      } finally {
+        this.actionLoading = false
+      }
+    },
 
     // Helper: Update user in all lists
     updateUserInLists(updatedUser) {
@@ -309,9 +357,9 @@ async removeFriend(userId) {
     },
 
     // Set current user (call this from auth store when user logs in)
-  setCurrentUser(user) {
-    this.currentUser = user
-  },
+    setCurrentUser(user) {
+      this.currentUser = user
+    },
 
     // Clear search
     clearSearch() {

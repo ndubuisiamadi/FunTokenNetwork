@@ -31,27 +31,12 @@ const allUsers = computed(() => usersStore.allUsers)
 
 // Add message function for friends
 const startConversation = async (friend) => {
-  try {
-    console.log('Creating conversation with friend:', friend.id)
-    
-    const response = await messagesAPI.createConversation({
-      participantIds: [friend.id],
-      isGroup: false
-    })
-    
-    console.log('Conversation response:', response)
-    
-    if (response.data.conversation) {
-      // Navigate to messages with the conversation ID
-      router.push(`/messages?conversation=${response.data.conversation.id}`)
-    } else {
-      console.error('No conversation in response:', response.data)
-      alert('Error starting conversation. Please try again.')
-    }
-  } catch (error) {
-    console.error('Error creating conversation:', error)
-    console.error('Error response:', error.response?.data)
-    alert('Error starting conversation. Please try again.')
+  if (props.isMobile) {
+    // Navigate to draft chat instead of creating conversation
+    router.push(`/chat/new?new=true&userId=${friend.id}`)
+  } else {
+    // For desktop, emit the friend selection to parent
+    emit('friend-selected', friend)
   }
 }
 

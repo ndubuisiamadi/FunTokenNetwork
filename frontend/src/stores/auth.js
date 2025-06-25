@@ -76,35 +76,45 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // Register new user
-    async register(userData) {
-      this.loading = true
-      this.error = null
-      
-      try {
-        const response = await authAPI.register(userData)
-        const { user, accessToken } = response.data
-        
-        // Store auth data
-        this.user = user
-        this.token = accessToken
-        this.isAuthenticated = true
-        
-        // Persist to localStorage
-        localStorage.setItem('authToken', accessToken)
-        localStorage.setItem('authUser', JSON.stringify(user))
-        
-        return { success: true, user }
-      } catch (error) {
-        console.error('Registration error:', error)
-        this.error = error.response?.data?.message || 'Registration failed'
-        return { success: false, error: this.error }
-      } finally {
-        this.loading = false
+    // In your auth store
+async register(userData) {
+  this.loading = true
+  this.error = null
+  
+  try {
+    const response = await authAPI.register(userData)
+    
+    if (response.data.requiresVerification) {
+      // User needs to verify email
+      return { 
+        success: true, 
+        requiresVerification: true,
+        message: response.data.message 
       }
-    },
+    } else {
+      // Old flow (shouldn't happen with new implementation)
+      const { user, accessToken } = response.data
+      this.user = user
+      this.token = accessToken
+      this.isAuthenticated = true
+      
+      localStorage.setItem('authToken', accessToken)
+      localStorage.setItem('authUser', JSON.stringify(user))
+      
+      return { success: true, user }
+    }
+  } catch (error) {
+    console.error('Registration error:', error)
+    this.error = error.response?.data?.message || 'Registration failed'
+    return { success: false, error: this.error }
+  } finally {
+    this.loading = false
+  }
+},
 
     // Login user
-    async login(credentials) {
+    // Login user
+async login(credentials) {
   this.loading = true
   this.error = null
   
@@ -112,7 +122,7 @@ export const useAuthStore = defineStore('auth', {
     const response = await authAPI.login(credentials)
     const { user, accessToken } = response.data
     
-    // Store auth data
+    // Store auth data FIRST
     this.user = user
     this.token = accessToken
     this.isAuthenticated = true
@@ -120,23 +130,29 @@ export const useAuthStore = defineStore('auth', {
     // Persist to localStorage
     localStorage.setItem('authToken', accessToken)
     localStorage.setItem('authUser', JSON.stringify(user))
-
-    // After successful login and setting this.user:
-    this.user = response.data.user
-    this.token = response.data.token
-    this.isAuthenticated = true
     
     // Set current user in users store
     const usersStore = useUsersStore()
     usersStore.setCurrentUser(this.user)
     
-    // Initialize messages store after successful login
-    await this.initializeUserData()
-
+    // Initialize user data (but don't await it to avoid blocking navigation)
+    this.initializeUserData().catch(console.error)
     
     return { success: true, user }
   } catch (error) {
     console.error('Login error:', error)
+    
+    // Check if this is an email verification error
+    if (error.response?.status === 403 && error.response?.data?.requiresVerification) {
+      return { 
+        success: false, 
+        requiresVerification: true,
+        email: error.response.data.email,
+        error: error.response.data.message
+      }
+    }
+    
+    // Regular login error
     this.error = error.response?.data?.message || 'Login failed'
     return { success: false, error: this.error }
   } finally {

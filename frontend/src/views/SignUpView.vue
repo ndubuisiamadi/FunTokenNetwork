@@ -6,19 +6,17 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-// Username prefix (the part before .fun)
-const usernamePrefix = ref('')
-
 const form = reactive({
   username: '',
+  email: '', // Add email field
   password: '',
   confirmPassword: ''
 })
 
+const usernamePrefix = ref('')
 const loading = ref(false)
 const error = ref('')
 
-// Computed properties
 const fullUsername = computed(() => {
   return usernamePrefix.value ? `${usernamePrefix.value}.fun` : ''
 })
@@ -47,8 +45,15 @@ const validateUsernameInput = () => {
 
 const handleRegister = async () => {
   // Validation
-  if (!usernamePrefix.value || !form.password || !form.confirmPassword) {
+  if (!usernamePrefix.value || !form.email || !form.password || !form.confirmPassword) {
     error.value = 'Please fill in all fields'
+    return
+  }
+
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(form.email)) {
+    error.value = 'Please enter a valid email address'
     return
   }
 
@@ -83,6 +88,7 @@ const handleRegister = async () => {
 
   const registrationData = {
     username: form.username, // This will be the full username with .fun
+    email: form.email, // Include email
     password: form.password
   }
   
@@ -91,8 +97,16 @@ const handleRegister = async () => {
   loading.value = false
 
   if (result.success) {
-    // REDIRECT TO PROFILE COMPLETION
-    router.push('/create-account')
+    if (result.requiresVerification) {
+      // Redirect to email verification
+      router.push({
+        name: 'email-verification',
+        query: { email: form.email }
+      })
+    } else {
+      // Legacy flow - redirect to profile completion
+      router.push('/create-account')
+    }
   } else {
     error.value = result.error
   }
@@ -166,6 +180,20 @@ watch(usernamePrefix, () => {
     </div>
   </div>
 </div>
+
+<!-- Email -->
+    <div>
+      <label class="block text-sm font-medium text-white/90 mb-2">
+        Email Address
+      </label>
+      <input
+        v-model="form.email"
+        type="email"
+        placeholder="Enter your email"
+        class="w-full text-sm px-3 py-2.5 pr-12 rounded-lg bg-black/20 border border-white/10 placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 disabled:opacity-50 transition-all"
+        :class="{ 'border-red-500': error && error.includes('email') }"
+      />
+    </div>
 
           <!-- Password -->
           <div>

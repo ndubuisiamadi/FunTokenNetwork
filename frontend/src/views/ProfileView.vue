@@ -28,7 +28,7 @@ import FeedPostCard from '@/components/FeedPostCard.vue';
           <div>
             <h2 class="text-xl font-bold">Kathryn Murphy</h2>
             <div class="flex items-center gap-1">
-              <img class="size-5" src="@/components/icons/mappinline.svg" alt="">
+              <img class="size-5" src="@/components/icons/map-pin-line.svg" alt="">
               <p class="text-xs">Minnesota, United States</p>
             </div>
             
@@ -71,8 +71,8 @@ import FeedPostCard from '@/components/FeedPostCard.vue';
             
           
           <div class="space-y-1">
-            <div class="text-sm font-semibold flex items-center gap-2"><img class="size-5" src="@/components/icons/clockuser.svg" alt="">Joined 5 months ago</div>
-            <div class="text-sm font-semibold flex items-center gap-2"><img class="size-5" src="@/components/icons/calendardots.svg" alt="">November, 1999</div>
+            <div class="text-sm font-semibold flex items-center gap-2"><img class="size-5" src="@/components/icons/clock-user.svg" alt="">Joined 5 months ago</div>
+            <div class="text-sm font-semibold flex items-center gap-2"><img class="size-5" src="@/components/icons/calendar-dots.svg" alt="">November, 1999</div>
           </div>
         </div>
 

@@ -108,11 +108,11 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="bg-linear-to-tr from-[#055DFF]/20 to-[#00BFFF]/20 backdrop-blur-xl border border-[#055CFF]/50 shadow-2xl
+    <div class="bg-linear-to-tr from-[#055DFF]/20 to-[#00BFFF]/20 backdrop-blur-xl border border-[#055CFF]/50
     text-white p-5 rounded-[18px] ">
         <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-2 text-lg font-medium">
-            <img src="@/components/icons/chatsteardrop.svg" alt="Check" class="size-6" />
+            <img src="@/components/icons/chats-tear-drop.svg" alt="Check" class="size-6" />
             <span>Messages</span>
             </div>
             <RouterLink to="/messages" class="text-xs text-white/80 hover:underline">View All</RouterLink>

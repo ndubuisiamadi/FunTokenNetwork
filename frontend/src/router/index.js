@@ -7,6 +7,7 @@ import SignUpView from '../views/SignUpView.vue'
 import HomeView from '../views/HomeView.vue'
 import TasksView from '../views/TasksView.vue'
 import MessagesView from '../views/MessagesView.vue'
+import ChatView from '../views/ChatView.vue'
 import FriendsView from '@/views/FriendsView.vue'
 import CommunitiesView from '@/views/CommunitiesView.vue'
 import UserProfileView from '@/views/UserProfileView.vue'
@@ -17,6 +18,7 @@ import ProfileView from '@/views/ProfileView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 import EditProfileView from '@/views/EditProfileView.vue'
 import SearchView from '@/views/SearchView.vue'
+import EmailVerificationView from '@/views/EmailVerificationView.vue'
 
 
 const router = createRouter({
@@ -35,6 +37,12 @@ const router = createRouter({
       component: SignUpView,
       meta: { requiresGuest: true }
     },
+    {
+  path: '/verify-email',
+  name: 'email-verification',
+  component: EmailVerificationView,
+  meta: { requiresGuest: true }
+},
     
     // Profile completion route (for newly registered users)
     {
@@ -63,6 +71,12 @@ const router = createRouter({
       component: MessagesView,
       meta: { requiresAuth: true, requiresCompleteProfile: true }
     },
+    // {
+    //   path: '/chat/:id',
+    //   name: 'chat',
+    //   component: ChatView,
+    //   meta: { requiresAuth: true, requiresCompleteProfile: true }
+    // },
     {
       path: '/communities',
       name: 'communities',

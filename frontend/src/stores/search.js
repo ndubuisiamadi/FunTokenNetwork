@@ -46,50 +46,49 @@ export const useSearchStore = defineStore('search', {
 
   actions: {
     // Global search using your existing API
-    async search(query) {
-      if (!query.trim()) {
-        this.clearResults()
-        return
+    // Updated search store to handle standardized responses
+async search(query) {
+  if (!query.trim()) {
+    this.clearResults()
+    return { success: true }
+  }
+
+  if (this.loading) {
+    return { success: false, error: 'Search already in progress' }
+  }
+
+  this.loading = true
+  this.error = null
+  this.query = query
+  this.isSearching = true
+
+  try {
+    const response = await searchAPI.globalSearch(query, {
+      types: ['users', 'communities', 'posts'],
+      limit: 5
+    })
+
+    if (response.success) {
+      // Now response.results has consistent format from backend
+      this.results = response.results
+      this.totalResults = {
+        posts: response.results.posts?.length || 0,
+        users: response.results.users?.length || 0,
+        communities: response.results.communities?.length || 0
       }
-
-      this.loading = true
-      this.error = null
-      this.query = query
-      this.isSearching = true
-
-      try {
-        // Use your existing globalSearch method
-        const response = await searchAPI.globalSearch(query, {
-          types: ['users', 'communities', 'posts'],
-          limit: 5
-        })
-
-        if (response.success) {
-          this.results = {
-            posts: response.results.posts || [],
-            users: response.results.users || [],
-            communities: response.results.communities || []
-          }
-
-          // Set initial totals (we'll get exact counts from individual searches if needed)
-          this.totalResults = {
-            posts: response.results.posts?.length || 0,
-            users: response.results.users?.length || 0,
-            communities: response.results.communities?.length || 0
-          }
-        } else {
-          this.error = response.error || 'Search failed'
-        }
-
-        return { success: response.success }
-      } catch (error) {
-        console.error('Search error:', error)
-        this.error = error.message || 'Search failed'
-        return { success: false, error: this.error }
-      } finally {
-        this.loading = false
-      }
-    },
+      return { success: true }
+    } else {
+      this.error = response.error || 'Search failed'
+      return { success: false, error: this.error }
+    }
+  } catch (error) {
+    console.error('Search error:', error)
+    this.error = error.message || 'Search failed'
+    return { success: false, error: this.error }
+  } finally {
+    this.loading = false
+  }
+},
 
     // Search specific type with pagination using individual API calls
     async searchType(type, page = 1) {

@@ -21,7 +21,7 @@
                 </div>
                 
                 </div>
-                <img src="@/components/icons/arrowfatlinesup.svg" alt="Play" class="size-5" />
+                <img src="@/components/icons/arrow-flat-lines-up.svg" alt="Play" class="size-5" />
                 </div>
 
                 <div class="flex items-center justify-between">
@@ -36,7 +36,7 @@
                     </div>
                     
                     </div>
-                    <img src="@/components/icons/arrowfatlinesup.svg" alt="Play" class="size-6" />
+                    <img src="@/components/icons/arrow-flat-lines-up.svg" alt="Play" class="size-6" />
                 </div>
 
                 <div class="flex items-center justify-between">
@@ -51,7 +51,7 @@
                 </div>
                 
                 </div>
-                <img src="@/components/icons/arrowfatlinesup.svg" alt="Play" class="size-6" />
+                <img src="@/components/icons/arrow-flat-lines-up.svg" alt="Play" class="size-6" />
             </div>
             </div>
 

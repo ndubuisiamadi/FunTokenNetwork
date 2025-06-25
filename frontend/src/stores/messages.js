@@ -53,6 +53,13 @@ const sortConversationsByActivity = (conversations) => {
   })
 }
 
+const clearCurrentConversation = () => {
+  currentConversation.value = null
+}
+
+// Export it
+export { clearCurrentConversation }
+
 export const useMessagesStore = defineStore('messages', {
   state: () => ({
     conversations: [],

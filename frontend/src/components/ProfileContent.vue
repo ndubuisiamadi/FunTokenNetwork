@@ -19,7 +19,10 @@ const props = defineProps({
 
 const emit = defineEmits([
   'edit-profile',
-  'send-friend-request', 
+  'send-friend-request',
+  'accept-friend-request',
+  'decline-friend-request',
+  'cancel-friend-request', 
   'remove-friend',
   'block-user',
   'start-conversation'
@@ -88,6 +91,7 @@ const getRoleText = (role) => {
           </div>
           
           <!-- Action buttons based on profile type -->
+           <!-- Action buttons based on profile type -->
 <div class="flex items-center space-x-2">
   <!-- Own profile buttons -->
   <template v-if="isOwnProfile">
@@ -111,23 +115,34 @@ const getRoleText = (role) => {
       {{ actionLoading ? 'Sending...' : 'Add Friend' }}
     </button>
     
-    <!-- Request Sent status -->
+    <!-- Request Sent - show Cancel button for sender -->
     <button 
       v-else-if="friendshipStatus === 'sent' || friendshipStatus === 'request_sent'"
-      disabled
-      class="bg-gray-600 px-4 py-2 rounded-full text-sm opacity-60 cursor-not-allowed"
+      @click="$emit('cancel-friend-request')"
+      :disabled="actionLoading"
+      class="bg-red-600 px-4 py-2 rounded-full text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
     >
-      Request Sent
+      {{ actionLoading ? 'Cancelling...' : 'Cancel Request' }}
     </button>
     
-    <!-- Request Received status -->
-    <button 
-      v-else-if="friendshipStatus === 'received' || friendshipStatus === 'request_received'"
-      disabled
-      class="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-full border-2 border-blue-500/30 text-sm cursor-not-allowed"
-    >
-      Request Received
-    </button>
+    <!-- Request Received - show Accept/Decline buttons for receiver -->
+    <template v-else-if="friendshipStatus === 'received' || friendshipStatus === 'request_received'">
+      <button 
+        @click="$emit('accept-friend-request')"
+        :disabled="actionLoading"
+        class="bg-green-600 px-4 py-2 rounded-full text-sm hover:bg-green-700 transition-colors disabled:opacity-50"
+      >
+        {{ actionLoading ? 'Accepting...' : 'Accept' }}
+      </button>
+      
+      <button 
+        @click="$emit('decline-friend-request')"
+        :disabled="actionLoading"
+        class="bg-red-600 px-4 py-2 rounded-full text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
+      >
+        {{ actionLoading ? 'Declining...' : 'Decline' }}
+      </button>
+    </template>
     
     <!-- Friends - show Message button -->
     <template v-else-if="friendshipStatus === 'friends'">
@@ -144,7 +159,7 @@ const getRoleText = (role) => {
         class="bg-black p-2 rounded-full hover:bg-gray-800 transition-colors"
         title="Remove Friend"
       >
-        <img src="@/components/icons/userminus.svg" alt="Remove Friend" />
+        <img src="@/components/icons/user-minus.svg" alt="Remove Friend" />
       </button>
       
       <button 
@@ -204,11 +219,11 @@ const getRoleText = (role) => {
           <!-- Join date and birth date -->
           <div class="space-y-1">
             <div class="text-sm font-semibold flex items-center gap-2">
-              <img class="size-5" src="@/components/icons/clockuser.svg" alt="" />
+              <img class="size-5" src="@/components/icons/clock-user.svg" alt="" />
               <span>Joined {{ joinDate }}</span>
             </div>
             <div v-if="birthDate" class="text-sm font-semibold flex items-center gap-2">
-              <img class="size-5" src="@/components/icons/calendardots.svg" alt="" />
+              <img class="size-5" src="@/components/icons/calendar-dots.svg" alt="" />
               <span>{{ birthDate }}</span>
             </div>
           </div>

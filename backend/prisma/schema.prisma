@@ -15,9 +15,12 @@ datasource db {
 model User {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   username    String   @unique
+  email       String?  @unique
   password    String
   firstName   String?  @map("first_name")
   lastName    String?  @map("last_name")
+  isEmailVerified Boolean  @default(false) @map("is_email_verified")
+  emailRequired   Boolean  @default(false) @map("email_required")
   bio         String?
   location    String?
   birthDate   DateTime? @map("birth_date")
@@ -39,6 +42,7 @@ model User {
   monthlyRankChange  Int?  @map("monthly_rank_change") @default(0)
 
   // Relations
+  verificationCodes EmailVerificationCode[]
   posts              Post[]
   comments           Comment[]
   likes              Like[]
@@ -65,6 +69,12 @@ model User {
   // Notifications
   notifications  Notification[]
 
+  // INDEXES FOR SEARCH PERFORMANCE
+  @@index([firstName])           // Index for firstName searches
+  @@index([lastName])            // Index for lastName searches  
+  @@index([firstName, lastName]) // Compound index for full name searches
+  @@index([gumballs, createdAt]) // For ordering search results
+
   // Indexes for performance
   @@index([gumballs])
   @@index([level, gumballs])
@@ -73,6 +83,26 @@ model User {
   @@index([createdAt])
   @@index([lastSeen])
   @@map("users")
+}
+
+model EmailVerificationCode {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  code      String   // 6-digit code
+  email     String   
+  userId    String?  @map("user_id") @db.ObjectId  // MongoDB ObjectId type
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relation to user (optional for new signups)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([email])
+  @@index([code])
+  @@index([expiresAt])
+  @@index([userId])
+  @@index([email, isUsed])
+  @@map("email_verification_codes")
 }
 
 // ===================================

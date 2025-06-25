@@ -12,18 +12,20 @@ const { Server } = require('socket.io')
 require('dotenv').config()
 
 const app = express()
+app.set('trust proxy', 'loopback, linklocal, uniquelocal')
 const server = createServer(app)
 
 // Configure Socket.io with CORS
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"],
+    origin: [
+      'http://localhost:5173',
+      'http://192.168.0.159:5173', 
+      'http://127.0.0.1:5173'
+    ],
     credentials: true
-  },
-  pingTimeout: 60000,
-  pingInterval: 25000
-})
+  }
+});
 
 // Make io available to route handlers
 app.set('io', io)
@@ -97,27 +99,15 @@ app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 100, 'Too many message 
 
 
 // CORS configuration
+// server.js - Updated CORS configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      process.env.CLIENT_URL || "http://localhost:5173",
-      "http://localhost:3000", // For development
-      "http://127.0.0.1:5173"
-    ]
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true)
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true)
-    } else {
-      callback(new Error('Not allowed by CORS'))
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}))
+  origin: [
+    'http://localhost:5173',
+    'http://192.168.0.159:5173',
+    'http://127.0.0.1:5173'
+  ],
+  credentials: true
+}));
 
 // Body parsing middleware with increased limits for file uploads
 app.use(express.json({ 

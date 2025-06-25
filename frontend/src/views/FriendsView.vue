@@ -199,6 +199,30 @@ const sendFriendRequest = async () => {
   }
 }
 
+const cancelFriendRequest = async () => {
+  if (!selectedUser.value?.id || actionLoading.value) return
+  
+  actionLoading.value = true
+  try {
+    const result = await usersStore.cancelFriendRequest(selectedUser.value.id)
+    
+    if (result.success) {
+      selectedUser.value.friendshipStatus = 'none'
+      // Refresh data to update lists
+      await Promise.all([
+        usersStore.getFriends(),
+        usersStore.getFriendRequests()
+      ])
+    } else {
+      console.error('Failed to cancel friend request:', result.error)
+    }
+  } catch (err) {
+    console.error('Error cancelling friend request:', err)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
 const removeFriend = async () => {
   if (!selectedUser.value) return
   
@@ -247,6 +271,17 @@ const startConversation = async () => {
     alert('Error starting conversation. Please try again.')
   }
 }
+
+const sentRequestId = computed(() => {
+  if (!selectedUser.value) return null
+  
+  // Check if there's a sent request to this user
+  const sentRequest = usersStore.sentRequests.find(
+    req => req.receiver?.id === selectedUser.value.id || req.receiverId === selectedUser.value.id
+  )
+  
+  return sentRequest?.id || null
+})
 
 // Lifecycle
 onMounted(async () => {
@@ -321,6 +356,9 @@ onUnmounted(() => {
         :action-loading="actionLoading"
         :friendship-status="friendshipStatus"
         @send-friend-request="sendFriendRequest"
+        @accept-friend-request="() => acceptFriendRequest(pendingRequestId)"
+        @decline-friend-request="() => declineFriendRequest(pendingRequestId)"
+        @cancel-friend-request="cancelFriendRequest"
         @remove-friend="removeFriend"
         @block-user="blockUser"
         @start-conversation="startConversation"

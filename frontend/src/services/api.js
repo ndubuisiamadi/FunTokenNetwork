@@ -54,7 +54,11 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   logout: () => api.post('/auth/logout'),
   getProfile: () => api.get('/auth/profile'),
-  updateProfile: (profileData) => api.put('/auth/profile', profileData), 
+  updateProfile: (profileData) => api.put('/auth/profile', profileData),
+  
+  // Add these new email verification endpoints
+  verifyEmail: (emailData) => api.post('/auth/verify-email', emailData),
+  resendVerificationCode: (emailData) => api.post('/auth/resend-verification', emailData),
 }
 
 // Users API endpoints - NEW
@@ -84,6 +88,7 @@ export const postsAPI = {
 export const friendsAPI = {
   sendRequest: (userId) => api.post(`/friends/request/${userId}`),
   respondToRequest: (requestId, action) => api.put(`/friends/request/${requestId}`, { action }),
+  cancelRequest: (requestId) => api.delete(`/friends/request/${requestId}`),
   getFriends: (userId) => api.get(userId ? `/friends/list/${userId}` : '/friends/list'),
   getRequests: (type = 'received') => api.get(`/friends/requests?type=${type}`),
   checkStatus: (userId) => api.get(`/friends/status/${userId}`),
@@ -312,71 +317,87 @@ export const tasksAPI = {
   })
 }
 
-// Global Search API
+// Global Search API - Updated to handle standardized backend response
 export const searchAPI = {
-  // Global search across all content types
+  // Global search using the backend global search endpoint
   globalSearch: async (query, options = {}) => {
     const { types = ['users', 'communities', 'posts'], limit = 5 } = options
     
-    const promises = []
-    const results = {
-      users: [],
-      communities: [],
-      posts: []
-    }
-
     try {
-      // Search users
-      if (types.includes('users')) {
-        promises.push(
-          // Use the new search endpoint instead of usersAPI
-          api.get(`/search/users?q=${encodeURIComponent(query)}&page=1&limit=${limit}`)
-            .then(response => ({ type: 'users', data: response.data.data }))
-            .catch(() => ({ type: 'users', data: [] }))
-        )
-      }
-
-      // Search communities  
-      if (types.includes('communities')) {
-        promises.push(
-          // Use the new search endpoint instead of communitiesAPI
-          api.get(`/search/communities?q=${encodeURIComponent(query)}&page=1&limit=${limit}`)
-            .then(response => ({ type: 'communities', data: response.data.data }))
-            .catch(() => ({ type: 'communities', data: [] }))
-        )
-      }
-
-      // Search posts
-      if (types.includes('posts')) {
-        promises.push(
-          api.get(`/search/posts?q=${encodeURIComponent(query)}&page=1&limit=${limit}`)
-            .then(response => ({ type: 'posts', data: response.data.data }))
-            .catch(() => ({ type: 'posts', data: [] }))
-        )
-      }
-
-      const responses = await Promise.all(promises)
-      
-      responses.forEach(({ type, data }) => {
-        results[type] = data || []
+      const params = new URLSearchParams({
+        q: query,
+        types: types.join(','),
+        limit: limit.toString()
       })
-
-      return { success: true, results }
+      
+      const response = await api.get(`/search?${params}`)
+      
+      // Handle standardized response format
+      if (response.data.success) {
+        return {
+          success: true,
+          results: response.data.data, // This will be { posts: [], users: [], communities: [] }
+          pagination: response.data.pagination
+        }
+      } else {
+        return {
+          success: false,
+          error: response.data.error,
+          results: { posts: [], users: [], communities: [] }
+        }
+      }
     } catch (error) {
       console.error('Global search error:', error)
-      return { success: false, error: error.message, results }
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message,
+        results: { posts: [], users: [], communities: [] }
+      }
     }
   },
 
-  // Individual search methods for pagination - use new endpoints
-  searchPosts: (query, page = 1, limit = 10) => 
-    api.get(`/search/posts?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
+  // Individual search methods - now handle standardized responses
+  searchPosts: async (query, page = 1, limit = 10) => {
+    try {
+      const response = await api.get(`/search/posts?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
+      return {
+        data: {
+          posts: response.data.data,
+          pagination: response.data.pagination
+        }
+      }
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Search failed')
+    }
+  },
     
-  searchUsers: (query, page = 1, limit = 10) => 
-    api.get(`/search/users?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
+  searchUsers: async (query, page = 1, limit = 10) => {
+    try {
+      const response = await api.get(`/search/users?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
+      return {
+        data: {
+          users: response.data.data,
+          pagination: response.data.pagination
+        }
+      }
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Search failed')
+    }
+  },
     
-  searchCommunities: (query, page = 1, limit = 10) => 
-    api.get(`/search/communities?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
+  searchCommunities: async (query, page = 1, limit = 10) => {
+    try {
+      const response = await api.get(`/search/communities?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
+      return {
+        data: {
+          communities: response.data.data,
+          pagination: response.data.pagination
+        }
+      }
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Search failed')
+    }
+  }
 }
 
 export default api

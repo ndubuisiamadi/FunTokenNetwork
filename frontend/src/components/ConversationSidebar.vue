@@ -3,6 +3,9 @@ import { ref, computed } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { friendsAPI, uploadAPI } from '@/services/api'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const props = defineProps({
   isMobile: {
@@ -115,6 +118,56 @@ const selectConversation = async (conversation) => {
   }
 }
 
+// For creating new conversations (from the modal), keep the original logic:
+const createConversation = async () => {
+  if (!canCreateConversation.value || creatingConversation.value) return
+
+  creatingConversation.value = true
+  let groupAvatarUrl = null
+
+  try {
+    // Upload group avatar if provided
+    if (groupAvatarFile.value) {
+      uploadingAvatar.value = true
+      
+      try {
+        const uploadResponse = await uploadAPI.uploadAvatar(groupAvatarFile.value)
+        groupAvatarUrl = uploadResponse.data.url
+      } catch (uploadError) {
+        console.error('Avatar upload failed:', uploadError)
+        alert('Failed to upload group avatar. Creating group without avatar.')
+      } finally {
+        uploadingAvatar.value = false
+      }
+    }
+    
+    const isGroup = conversationType.value === 'group'
+    const participantIds = selectedUsers.value.map(user => user.id)
+    
+    const result = await messagesStore.createConversation(
+      participantIds,
+      isGroup,
+      isGroup ? groupName.value.trim() : null,
+      groupAvatarUrl
+    )
+    
+    if (result.success) {
+      console.log('Conversation created successfully!')
+      closeNewConversationModal()
+      emit('newConversation', result.conversation)
+    } else {
+      console.error('Failed to create conversation:', result.error)
+      alert('Failed to create conversation: ' + result.error)
+    }
+  } catch (error) {
+    console.error('Error creating conversation:', error)
+    alert('Error creating conversation: ' + (error.message || 'Unknown error'))
+  } finally {
+    creatingConversation.value = false
+    uploadingAvatar.value = false
+  }
+}
+
 const handleSearch = (query) => {
   messagesStore.setSearchQuery(query)
 }
@@ -211,68 +264,6 @@ const removeGroupAvatar = () => {
   }
 }
 
-const createConversation = async () => {
-  if (!canCreateConversation.value || creatingConversation.value) return
-
-  creatingConversation.value = true
-  let groupAvatarUrl = null
-
-  try {
-    // Upload group avatar if provided
-    if (groupAvatarFile.value) {
-      uploadingAvatar.value = true
-      
-      try {
-        const formData = new FormData()
-        formData.append('avatar', groupAvatarFile.value) // Use 'avatar' field name
-        
-        // Use uploadAvatar method instead of uploadFile
-        const uploadResponse = await uploadAPI.uploadAvatar(groupAvatarFile.value)
-        groupAvatarUrl = uploadResponse.data.url
-        console.log('Avatar uploaded successfully:', groupAvatarUrl)
-      } catch (uploadError) {
-        console.error('Avatar upload failed:', uploadError)
-        alert('Failed to upload group avatar. Creating group without avatar.')
-        // Continue with group creation even if avatar upload fails
-      } finally {
-        uploadingAvatar.value = false
-      }
-    }
-    
-    const isGroup = conversationType.value === 'group'
-    const participantIds = selectedUsers.value.map(user => user.id)
-    
-    console.log('Creating conversation with:', {
-      participantIds,
-      isGroup,
-      name: isGroup ? groupName.value.trim() : null,
-      avatarUrl: groupAvatarUrl
-    })
-    
-    const result = await messagesStore.createConversation(
-      participantIds,
-      isGroup,
-      isGroup ? groupName.value.trim() : null,
-      groupAvatarUrl
-    )
-    
-    if (result.success) {
-      console.log('Conversation created successfully!')
-      closeNewConversationModal()
-      emit('newConversation', result.conversation)
-    } else {
-      console.error('Failed to create conversation:', result.error)
-      alert('Failed to create conversation: ' + result.error)
-    }
-  } catch (error) {
-    console.error('Error creating conversation:', error)
-    alert('Error creating conversation: ' + (error.message || 'Unknown error'))
-  } finally {
-    creatingConversation.value = false
-    uploadingAvatar.value = false
-  }
-}
-
 // Helper functions
 const getConversationName = (conversation) => {
   if (conversation.isGroup) {
@@ -331,12 +322,23 @@ const getLastMessageStatus = (conversation) => {
   const lastMessage = conversation.lastMessageData || {}
   return lastMessage.status || 'sent'
 }
+
+const handleConversationClick = async (conversation) => {
+  if (props.isMobile) {
+    // Navigate to dedicated chat route on mobile
+    router.push(`/chat/${conversation.id}`)
+  } else {
+    // Desktop behavior - select conversation in current view
+    await messagesStore.selectConversation(conversation.id)
+    emit('conversation-selected', conversation)
+  }
+}
 </script>
 
 <template>
-  <aside class="w-full md:w-80 bg-[#1A1A1A] md:bg[#101010] flex flex-col" :class="isMobile ? 'h-full' : 'rounded-l-2xl'">
+  <aside class="w-full md:w-80 bg-[#262624] md:bg-[#101010] flex flex-col" :class="isMobile ? 'h-full' : 'rounded-l-2xl'">
     <!-- Tab-Style Header -->
-    <div class="p-3 md:p-4 border-b border-white/10">
+    <div class="px-3 md:p-4 border-b border-white/10">
       <!-- Mobile Header -->
       <div v-if="isMobile" class="flex items-center justify-between mb-4">
         <h1 class="text-[1.8em]! font-semibold text-[#00BFFF]">Messages</h1>
@@ -472,7 +474,7 @@ const getLastMessageStatus = (conversation) => {
           @click="selectConversation(conversation)"
           :class="[
             'flex items-center gap-3 py-4 px-3 hover:bg-[#2C2F36] cursor-pointer transition-colors',
-            currentConversation?.id === conversation.id ? 'bg-[#2C2F36]' : ''
+            currentConversation?.id === conversation.id ? 'md:bg-[#2C2F36]' : ''
           ]"
         >
           <div class="relative flex-shrink-0">
@@ -493,7 +495,16 @@ const getLastMessageStatus = (conversation) => {
               <div class="flex items-center gap-2">
                 <span class="text-[10px] text-white/50">{{ formatTime(conversation.lastMessageTime) }}</span>
                 
-                <!-- Message Status for Sender -->
+                
+              </div>
+            </div>
+            
+            <!-- Enhanced Preview -->
+             <div class="flex justify-between gap-3 items-center">
+              <p class="text-sm text-white/60 truncate">
+              {{ getConversationPreview(conversation) }}
+            </p>
+            <!-- Message Status for Sender -->
                 <div v-if="isLastMessageFromSender(conversation)" class="flex-shrink-0">
                   <div v-if="getLastMessageStatus(conversation) === 'sending'" 
                        class="w-3 h-3 border border-white/30 border-t-transparent rounded-full animate-spin"
@@ -524,13 +535,8 @@ const getLastMessageStatus = (conversation) => {
                 >
                   {{ formatUnreadCount(conversation.unreadCount) }}
                 </div>
-              </div>
-            </div>
+             </div>
             
-            <!-- Enhanced Preview -->
-            <p class="text-sm text-white/60 truncate">
-              {{ getConversationPreview(conversation) }}
-            </p>
           </div>
         </li>
       </ul>

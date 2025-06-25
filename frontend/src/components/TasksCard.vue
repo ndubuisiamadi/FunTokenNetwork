@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-linear-to-tr from-[#9E03FF]/20 to-[#082CFC]/20 backdrop-blur-xl border border-[#082CFC]/50 shadow-2xl 
+  <div class="bg-linear-to-tr from-[#9E03FF]/20 to-[#082CFC]/20 backdrop-blur-xl border border-[#082CFC]/50
    text-white p-5 rounded-[18px] ">
     <div class="flex justify-between items-center mb-5">
       <div class="flex items-center gap-2 text-lg font-medium">
-        <img src="@/components/icons/checkfat.svg" alt="Check" class="size-6" />
+        <img src="@/components/icons/check-fat.svg" alt="Check" class="size-6" />
         <span>Tasks</span>
       </div>
       <RouterLink 

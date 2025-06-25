@@ -1,12 +1,13 @@
+<!-- MessagesView.vue -->
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute } from 'vue-router'  // Add this import
+import { useRoute } from 'vue-router'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import ConversationSidebar from '@/components/ConversationSidebar.vue'
 import ChatArea from '@/components/ChatArea.vue'
 
-const route = useRoute()  // Add this
+const route = useRoute()
 const messagesStore = useMessagesStore()
 const authStore = useAuthStore()
 
@@ -76,6 +77,11 @@ onMounted(async () => {
   // Add resize listener
   window.addEventListener('resize', checkMobile)
   
+  // Debug info
+  console.log('Attempting socket connection...')
+  console.log('Current URL:', window.location.origin)
+  console.log('Socket URL should be:', window.location.hostname + ':3000')
+  
   // Initialize messages store if needed
   if (!messagesStore.isInitialized()) {
     console.log('Messages not initialized, initializing now...')
@@ -91,10 +97,21 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
-  messagesStore.reset()
+  
+  // Check if reset method exists before calling it
+  if (typeof messagesStore.reset === 'function') {
+    messagesStore.reset()
+  } else {
+    // Alternative cleanup - just clear current conversation
+    if (typeof messagesStore.clearCurrentConversation === 'function') {
+      messagesStore.clearCurrentConversation()
+    }
+    console.log('MessagesStore reset method not found, skipping cleanup')
+  }
 })
 </script>
 
+<!-- Rest of template stays the same -->
 <template>
   <!-- Desktop Layout (md and above) -->
   <div class="hidden md:flex h-full text-white">

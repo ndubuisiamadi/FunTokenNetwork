@@ -16,6 +16,7 @@ const respondToRequestValidation = [
 // Routes - PROPERLY DEFINED
 router.post('/request/:userId', auth, friendsController.sendFriendRequest)
 router.put('/request/:requestId', auth, respondToRequestValidation, friendsController.respondToFriendRequest)
+router.delete('/request/:requestId', auth, friendsController.cancelFriendRequest)
 router.get('/requests', auth, friendsController.getFriendRequests)
 
 // Fixed: Use separate routes instead of optional parameters

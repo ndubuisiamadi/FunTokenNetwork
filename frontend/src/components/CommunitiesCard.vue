@@ -34,11 +34,11 @@ const getPostsText = (community) => {
 </script>
 
 <template>
-  <div class="bg-linear-to-tr from-[#FFA02B]/20 to-[#FF1E00]/20 backdrop-blur-xl border border-[#B72828]/50 shadow-2xl 
+  <div class="bg-linear-to-tr from-[#FFA02B]/20 to-[#FF1E00]/20 backdrop-blur-xl border border-[#B72828]/50
   text-white p-5 rounded-[18px] relative">
     <div class="flex justify-between items-center mb-5">
       <div class="flex items-center gap-2 text-lg font-medium">
-        <img src="@/components/icons/usersfour.svg" alt="Communities" class="size-6" />
+        <img src="@/components/icons/users-four.svg" alt="Communities" class="size-6" />
         <span>Communities</span>
       </div>
       <RouterLink to="/communities">
@@ -108,7 +108,7 @@ const getPostsText = (community) => {
 
     <!-- Empty State -->
     <div v-else class="text-center py-4">
-      <img src="@/components/icons/usersfour.svg" alt="No communities" class="size-8 mx-auto mb-2 opacity-50" />
+      <img src="@/components/icons/users-four.svg" alt="No communities" class="size-8 mx-auto mb-2 opacity-50" />
       <p class="text-xs opacity-60 mb-3">You haven't joined any communities yet</p>
       <RouterLink to="/communities">
         <button class="text-xs bg-[#055CFF] hover:bg-[#044ACC] px-3 py-1.5 rounded-full transition-colors">

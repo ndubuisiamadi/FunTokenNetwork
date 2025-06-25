@@ -38,7 +38,17 @@ const handleLogin = async () => {
       router.push('/')
     }
   } else {
-    error.value = result.error
+    // Check if user needs email verification
+    if (result.requiresVerification && result.email) {
+      // Redirect to email verification instead of showing error
+      router.push({
+        name: 'email-verification',
+        query: { email: result.email }
+      })
+    } else {
+      // Show other login errors normally
+      error.value = result.error
+    }
   }
 }
 </script>

@@ -2,6 +2,7 @@
 import { RouterLink, useRoute } from 'vue-router'
 import { computed } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
+import { useUsersStore } from '@/stores/users'
 
 // Accept the class prop
 defineProps({
@@ -13,6 +14,7 @@ defineProps({
 
 const route = useRoute()
 const messagesStore = useMessagesStore()
+const usersStore = useUsersStore()
 
 const isNotLoggedIn = (routePath) => {
   return route.path === routePath
@@ -30,6 +32,16 @@ const totalUnreadCount = computed(() => {
 // Computed property to format the count (99+ for large numbers)
 const formattedUnreadCount = computed(() => {
   const count = totalUnreadCount.value
+  return count > 99 ? '99+' : count.toString()
+})
+
+// Computed properties for friend requests
+const totalFriendRequestsCount = computed(() => {
+  return usersStore.receivedRequests?.length || 0
+})
+
+const formattedFriendRequestsCount = computed(() => {
+  const count = totalFriendRequestsCount.value
   return count > 99 ? '99+' : count.toString()
 })
 </script>
@@ -87,9 +99,17 @@ const formattedUnreadCount = computed(() => {
             <RouterLink to="/friends"
             :class="[isNotLoggedIn('/friends') ? 
             'bg-linear-to-tr from-[#7A0000] to-[#FA7D7D] backdrop-blur-xl' : 
-            'bg-transparent', 'size-9', 'hover:bg-linear-to-tr from-[#7A0000] to-[#FA7D7D] backdrop-blur-xl', 'rounded-full']">
+            'bg-transparent', 'size-9', 'hover:bg-linear-to-tr from-[#7A0000] to-[#FA7D7D] backdrop-blur-xl', 'rounded-full']"
+            class="relative">
                 <img v-if="!isNotLoggedIn('/friends')" class="size-9 p-2" src="@/components/icons/friends-line.svg">
                 <img v-if="isNotLoggedIn('/friends')" class="size-9 p-2" src="@/components/icons/friends-filled.svg">
+                <!-- Friend Requests Counter Badge -->
+                <div 
+                  v-if="totalFriendRequestsCount > 0"
+                  class="absolute -top-1 -right-1 bg-[#FA7D7D] text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-medium"
+                >
+                  {{ formattedFriendRequestsCount }}
+                </div>
             </RouterLink>
             <RouterLink to="/leaderboard"
             :class="[isNotLoggedIn('/leaderboard') ? 
@@ -144,10 +164,17 @@ const formattedUnreadCount = computed(() => {
                 </RouterLink>
                 
                 <RouterLink to="/friends" 
-                class="flex flex-col items-center rounded-full transition-colors duration-200" 
+                class="relative flex flex-col items-center rounded-full transition-colors duration-200" 
                 :class="[isNotLoggedIn('/friends') ? 'bg-linear-to-tr from-[#7A0000] to-[#FA7D7D] backdrop-blur-xl p-3' : 'hover:bg-white/10 p-3']">
                     <img v-if="!isNotLoggedIn('/friends')" class="size-6" src="@/components/icons/friends-line.svg">
                     <img v-if="isNotLoggedIn('/friends')" class="size-6" src="@/components/icons/friends-filled.svg">
+                    <!-- Friend Requests Counter Badge -->
+                    <div 
+                      v-if="totalFriendRequestsCount > 0"
+                      class="absolute -top-1 right-1 bg-[#FA7D7D] text-white text-xs rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 font-medium text-[10px]"
+                    >
+                      {{ formattedFriendRequestsCount }}
+                    </div>
                 </RouterLink>
 
                 <RouterLink to="/leaderboard" 

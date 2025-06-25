@@ -81,39 +81,72 @@ const sendFriendRequest = async (req, res) => {
       return res.status(400).json({ message: 'You are already friends with this user' })
     }
 
-    // Check if request already exists
+    // Check for ANY existing request (regardless of status)
     const existingRequest = await prisma.friendRequest.findFirst({
       where: {
         OR: [
           { senderId: req.user.id, receiverId: userId },
           { senderId: userId, receiverId: req.user.id }
-        ],
-        status: 'pending'
+        ]
       }
     })
+
+    let friendRequest
 
     if (existingRequest) {
-      return res.status(400).json({ message: 'Friend request already exists' })
-    }
-
-    // Create friend request
-    const friendRequest = await prisma.friendRequest.create({
-      data: {
-        senderId: req.user.id,
-        receiverId: userId
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            firstName: true,
-            lastName: true,
-            avatarUrl: true
+      // If there's a pending request, don't allow duplicate
+      if (existingRequest.status === 'pending') {
+        return res.status(400).json({ message: 'Friend request already exists' })
+      }
+      
+      // If current user is trying to send to someone who already sent them a request
+      if (existingRequest.senderId === userId && existingRequest.receiverId === req.user.id) {
+        return res.status(400).json({ 
+          message: 'This user has already sent you a friend request. Please respond to their request instead.' 
+        })
+      }
+      
+      // If there's a declined/accepted request from current user, update it to pending
+      if (existingRequest.senderId === req.user.id && existingRequest.receiverId === userId) {
+        friendRequest = await prisma.friendRequest.update({
+          where: { id: existingRequest.id },
+          data: { 
+            status: 'pending',
+            updatedAt: new Date()
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                avatarUrl: true
+              }
+            }
+          }
+        })
+      }
+    } else {
+      // No existing request, create a new one
+      friendRequest = await prisma.friendRequest.create({
+        data: {
+          senderId: req.user.id,
+          receiverId: userId
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              avatarUrl: true
+            }
           }
         }
-      }
-    })
+      })
+    }
 
     res.status(201).json({
       message: 'Friend request sent successfully',
@@ -233,6 +266,41 @@ const getFriendRequests = async (req, res) => {
     res.json({ requests })
   } catch (error) {
     console.error('Get friend requests error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+const cancelFriendRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params
+
+    // Find the friend request
+    const friendRequest = await prisma.friendRequest.findUnique({
+      where: { id: requestId }
+    })
+
+    if (!friendRequest) {
+      return res.status(404).json({ message: 'Friend request not found' })
+    }
+
+    // Only the sender can cancel the request
+    if (friendRequest.senderId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only cancel requests you sent' })
+    }
+
+    // Only pending requests can be cancelled
+    if (friendRequest.status !== 'pending') {
+      return res.status(400).json({ message: 'Only pending requests can be cancelled' })
+    }
+
+    // Delete the friend request
+    await prisma.friendRequest.delete({
+      where: { id: requestId }
+    })
+
+    res.json({ message: 'Friend request cancelled successfully' })
+  } catch (error) {
+    console.error('Cancel friend request error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
@@ -381,5 +449,6 @@ module.exports = {
   getFriends,
   removeFriend,
   checkFriendshipStatus,
-  getFriendsForChat
+  getFriendsForChat,
+  cancelFriendRequest
 }

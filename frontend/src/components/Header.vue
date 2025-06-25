@@ -2,7 +2,7 @@
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSearchStore } from '@/stores/search'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue' // ✅ Added nextTick import
 
 import userPlaceholderImage from '@/assets/user-placeholder-image.jpg'
 
@@ -15,6 +15,13 @@ const isOpen = ref(false)
 const searchQuery = ref('')
 const isMobileSearchOpen = ref(false)
 
+defineProps({
+  class: {
+    type: String,
+    default: ''
+  }
+})
+
 // Watch for route changes to update search query
 watch(() => route.query.q, (newQuery) => {
   searchQuery.value = newQuery || ''
@@ -25,6 +32,7 @@ onMounted(() => {
   if (route.query.q) {
     searchQuery.value = route.query.q
   }
+  document.addEventListener('click', closeOnClickOutside)
 })
 
 const currentPage = (routePath) => {
@@ -46,20 +54,28 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
-// Search functionality
+// ✅ Fixed search functionality
 const handleSearch = (event) => {
   if (event.key === 'Enter' || event.type === 'click') {
     performSearch()
   }
 }
 
-const performSearch = () => {
+const performSearch = async () => {
   const query = searchQuery.value.trim()
-  if (query) {
+  if (!query) return
+
+  try {
     // Navigate to search page with query
-    router.push({ path: '/search', query: { q: query } })
+    await router.push({ path: '/search', query: { q: query } })
+    
+    // ✅ Actually trigger the search in the store
+    await searchStore.search(query)
+    
     // Close mobile search if open
     isMobileSearchOpen.value = false
+  } catch (error) {
+    console.error('Search error:', error)
   }
 }
 
@@ -70,31 +86,32 @@ const clearSearch = () => {
   }
 }
 
+// ✅ Fixed mobile search with proper nextTick usage
 const toggleMobileSearch = () => {
   isMobileSearchOpen.value = !isMobileSearchOpen.value
   if (isMobileSearchOpen.value) {
-    // Focus the input after Vue updates the DOM
-    setTimeout(() => {
+    // Use nextTick to ensure DOM is updated
+    nextTick(() => {
       const input = document.querySelector('#mobile-search-input')
-      if (input) input.focus()
-    }, 100)
+      if (input) {
+        input.focus()
+        input.select() // Also select existing text for better UX
+      }
+    })
   }
 }
-
-onMounted(() => {
-  document.addEventListener('click', closeOnClickOutside)
-})
 </script>
 
 <template>
-  <div v-if="!currentPage('/messages')" class="flex items-center justify-between w-full text-xs md:text-base">
+  <div :class="$props.class">
+    <div v-if="!currentPage('/messages')" class="flex items-center justify-between w-full text-xs md:text-base">
     <!-- Left: Page Title -->
     
     <h1 v-if="currentPage('/tasks')" class="text-[#00B043]">Tasks</h1>
     <h1 v-if="currentPage('/messages')" class="text-[#055DFF]">Messages</h1>
     <h1 v-if="currentPage('/communities')" class="text-[#FFA02B]">Communities</h1>
     <h1 v-if="currentPage('/friends')" class="text-[#FA7D7D]">Friends</h1>
-    <h1 v-if="currentPage('/profile')" class="text-[#082CFC]">My Profile</h1>
+    <h1 v-if="currentPage('/profile')" class="text-[#055DFF]">My Profile</h1>
     <h1 v-if="currentPage('/profile/edit')" class="text-white">Edit Profile</h1>
     <h1 v-if="currentPage('/leaderboard')" class="text-[#FCCA00]">Leaderboard</h1>
     <h1 v-if="currentPage('/search')" class="text-white hidden md:block">Search</h1>
@@ -117,7 +134,7 @@ onMounted(() => {
           class="bg-transparent outline-none flex-grow text-sm placeholder-white"
         />
         <button @click="performSearch" class="ml-2">
-          <img src="@/components/icons/magnifyingglass.svg" alt="Search">
+          <img src="@/components/icons/magnifying-glass.svg" alt="Search">
         </button>
       </div>
 
@@ -127,7 +144,7 @@ onMounted(() => {
         class="size-10 md:size-11 p-3 rounded-full 
         bg-linear-to-tr from-[#055DFF] to-[#00BFFF] backdrop-blur-xl
         flex lg:hidden items-center justify-center text-white">
-        <img src="@/components/icons/magnifyingglass.svg" alt="Search">
+        <img src="@/components/icons/magnifying-glass.svg" alt="Search">
       </button>
 
       <!-- Notification Icon -->
@@ -154,7 +171,7 @@ onMounted(() => {
             <p class="text-sm font-semibold">{{ authStore.userFullName || authStore.currentUser?.username }}</p>
             <p class="text-xs">{{ authStore.currentUser?.gumballs || 0 }} Gumballs</p>
           </div>
-          <img class="hidden md:block" src="@/components/icons/caretdown.svg">
+          <img class="hidden md:block" src="@/components/icons/caret-down.svg">
         </div>
         
         <!-- Dropdown Menu -->
@@ -182,11 +199,11 @@ onMounted(() => {
            v-model="searchQuery"
            @keyup.enter="handleSearch"
            type="text"
-           placeholder="Search posts, users, communities..."
+           placeholder="Search"
            class="bg-transparent outline-none flex-grow text-sm placeholder-white text-white"
          />
          <button @click="performSearch" class="ml-2">
-           <img src="@/components/icons/magnifyingglass.svg" alt="Search">
+           <img src="@/components/icons/magnifying-glass.svg" alt="Search">
          </button>
        </div>
        <button @click="toggleMobileSearch" class="text-white">
@@ -197,4 +214,6 @@ onMounted(() => {
      </div>
    </div>
  </div>
+  </div>
+  
 </template>

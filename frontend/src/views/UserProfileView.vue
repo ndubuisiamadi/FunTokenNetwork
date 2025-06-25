@@ -231,12 +231,86 @@ const sendFriendRequest = async () => {
   
   actionLoading.value = true
   try {
-    const response = await friendsAPI.sendRequest(profileUser.value.id)
-    if (response.status === 200) {
+    const result = await usersStore.sendFriendRequest(profileUser.value.id)
+    if (result.success) {
       profileUser.value.friendshipStatus = 'sent'
+      // Make sure the requests are refreshed
+      await usersStore.getFriendRequests()
     }
   } catch (err) {
     console.error('Error sending friend request:', err)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const pendingRequestId = computed(() => {
+  if (!profileUser.value) return null
+  
+  // Check if there's a received request from this user
+  const receivedRequest = usersStore.receivedRequests.find(
+    req => req.sender?.id === profileUser.value.id
+  )
+  
+  return receivedRequest?.id || null
+})
+
+// Add the missing action methods
+const acceptFriendRequest = async () => {
+  if (!pendingRequestId.value) return
+  
+  actionLoading.value = true
+  try {
+    const result = await usersStore.respondToFriendRequest(pendingRequestId.value, 'accept')
+    if (result.success) {
+      profileUser.value.friendshipStatus = 'friends'
+      await Promise.all([
+        usersStore.getFriends(),
+        usersStore.getFriendRequests()
+      ])
+    }
+  } catch (err) {
+    console.error('Error accepting friend request:', err)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const declineFriendRequest = async () => {
+  if (!pendingRequestId.value) return
+  
+  actionLoading.value = true
+  try {
+    const result = await usersStore.respondToFriendRequest(pendingRequestId.value, 'decline')
+    if (result.success) {
+      profileUser.value.friendshipStatus = 'none'
+      await Promise.all([
+        usersStore.getFriends(),
+        usersStore.getFriendRequests()
+      ])
+    }
+  } catch (err) {
+    console.error('Error declining friend request:', err)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const cancelFriendRequest = async () => {
+  if (!profileUser.value?.id || actionLoading.value) return
+  
+  actionLoading.value = true
+  try {
+    const result = await usersStore.cancelFriendRequest(profileUser.value.id)
+    if (result.success) {
+      profileUser.value.friendshipStatus = 'none'
+      await Promise.all([
+        usersStore.getFriends(),
+        usersStore.getFriendRequests()
+      ])
+    }
+  } catch (err) {
+    console.error('Error cancelling friend request:', err)
   } finally {
     actionLoading.value = false
   }
@@ -304,8 +378,19 @@ const handlePostCreated = async () => {
   await fetchUserCommunities()
 }
 
-onMounted(() => {
-  fetchUserProfile()
+onMounted(async () => {
+  // Make sure currentUser is set
+  if (authStore.user && !usersStore.currentUser) {
+    usersStore.setCurrentUser(authStore.user)
+  }
+  
+  await fetchUserProfile()
+  
+  // Load friend request data for proper status checking
+  await Promise.all([
+    usersStore.getFriends(),
+    usersStore.getFriendRequests()
+  ])
 })
 </script>
 
@@ -354,31 +439,57 @@ onMounted(() => {
           </template>
           
           <template v-else>
-            <button 
-              v-if="friendshipStatus === 'none'"
-              @click="sendFriendRequest"
-              :disabled="actionLoading"
-              class="bg-[#055CFF]/90 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm disabled:opacity-50"
-            >
-              {{ actionLoading ? 'Sending...' : 'Add Friend' }}
-            </button>
-            
-            <button 
-              v-else-if="friendshipStatus === 'friends'"
-              @click="startConversation"
-              class="bg-black/70 px-3 py-1.5 rounded-full border border-[#055CFF] text-xs backdrop-blur-sm"
-            >
-              Message
-            </button>
-            
-            <button 
-              v-else-if="friendshipStatus === 'sent'"
-              disabled
-              class="bg-gray-600/70 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm opacity-60"
-            >
-              Request Sent
-            </button>
-          </template>
+  <!-- Add Friend button -->
+  <button 
+    v-if="friendshipStatus === 'none'"
+    @click="sendFriendRequest"
+    :disabled="actionLoading"
+    class="bg-[#055CFF]/90 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm disabled:opacity-50"
+  >
+    {{ actionLoading ? 'Sending...' : 'Add Friend' }}
+  </button>
+  
+  <!-- Request Sent - show Cancel button for sender -->
+  <button 
+    v-else-if="friendshipStatus === 'sent' || friendshipStatus === 'request_sent'"
+    @click="cancelFriendRequest"
+    :disabled="actionLoading"
+    class="bg-red-600/90 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm disabled:opacity-50"
+  >
+    {{ actionLoading ? 'Cancelling...' : 'Cancel Request' }}
+  </button>
+  
+  <!-- Request Received - show Accept/Decline buttons for receiver -->
+  <template v-else-if="friendshipStatus === 'received' || friendshipStatus === 'request_received'">
+    <div class="flex gap-2">
+      <button 
+        @click="acceptFriendRequest"
+        :disabled="actionLoading"
+        class="bg-green-600/90 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm disabled:opacity-50"
+      >
+        {{ actionLoading ? 'Accepting...' : 'Accept' }}
+      </button>
+      
+      <button 
+        @click="declineFriendRequest"
+        :disabled="actionLoading"
+        class="bg-red-600/90 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm disabled:opacity-50"
+      >
+        {{ actionLoading ? 'Declining...' : 'Decline' }}
+      </button>
+    </div>
+  </template>
+  
+  <!-- Friends - show Message button -->
+  <template v-else-if="friendshipStatus === 'friends'">
+    <button 
+      @click="startConversation"
+      class="bg-[#055CFF]/90 px-3 py-1.5 rounded-full text-xs backdrop-blur-sm"
+    >
+      Message
+    </button>
+  </template>
+</template>
         </div>
       </div>
 
@@ -445,7 +556,7 @@ onMounted(() => {
 
         <!-- Join date -->
         <div class="flex items-center gap-2 text-xs text-white/50 pt-2">
-          <img class="size-3" src="@/components/icons/clockuser.svg" alt="" />
+          <img class="size-3" src="@/components/icons/clock-user.svg" alt="" />
           <span>Joined {{ joinDate }}</span>
         </div>
       </div>
@@ -580,6 +691,9 @@ onMounted(() => {
       :friendship-status="friendshipStatus"
       @edit-profile="editProfile"
       @send-friend-request="sendFriendRequest"
+      @accept-friend-request="() => acceptFriendRequest(pendingRequestId)"
+      @decline-friend-request="() => declineFriendRequest(pendingRequestId)"
+      @cancel-friend-request="cancelFriendRequest"
       @remove-friend="removeFriend"
       @block-user="blockUser"
       @start-conversation="startConversation"

@@ -143,7 +143,7 @@ const getUserStats = (user) => {
               v-if="community.isMember"
               class="bg-black p-2 rounded-full hover:bg-black/80 transition-colors"
             >
-              <img src="@/components/icons/bellringing.svg">
+              <img src="@/components/icons/bell-ringing.svg">
             </button>
             
             <!-- Edit/Join/Leave Button -->
@@ -177,7 +177,7 @@ const getUserStats = (user) => {
       <div class="flex flex-col flex-1">
         <div class="space-y-1">
           <div class="text-sm font-semibold flex items-center gap-2">
-            <img class="size-5" src="@/components/icons/clockuser.svg" alt="">
+            <img class="size-5" src="@/components/icons/clock-user.svg" alt="">
             {{ formatCreatedDate(community.createdAt) }}
           </div>
           <div class="text-sm">
