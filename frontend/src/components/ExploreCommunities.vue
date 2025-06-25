@@ -124,7 +124,7 @@ onMounted(async () => {
     <!-- Header -->
     <div class="hidden md:flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
-        <img src="@/components/icons/binoculars.svg" alt="Explore" />
+        <img src="@/components/icons/binoculars-filled.svg" alt="Explore" />
         <h2 class="text-xl font-bold">
           {{ isSearching ? `Search Results (${displayedCommunities.length})` : 'Explore Communities' }}
         </h2>

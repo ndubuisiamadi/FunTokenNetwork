@@ -151,7 +151,7 @@ const toggleMobileSearch = () => {
       <button class="size-10 md:size-11 p-3 rounded-full 
       bg-linear-to-tr from-[#FFA02B] to-[#FF1E00] backdrop-blur-xl
       flex items-center justify-center text-white">
-        <img src="@/components/icons/bell.svg" alt="Notifications">
+        <img src="@/components/icons/bell-lined.svg" alt="Notifications">
       </button>
 
       <!-- Profile Dropdown -->

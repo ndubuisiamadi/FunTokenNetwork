@@ -187,7 +187,7 @@ const getUserStats = (user) => {
 
         <div class="mt-4 text-sm space-y-1">
           <div class="text-sm font-semibold flex items-center gap-2">
-            <img class="size-5" src="@/components/icons/scales.svg" alt="">
+            <img class="size-5" src="@/components/icons/scales-lined.svg" alt="">
             Rules
           </div>
           {{ community.rules || 'No specific rules set.' }}

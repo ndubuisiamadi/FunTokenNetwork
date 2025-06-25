@@ -168,7 +168,7 @@ const getRoleText = (role) => {
         class="bg-black p-2 rounded-full hover:bg-gray-800 transition-colors"
         title="Block User"
       >
-        <img src="@/components/icons/prohibit.svg" alt="Block User" />
+        <img src="@/components/icons/prohibit-lined.svg" alt="Block User" />
       </button>
     </template>
   </template>

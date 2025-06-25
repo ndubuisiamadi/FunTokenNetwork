@@ -48,7 +48,7 @@ import FeedPostCard from '@/components/FeedPostCard.vue';
           
             <div class="flex items-center justify-between">
 <div class="flex items-center gap-2">
-              <img src="@/components/icons/wallet.svg" alt="">
+              <img src="@/components/icons/wallet-filled.svg" alt="">
             <div>
                         <p class="font-bold text-xl">1,682</p>
                         <p class="text-xs">Top 200 Player</p>
