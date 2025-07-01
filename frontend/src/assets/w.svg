@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <!-- Gradients -->
+    <radialGradient id="grad-yellow" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFF04D"/>
+      <stop offset="100%" stop-color="#F7B500"/>
+    </radialGradient>
+    <radialGradient id="grad-lightblue" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#A6E3FF"/>
+      <stop offset="100%" stop-color="#009CFF"/>
+    </radialGradient>
+    <radialGradient id="grad-pink" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FF9ACD"/>
+      <stop offset="100%" stop-color="#D80050"/>
+    </radialGradient>
+    <radialGradient id="grad-red" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FF9A8B"/>
+      <stop offset="100%" stop-color="#FF1300"/>
+    </radialGradient>
+    <radialGradient id="grad-navy" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#9AB7FF"/>
+      <stop offset="100%" stop-color="#000F55"/>
+    </radialGradient>
+    <radialGradient id="grad-green" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#A8FF8C"/>
+      <stop offset="100%" stop-color="#009900"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Top row of F: yellow, blue, pink -->
+  <circle cx="100" cy="100" r="80" fill="url(#grad-yellow)" />
+  <circle cx="220" cy="100" r="80" fill="url(#grad-lightblue)" />
+  <circle cx="340" cy="100" r="80" fill="url(#grad-pink)" />
+
+  <!-- Left vertical of F: red, navy, green -->
+  <circle cx="100" cy="220" r="80" fill="url(#grad-red)" />
+  <circle cx="100" cy="340" r="80" fill="url(#grad-navy)" />
+  <circle cx="100" cy="460" r="80" fill="url(#grad-green)" />
+
+  <!-- Middle arm of F: dark blue -->
+  <circle cx="220" cy="340" r="80" fill="url(#grad-navy)" />
+
+</svg>

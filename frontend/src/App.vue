@@ -17,11 +17,11 @@ onMounted(() => {
   window.addEventListener('resize', checkMobile)
 })
 
-const hideNavbar = computed(() => ['/signup', '/login', '/create-account', '/verify-email'].includes(route.path) || route.name === 'chat')
+const hideNavbar = computed(() => ['/signup', '/login', '/create-account', '/verify-email', '/forgot-password'].includes(route.path) || route.name === 'chat')
 
-const hideHeader = computed(() => ['/signup', '/login', '/create-account', '/verify-email'].includes(route.path) || route.name === 'chat')
+const hideHeader = computed(() => ['/signup', '/login', '/create-account', '/verify-email', '/forgot-password'].includes(route.path) || route.name === 'chat')
 
-const removeAllPadding = computed(() => ['/messages', '/login', '/signup', '/create-account', '/verify-email'].includes(route.path) || route.name === 'chat')
+const removeAllPadding = computed(() => ['/messages', '/login', '/signup', '/create-account', '/verify-email', '/forgot-password'].includes(route.path) || route.name === 'chat')
 
 // New computed to check if both navbar and header are hidden
 const isFullscreenLayout = computed(() => hideNavbar.value && hideHeader.value)

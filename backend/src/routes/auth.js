@@ -58,6 +58,23 @@ const resendCodeValidation = [
     .withMessage('Please provide a valid email address')
 ]
 
+// Password reset validations
+const forgotPasswordValidation = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email address')
+]
+
+const resetPasswordValidation = [
+  body('token')
+    .notEmpty()
+    .withMessage('Reset token is required'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters')
+]
+
 const updateProfileValidation = [
   body('firstName')
     .optional()
@@ -90,5 +107,9 @@ router.put('/profile', auth, updateProfileValidation, authController.updateProfi
 // Email verification routes
 router.post('/verify-email', verifyEmailValidation, authController.verifyEmail)
 router.post('/resend-verification', resendCodeValidation, authController.resendVerificationCode)
+
+// Password reset routes
+router.post('/forgot-password', forgotPasswordValidation, authController.forgotPassword)
+router.post('/reset-password', resetPasswordValidation, authController.resetPassword)
 
 module.exports = router

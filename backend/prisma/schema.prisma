@@ -21,6 +21,7 @@ model User {
   lastName    String?  @map("last_name")
   isEmailVerified Boolean  @default(false) @map("is_email_verified")
   emailRequired   Boolean  @default(false) @map("email_required")
+  profileCompleted Boolean @default(false) @map("profile_completed") 
   bio         String?
   location    String?
   birthDate   DateTime? @map("birth_date")
@@ -31,6 +32,7 @@ model User {
   lastSeen    DateTime @default(now()) @map("last_seen")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  
 
   // Level system fields
   level        String   @default("Novice")
@@ -41,7 +43,17 @@ model User {
   weeklyRankChange   Int?  @map("weekly_rank_change") @default(0)
   monthlyRankChange  Int?  @map("monthly_rank_change") @default(0)
 
+  // Referral System Fields
+  referralCode     String    @map("referral_code") 
+  referredBy       String?   @map("referred_by") @db.ObjectId
+  referrer         User?     @relation("UserReferrals", fields: [referredBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  referrals        User[]    @relation("UserReferrals")
+  totalReferrals   Int       @default(0) @map("total_referrals")
+  activeReferrals  Int       @default(0) @map("active_referrals") // Users who are still active
+  referralEarnings Int       @default(0) @map("referral_earnings") // Gumballs earned from referrals
+
   // Relations
+  passwordResetTokens PasswordResetToken[]
   verificationCodes EmailVerificationCode[]
   posts              Post[]
   comments           Comment[]
@@ -69,20 +81,79 @@ model User {
   // Notifications
   notifications  Notification[]
 
+  // Referral system relations
+  referralRewards  ReferralReward[]
+  referredRewards ReferralReward[] @relation("ReferredRewards")
+
   // INDEXES FOR SEARCH PERFORMANCE
   @@index([firstName])           // Index for firstName searches
   @@index([lastName])            // Index for lastName searches  
   @@index([firstName, lastName]) // Compound index for full name searches
+  @@index([gumballs])            // For gumball-based queries
   @@index([gumballs, createdAt]) // For ordering search results
-
-  // Indexes for performance
-  @@index([gumballs])
-  @@index([level, gumballs])
-  @@index([globalRank])
-  @@index([isOnline])
-  @@index([createdAt])
-  @@index([lastSeen])
+  @@index([level, gumballs])     // For level system queries
+  @@index([globalRank])          // For ranking queries
+  @@index([isOnline])            // For online status queries
+  @@index([createdAt])           // For chronological queries
+  @@index([lastSeen])            // For activity tracking
+  @@index([referredBy])          // For referral chain queries (referralCode already has @unique)
+  @@index([referralCode])
+   @@index([profileCompleted])
   @@map("users")
+}
+
+// Referral System
+model ReferralReward {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @map("user_id") @db.ObjectId
+  referredUserId String @map("referred_user_id") @db.ObjectId
+  rewardType  String   // "signup", "first_post", "week_active", "month_active"
+  amount      Int      // Gumballs earned
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referredUser User @relation("ReferredRewards", fields: [referredUserId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([referredUserId])
+  @@index([createdAt])
+  @@map("referral_rewards")
+}
+
+model ReferralClick {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  referralCode String   @map("referral_code")
+  ipAddress    String   @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  converted    Boolean  @default(false) // Did they sign up?
+  convertedUserId String? @map("converted_user_id") @db.ObjectId
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  @@index([referralCode])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@map("referral_clicks")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  email     String
+  userId    String   @map("user_id") @db.ObjectId
+  isUsed    Boolean  @default(false) @map("is_used")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([email, isUsed])
+  @@map("password_reset_tokens")
 }
 
 model EmailVerificationCode {

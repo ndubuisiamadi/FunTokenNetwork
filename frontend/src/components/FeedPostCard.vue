@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import { RouterLink } from 'vue-router'
 import { getAvatarUrl } from '@/utils/avatar'
+import CommentSection from '@/components/CommentSection.vue'
 
 const props = defineProps({
   post: {
@@ -24,10 +25,10 @@ const postMenuRef = ref(null)
 // Video controls state
 const videoRef = ref(null)
 const isVideoPlaying = ref(false)
-const isVideoMuted = ref(true) // Start muted
+const isVideoMuted = ref(true)
 const showVideoControls = ref(true)
 const videoControlsTimeout = ref(null)
-const muteButtonClicked = ref(false) // Flag to prevent container click
+const muteButtonClicked = ref(false)
 const videoDuration = ref(0)
 const currentTime = ref(0)
 
@@ -39,9 +40,15 @@ const savingInProgress = ref(false)
 const localLikesCount = ref(props.post.likesCount || 0)
 const localIsLiked = ref(props.post.isLiked || false)
 const localIsSaved = ref(props.post.isSaved || false)
+const localCommentsCount = ref(props.post.commentsCount || 0) // Add local comment count
 
 const showLightbox = ref(false)
 const lightboxImageUrl = ref('')
+
+// Watch for prop changes to sync local state
+watch(() => props.post.commentsCount, (newValue) => {
+  localCommentsCount.value = newValue
+}, { immediate: true })
 
 // Backend URL
 const BACKEND_URL = 'http://localhost:3000'
@@ -62,161 +69,112 @@ const getMediaUrl = (mediaUrl) => {
   if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
     return mediaUrl
   }
-  if (mediaUrl.startsWith('/uploads/')) {
-    return `${BACKEND_URL}${mediaUrl}`
-  }
-  if (!mediaUrl.startsWith('/')) {
-    return `${BACKEND_URL}/uploads/${mediaUrl}`
-  }
-  return `${BACKEND_URL}${mediaUrl}`
+  return `${BACKEND_URL}${mediaUrl.startsWith('/') ? mediaUrl : `/${mediaUrl}`}`
 }
 
-const isMultipleMedia = computed(() => 
-  props.post.mediaUrls && props.post.mediaUrls.length > 1
-)
-
-const truncatedCaption = computed(() => {
-  const caption = props.post.content
-  if (!caption || caption.length <= 150 || showFullCaption.value) return caption
-  return caption.slice(0, 150) + '...'
+// Computed properties
+const userAvatarUrl = computed(() => {
+  return getAvatarUrl(props.post.user?.avatarUrl)
 })
 
-// Helper function to determine if URL is a video
-const isVideoUrl = (url) => {
-  if (!url) return false
-  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi']
-  const lowerUrl = url.toLowerCase()
-  return videoExtensions.some(ext => lowerUrl.includes(ext))
-}
+const hasMedia = computed(() => {
+  return props.post.mediaUrls && props.post.mediaUrls.length > 0
+})
 
-// Helper function to determine if URL is an image
-const isImageUrl = (url) => {
-  if (!url) return false
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
-  const lowerUrl = url.toLowerCase()
-  return imageExtensions.some(ext => lowerUrl.includes(ext))
-}
-
-// Computed properties for current media
 const currentMediaUrl = computed(() => {
-  if (!props.post.mediaUrls || props.post.mediaUrls.length === 0) return ''
+  if (!hasMedia.value) return ''
   return getMediaUrl(props.post.mediaUrls[currentImageIndex.value])
 })
 
-const currentMediaType = computed(() => {
+const isVideo = computed(() => {
   const url = currentMediaUrl.value
-  if (isVideoUrl(url)) return 'video'
-  if (isImageUrl(url)) return 'image'
-  return 'unknown'
+  return url && (url.includes('.mp4') || url.includes('.webm') || url.includes('.mov'))
 })
 
-const userAvatarUrl = computed(() => {
-  return getAvatarUrl(props.post.user.avatarUrl)
+const isImage = computed(() => {
+  const url = currentMediaUrl.value
+  return url && (url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.gif') || url.includes('.webp'))
 })
 
-// Video time calculations
-const remainingTime = computed(() => {
-  return Math.max(0, videoDuration.value - currentTime.value)
-})
-
-const formatTime = (timeInSeconds) => {
-  if (!timeInSeconds || isNaN(timeInSeconds)) return '0:00'
+const captionText = computed(() => {
+  if (!props.post.content) return ''
   
-  const minutes = Math.floor(timeInSeconds / 60)
-  const seconds = Math.floor(timeInSeconds % 60)
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  if (showFullCaption.value || props.post.content.length <= 150) {
+    return props.post.content
+  }
+  
+  return props.post.content.substring(0, 150) + '...'
+})
+
+const shouldShowSeeMore = computed(() => {
+  return props.post.content && props.post.content.length > 150
+})
+
+// Media navigation
+const nextImage = () => {
+  if (hasMedia.value && currentImageIndex.value < props.post.mediaUrls.length - 1) {
+    currentImageIndex.value++
+  }
 }
 
-const formattedRemainingTime = computed(() => {
-  return formatTime(remainingTime.value)
-})
-
-// Video control functions
-const toggleVideoPlayback = () => {
-  if (!videoRef.value) return
-  
-  if (isVideoPlaying.value) {
-    videoRef.value.pause()
-  } else {
-    videoRef.value.play()
+const prevImage = () => {
+  if (hasMedia.value && currentImageIndex.value > 0) {
+    currentImageIndex.value--
   }
+}
+
+const goToImage = (index) => {
+  if (hasMedia.value && index >= 0 && index < props.post.mediaUrls.length) {
+    currentImageIndex.value = index
+  }
+}
+
+// Video functions
+const toggleVideoPlay = () => {
+  const video = videoRef.value
+  if (!video) return
+
+  if (video.paused) {
+    video.play()
+    isVideoPlaying.value = true
+  } else {
+    video.pause()
+    isVideoPlaying.value = false
+  }
+}
+
+const handleVideoClick = (event) => {
+  if (muteButtonClicked.value) {
+    muteButtonClicked.value = false
+    return
+  }
+  
+  event.preventDefault()
+  event.stopPropagation()
+  toggleVideoPlay()
 }
 
 const toggleVideoMute = (event) => {
-  event.stopPropagation() // Prevent bubbling
-  muteButtonClicked.value = true // Set flag
-  
-  if (!videoRef.value) return
-  
-  videoRef.value.muted = !videoRef.value.muted
-  isVideoMuted.value = videoRef.value.muted
-  
-  // Reset flag after a short delay
-  setTimeout(() => {
-    muteButtonClicked.value = false
-  }, 50)
+  event.preventDefault()
+  event.stopPropagation()
+  muteButtonClicked.value = true
+
+  const video = videoRef.value
+  if (!video) return
+
+  video.muted = !video.muted
+  isVideoMuted.value = video.muted
 }
 
-const handleVideoContainerClick = (event) => {
-  if (!isVideoPlaying.value || muteButtonClicked.value) return
-  
-  toggleVideoPlayback()
-}
-
-const handleVideoPlay = () => {
-  isVideoPlaying.value = true
-  hideVideoControlsAfterDelay()
-}
-
-const handleVideoPause = () => {
-  isVideoPlaying.value = false
+const showControlsTemporarily = () => {
   showVideoControls.value = true
   clearVideoControlsTimeout()
-}
-
-const handleVideoEnded = () => {
-  isVideoPlaying.value = false
-  showVideoControls.value = true
-  clearVideoControlsTimeout()
-  currentTime.value = 0 // Reset to beginning
-}
-
-const handleVideoLoadedMetadata = () => {
-  if (videoRef.value) {
-    videoDuration.value = videoRef.value.duration || 0
-    currentTime.value = 0
-    console.log('Video metadata loaded:', {
-      duration: videoDuration.value,
-      currentTime: currentTime.value,
-      formattedRemaining: formattedRemainingTime.value
-    })
-  }
-}
-
-const handleVideoTimeUpdate = () => {
-  if (videoRef.value) {
-    currentTime.value = videoRef.value.currentTime || 0
-    console.log('Time update:', {
-      currentTime: currentTime.value,
-      duration: videoDuration.value,
-      remaining: remainingTime.value,
-      formatted: formattedRemainingTime.value
-    })
-  }
-}
-
-const handleVideoMouseMove = () => {
-  showVideoControls.value = true
-  hideVideoControlsAfterDelay()
-}
-
-const hideVideoControlsAfterDelay = () => {
-  clearVideoControlsTimeout()
-  if (isVideoPlaying.value) {
-    videoControlsTimeout.value = setTimeout(() => {
+  
+  videoControlsTimeout.value = setTimeout(() => {
+    if (isVideoPlaying.value) {
       showVideoControls.value = false
-    }, 3000) // Hide after 3 seconds of inactivity
-  }
+    }
+  }, 3000)
 }
 
 const clearVideoControlsTimeout = () => {
@@ -226,45 +184,34 @@ const clearVideoControlsTimeout = () => {
   }
 }
 
-const resetVideoState = () => {
-  isVideoPlaying.value = false
-  isVideoMuted.value = true
-  showVideoControls.value = true
-  muteButtonClicked.value = false
-  videoDuration.value = 0
-  currentTime.value = 0
-  clearVideoControlsTimeout()
+const updateVideoTime = () => {
+  const video = videoRef.value
+  if (!video) return
+  
+  currentTime.value = video.currentTime
+  videoDuration.value = video.duration || 0
 }
 
-// Navigation functions
-const nextMedia = () => {
-  if (currentImageIndex.value < props.post.mediaUrls.length - 1) {
-    resetVideoState()
-    currentImageIndex.value++
-  }
+const formatTime = (seconds) => {
+  if (isNaN(seconds)) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-const prevMedia = () => {
-  if (currentImageIndex.value > 0) {
-    resetVideoState()
-    currentImageIndex.value--
-  }
-}
-
-const goToMedia = (index) => {
-  resetVideoState()
-  currentImageIndex.value = index
-}
-
+// Action handlers
 const toggleLike = async () => {
   if (likingInProgress.value) return
-
+  
   likingInProgress.value = true
   
-  // Optimistic update
+  // Store the current state for potential rollback
   const wasLiked = localIsLiked.value
-  localIsLiked.value = !wasLiked
-  localLikesCount.value += wasLiked ? -1 : 1
+  const previousCount = localLikesCount.value
+  
+  // Optimistic update - immediate UI feedback
+  localIsLiked.value = !localIsLiked.value
+  localLikesCount.value += localIsLiked.value ? 1 : -1
 
   try {
     let result
@@ -277,13 +224,13 @@ const toggleLike = async () => {
     if (!result.success) {
       // Revert optimistic update on failure
       localIsLiked.value = wasLiked
-      localLikesCount.value += wasLiked ? 1 : -1
+      localLikesCount.value = previousCount
       console.error('Failed to toggle like:', result.error)
     }
   } catch (error) {
     // Revert optimistic update on error
     localIsLiked.value = wasLiked
-    localLikesCount.value += wasLiked ? 1 : -1
+    localLikesCount.value = previousCount
     console.error('Error toggling like:', error)
   } finally {
     likingInProgress.value = false
@@ -349,6 +296,21 @@ const isOwnPost = computed(() => {
   return props.post.user.id === authStore.currentUser?.id
 })
 
+// Comment handlers with optimistic updates
+const handleCommentAdded = (comment) => {
+  // Only increment for top-level comments (not replies)
+  if (!comment.parentId) {
+    localCommentsCount.value += 1
+  }
+}
+
+const handleCommentDeleted = (comment) => {
+  // Only decrement for top-level comments (not replies)
+  if (!comment.parentId) {
+    localCommentsCount.value -= 1
+  }
+}
+
 // Click outside to close menu
 const handleClickOutside = (event) => {
   if (postMenuRef.value && !postMenuRef.value.contains(event.target)) {
@@ -391,254 +353,193 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-[#030712]/20
-  text-white mx-auto rounded-2xl w-full">
+  <div class="bg-[#030712]/20 text-white mx-auto rounded-2xl w-full">
     
     <!-- Post Header -->
     <div class="flex items-center justify-between p-4">
       <div class="flex items-center gap-3">
-    <div class="relative">
-      <RouterLink :to="`/user-profile/${post.user.id}`">
-        <img 
-          :src="userAvatarUrl" 
-          :alt="post.user.firstName || post.user.username" 
-          class="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-[#055CFF] transition-all duration-200" 
-        />
-      </RouterLink>
-    </div>
-    <div>
-      <div class="flex items-center gap-2">
-        <RouterLink 
-          :to="`/user-profile/${post.user.id}`"
-          class="text-sm font-medium hover:text-[#055CFF] transition-colors duration-200 cursor-pointer"
-        >
-          {{ post.user.firstName && post.user.lastName 
-              ? `${post.user.firstName} ${post.user.lastName}` 
-              : post.user.username }}
-        </RouterLink>
-        <span class="text-xs text-white/40">•</span>
-        <span class="text-xs text-white/50">{{ formatTimeAgo(post.createdAt) }}</span>
+        <div class="relative">
+          <RouterLink :to="`/user-profile/${post.user.id}`">
+            <img 
+              :src="userAvatarUrl" 
+              :alt="post.user.firstName || post.user.username" 
+              class="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-[#055CFF] transition-all duration-200" 
+            />
+          </RouterLink>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <RouterLink 
+              :to="`/user-profile/${post.user.id}`"
+              class="text-sm font-medium hover:text-[#055CFF] transition-colors duration-200 cursor-pointer"
+            >
+              {{ post.user.firstName && post.user.lastName 
+                  ? `${post.user.firstName} ${post.user.lastName}`.trim() 
+                  : post.user.username }}
+            </RouterLink>
+          </div>
+          <div class="text-xs text-white/50 flex items-center gap-1">
+            <span>{{ formatTimeAgo(post.createdAt) }}</span>
+            <span v-if="post.community">
+              • in 
+              <RouterLink 
+                :to="`/community/${post.community.id}`"
+                class="text-[#055CFF] hover:underline"
+              >
+                {{ post.community.name }}
+              </RouterLink>
+            </span>
+          </div>
+        </div>
       </div>
-      <p class="text-xs text-white/50">{{ formatDate(post.createdAt) }}</p>
-    </div>
-  </div>
-  <div class="relative" ref="postMenuRef">
-    <button 
-      @click="togglePostMenu"
-      class="p-2 hover:bg-white/5 rounded-full transition-colors duration-200"
-    >
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"/>
-      </svg>
-    </button>
+      
+      <!-- Post Menu -->
+      <div class="relative" v-if="isOwnPost">
+        <button 
+          @click="togglePostMenu"
+          ref="postMenuRef"
+          class="p-2 hover:bg-white/10 rounded-full transition-colors"
+        >
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+          </svg>
+        </button>
         
         <!-- Dropdown Menu -->
-        <div 
-          v-if="showPostMenu"
-          class="absolute right-0 top-10 w-48 bg-[#2a2a2a] rounded-lg shadow-lg border border-white/10 py-2 z-50"
-        >
-          <button 
-            @click="handlePostAction('save')"
-            :disabled="savingInProgress"
-            class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors duration-200 flex items-center gap-3 disabled:opacity-50"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-            </svg>
-            {{ localIsSaved ? 'Unsave post' : 'Save post' }}
-          </button>
-
-          <button 
-            @click="handlePostAction('copy')"
-            class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors duration-200 flex items-center gap-3"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-            </svg>
+        <div v-if="showPostMenu" class="absolute right-0 mt-2 w-48 bg-[#1a1a1a] rounded-lg shadow-lg border border-white/10 z-10">
+          <button @click="handlePostAction('copy')" class="w-full px-4 py-2 text-left hover:bg-white/10 transition-colors">
             Copy link
           </button>
-
-          <div v-if="isOwnPost" class="border-t border-white/10 my-2"></div>
-
-          <template v-if="isOwnPost">
-            <button 
-              @click="handlePostAction('delete')"
-              class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors duration-200 flex items-center gap-3"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-              Delete post
-            </button>
-          </template>
+          <button @click="handlePostAction('save')" class="w-full px-4 py-2 text-left hover:bg-white/10 transition-colors">
+            {{ localIsSaved ? 'Unsave' : 'Save' }} post
+          </button>
+          <button @click="handlePostAction('delete')" class="w-full px-4 py-2 text-left hover:bg-white/10 transition-colors text-red-400">
+            Delete post
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Post Caption -->
+    <!-- Post Content -->
     <div v-if="post.content" class="px-4 pb-3">
-      <p class="text-sm leading-relaxed">
-        {{ truncatedCaption }}
+      <div class="text-sm leading-relaxed whitespace-pre-wrap">
+        {{ captionText }}
         <button 
-          v-if="post.content && post.content.length > 150" 
+          v-if="shouldShowSeeMore && !showFullCaption" 
           @click="toggleCaption"
-          class="text-white/50 hover:text-white/70 ml-1 font-medium transition-colors duration-200"
+          class="text-white/70 hover:text-white ml-1 font-medium"
         >
-          {{ showFullCaption ? ' less' : ' more' }}
+          See more
         </button>
-      </p>
+        <button 
+          v-if="shouldShowSeeMore && showFullCaption" 
+          @click="toggleCaption"
+          class="text-white/70 hover:text-white ml-1 font-medium"
+        >
+          See less
+        </button>
+      </div>
     </div>
 
-    <!-- Post Media (Images and Videos) -->
-    <div v-if="post.mediaUrls && post.mediaUrls.length > 0" class="relative group">
-      
-      <!-- Image Display with 1:1 Aspect Ratio -->
-<div 
-  v-if="currentMediaType === 'image'"
-  class="w-full aspect-square bg-gray-900 cursor-pointer"
-  @click="openLightbox"
->
-  <img 
-    :src="currentMediaUrl" 
-    alt="Post content" 
-    class="w-full h-full object-cover" 
-    @error="(e) => console.error('Failed to load image:', e.target.src)"
-  />
-</div>
-      
-      <!-- Video Display with 1:1 Aspect Ratio and Custom Controls -->
-<div 
-  v-else-if="currentMediaType === 'video'"
-  class="w-full aspect-square bg-black cursor-pointer relative"
-  @mousemove="handleVideoMouseMove"
-  @mouseleave="hideVideoControlsAfterDelay"
-  @click="handleVideoContainerClick"
->
-  <video 
-    ref="videoRef"
-    :src="currentMediaUrl"
-    class="w-full h-full object-contain"
-    :muted="isVideoMuted"
-    preload="metadata"
-    @play="handleVideoPlay"
-    @pause="handleVideoPause"
-    @ended="handleVideoEnded"
-    @loadedmetadata="handleVideoLoadedMetadata"
-    @timeupdate="handleVideoTimeUpdate"
-    @error="(e) => console.error('Failed to load video:', e.target.src)"
-  >
-    Your browser does not support the video tag.
-  </video>
-  
-  <!-- Remaining Time Counter (Always Visible) -->
-  <div class="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded z-20">
-    {{ formattedRemainingTime }}
-  </div>
-  
-  <!-- Custom Video Controls Overlay -->
-  <div 
-    :class="[
-      'absolute inset-0 transition-opacity duration-300',
-      showVideoControls ? 'opacity-100' : 'opacity-0'
-    ]"
-  >
-    <!-- Central Play/Pause Button -->
-    <div class="absolute inset-0 flex items-center justify-center z-10">
-      <button 
-        @click.stop="toggleVideoPlayback"
-        :class="[
-          'w-16 h-16 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 hover:bg-black/80 hover:scale-110',
-          isVideoPlaying ? 'opacity-0' : 'opacity-100'
-        ]"
-      >
-        <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z"/>
-        </svg>
-      </button>
-    </div>
-    
-    <!-- Mute/Unmute Button (Bottom Right) -->
-    <div class="absolute bottom-3 right-3 z-20">
-      <button 
-        @click.stop="toggleVideoMute"
-        class="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/80 transition-all duration-200"
-      >
-        <svg v-if="isVideoMuted" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2-2-2"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12l2-2-2-2"/>
-        </svg>
-        <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</div>
-      
-      <!-- Fallback for unknown media types -->
-      <div 
-        v-else
-        class="w-full h-40 bg-gray-700 flex items-center justify-center text-white/50"
-      >
-        <div class="text-center">
-          <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          <p class="text-sm">Unsupported media type</p>
+    <!-- Media Content -->
+    <div v-if="hasMedia" class="relative bg-black">
+      <!-- Video -->
+      <div v-if="isVideo" class="relative">
+        <video
+          ref="videoRef"
+          :src="currentMediaUrl"
+          class="w-full h-auto max-h-[600px] object-contain cursor-pointer"
+          :muted="isVideoMuted"
+          @click="handleVideoClick"
+          @timeupdate="updateVideoTime"
+          @loadedmetadata="updateVideoTime"
+          @mousemove="showControlsTemporarily"
+          @play="isVideoPlaying = true"
+          @pause="isVideoPlaying = false"
+          loop
+        />
+        
+        <!-- Video Controls Overlay -->
+        <div 
+          v-if="showVideoControls || !isVideoPlaying"
+          class="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity duration-300"
+          @click="handleVideoClick"
+        >
+          <!-- Play/Pause Button -->
+          <button 
+            v-if="!isVideoPlaying"
+            class="bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors"
+            @click="toggleVideoPlay"
+          >
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8 5v10l8-5-8-5z"/>
+            </svg>
+          </button>
+          
+          <!-- Mute Button -->
+          <button 
+            class="absolute bottom-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+            @click="toggleVideoMute"
+          >
+            <svg v-if="isVideoMuted" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.804L4.828 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.828l3.555-3.804a1 1 0 011.617-.196z"/>
+              <path d="M13.293 7.293a1 1 0 011.414 0L16 8.586l1.293-1.293a1 1 0 111.414 1.414L17.414 10l1.293 1.293a1 1 0 01-1.414 1.414L16 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L14.586 10l-1.293-1.293a1 1 0 010-1.414z"/>
+            </svg>
+            <svg v-else class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.804L4.828 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.828l3.555-3.804a1 1 0 011.617-.196zM12 8a1 1 0 012 0v4a1 1 0 11-2 0V8z"/>
+            </svg>
+          </button>
         </div>
       </div>
-      
-      <!-- Navigation for multiple media -->
-      <template v-if="isMultipleMedia">
+
+      <!-- Image -->
+      <div v-else-if="isImage" class="relative">
+        <img 
+          :src="currentMediaUrl" 
+          :alt="post.content || 'Post image'"
+          class="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-95 transition-opacity"
+          @click="openLightbox"
+        />
+      </div>
+
+      <!-- Media Navigation -->
+      <div v-if="post.mediaUrls.length > 1" class="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
         <button 
           v-if="currentImageIndex > 0"
-          @click.stop="prevMedia"
-          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 p-1 rounded-full transition-all duration-200 z-10"
+          @click="prevImage"
+          class="bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors pointer-events-auto"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
         </button>
         
         <button 
           v-if="currentImageIndex < post.mediaUrls.length - 1"
-          @click.stop="nextMedia"
-          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 p-1 rounded-full transition-all duration-200 z-10"
+          @click="nextImage"
+          class="bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors pointer-events-auto"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </button>
+      </div>
 
-        <!-- Media indicators -->
-        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-          <button 
-            v-for="(mediaUrl, index) in post.mediaUrls" 
-            :key="index"
-            @click.stop="goToMedia(index)"
-            :class="[
-              'w-2 h-2 rounded-full transition-all duration-200',
-              index === currentImageIndex 
-                ? 'bg-white scale-110' 
-                : 'bg-white/50 hover:bg-white/70'
-            ]"
-          />
-        </div>
-      </template>
-
-      <!-- Gallery icon (only for multiple media) -->
-<div v-if="isMultipleMedia" class="absolute top-3 left-3 z-10">
-  <div class="w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center">
-    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-    </svg>
-  </div>
-</div>
+      <!-- Media Indicators -->
+      <div v-if="post.mediaUrls.length > 1" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        <button
+          v-for="(media, index) in post.mediaUrls"
+          :key="index"
+          @click="goToImage(index)"
+          :class="[
+            'w-2 h-2 rounded-full transition-colors',
+            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+          ]"
+        />
+      </div>
     </div>
 
-    <!-- Engagement Section -->
+    <!-- Post Actions and Stats -->
     <div class="p-4 space-y-3">
       <!-- Action Buttons -->
       <div class="flex items-center justify-between">
@@ -685,7 +586,7 @@ onUnmounted(() => {
           </button>
         </div>
         
-        <button 
+        <!-- <button 
           @click="toggleSave"
           :disabled="savingInProgress"
           :class="[
@@ -703,7 +604,7 @@ onUnmounted(() => {
           >
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
           </svg>
-        </button>
+        </button> -->
       </div>
 
       <!-- Likes count -->
@@ -715,38 +616,43 @@ onUnmounted(() => {
       </div>
 
       <!-- Comments and shares -->
-      <div class="flex items-center justify-between text-sm text-white/70">
+      <div class="flex items-center justify-start text-xs text-white/70">
         <button @click="toggleComments" class="hover:text-white transition-colors duration-200">
-          <span class="font-medium">{{ post.commentsCount || 0 }}</span> comments
+          <span class="font-medium">{{ localCommentsCount || 0 }}</span> comments
         </button>
-        <button class="hover:text-white transition-colors duration-200">
+        <!-- <button class="hover:text-white transition-colors duration-200">
           <span class="font-medium">{{ post.sharesCount || 0 }}</span> shares
-        </button>
+        </button> -->
       </div>
     </div>
 
     <!-- Comments Section -->
-    <div v-if="showComments" class="border-t border-white/10 bg-[#1a1a1a] p-4">
-      <p class="text-white/60 text-sm text-center">Comments functionality coming soon...</p>
+    <div v-if="showComments" class="border-t border-white/10 bg-[#1a1a1a] ">
+      <CommentSection 
+        :post-id="post.id"
+        @comment-added="handleCommentAdded"
+        @comment-deleted="handleCommentDeleted"
+      />
     </div>
   </div>
+  
   <!-- Image Lightbox Modal -->
-<div 
-  v-if="showLightbox" 
-  @click="closeLightbox"
-  class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
->
-  <img 
-    :src="lightboxImageUrl"
-    alt="Full size image"
-    class="max-w-full max-h-full object-contain"
-    @click.stop
-  />
-  <button 
+  <div 
+    v-if="showLightbox" 
     @click="closeLightbox"
-    class="absolute top-4 right-4 text-white text-3xl hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+    class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
   >
-    ×
-  </button>
-</div>
+    <img 
+      :src="lightboxImageUrl"
+      alt="Full size image"
+      class="max-w-full max-h-full object-contain"
+      @click.stop
+    />
+    <button 
+      @click="closeLightbox"
+      class="absolute top-4 right-4 text-white text-3xl hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+    >
+      ×
+    </button>
+  </div>
 </template>

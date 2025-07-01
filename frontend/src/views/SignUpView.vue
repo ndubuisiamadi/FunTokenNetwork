@@ -6,6 +6,9 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
+const urlParams = new URLSearchParams(window.location.search)
+const referralCode = urlParams.get('ref')
+
 const form = reactive({
   username: '',
   email: '', // Add email field
@@ -89,7 +92,8 @@ const handleRegister = async () => {
   const registrationData = {
     username: form.username, // This will be the full username with .fun
     email: form.email, // Include email
-    password: form.password
+    password: form.password,
+    referralCode
   }
   
   const result = await authStore.register(registrationData)

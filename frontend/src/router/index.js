@@ -19,6 +19,10 @@ import LeaderboardView from '@/views/LeaderboardView.vue'
 import EditProfileView from '@/views/EditProfileView.vue'
 import SearchView from '@/views/SearchView.vue'
 import EmailVerificationView from '@/views/EmailVerificationView.vue'
+import EarningsView from '../views/EarningsView.vue'
+import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
+
 
 
 const router = createRouter({
@@ -43,6 +47,19 @@ const router = createRouter({
   component: EmailVerificationView,
   meta: { requiresGuest: true }
 },
+
+{
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: ForgotPasswordView,
+    meta: { requiresGuest: true } // Only accessible when not logged in
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPasswordView,
+    meta: { requiresGuest: true } // Only accessible when not logged in
+  },
     
     // Profile completion route (for newly registered users)
     {
@@ -57,6 +74,12 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: { requiresAuth: true, requiresCompleteProfile: true }
+    },
+    {
+      path: '/earnings',
+      name: 'earnings',
+      component: EarningsView,
       meta: { requiresAuth: true, requiresCompleteProfile: true }
     },
     {
@@ -144,6 +167,13 @@ const router = createRouter({
 // Enhanced navigation guard
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+
+  if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    // If user is logged in and trying to access guest-only routes, redirect to home
+    next('/')
+  } else {
+    next()
+  }
   
   // Initialize auth state from localStorage if not already done
   if (!authStore.isAuthenticated && localStorage.getItem('authToken')) {

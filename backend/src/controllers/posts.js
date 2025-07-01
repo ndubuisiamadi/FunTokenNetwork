@@ -1,4 +1,4 @@
-// src/controllers/posts.js
+// src/controllers/posts.js - FIXED VERSION
 const { validationResult } = require('express-validator')
 const prisma = require('../db')
 const { awardGumballs } = require('../services/levelSystem')
@@ -23,7 +23,6 @@ const getFeed = async (req, res) => {
             firstName: true,
             lastName: true,
             avatarUrl: true
-            // Removed isVerified - field doesn't exist in current schema
           }
         },
         community: {
@@ -35,8 +34,8 @@ const getFeed = async (req, res) => {
         },
         _count: {
           select: {
-            likes: true,
-            comments: true
+            likes: true
+            // Removed comments count from here - we'll use the stored field
           }
         },
         ...(req.user && {
@@ -61,14 +60,14 @@ const getFeed = async (req, res) => {
       updatedAt: post.updatedAt,
       user: {
         ...post.user,
-        isVerified: false // Default to false since field doesn't exist
+        isVerified: false
       },
       community: post.community,
       likesCount: post._count.likes,
-      commentsCount: post._count.comments,
+      commentsCount: post.commentsCount, // Use the stored field, not _count.comments
       sharesCount: post.sharesCount || 0,
       isLiked: req.user ? post.likes.length > 0 : false,
-      isSaved: false // TODO: Implement saved posts functionality
+      isSaved: false
     }))
 
     res.json({
@@ -81,6 +80,74 @@ const getFeed = async (req, res) => {
     })
   } catch (error) {
     console.error('Get feed error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+const getPost = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true
+          }
+        },
+        community: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true
+          }
+        },
+        _count: {
+          select: {
+            likes: true
+          }
+        },
+        ...(req.user && {
+          likes: {
+            where: { userId: req.user.id },
+            select: { id: true }
+          }
+        })
+      }
+    })
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+
+    const formattedPost = {
+      id: post.id,
+      content: post.content,
+      mediaUrls: post.mediaUrls,
+      postType: post.postType,
+      linkPreview: post.linkPreview,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      user: {
+        ...post.user,
+        isVerified: false
+      },
+      community: post.community,
+      likesCount: post._count.likes,
+      commentsCount: post.commentsCount, // Use stored field
+      sharesCount: post.sharesCount || 0,
+      isLiked: req.user ? post.likes.length > 0 : false,
+      isSaved: false
+    }
+
+    res.json(formattedPost)
+  } catch (error) {
+    console.error('Get post error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
@@ -104,42 +171,15 @@ const createPost = async (req, res) => {
       return res.status(400).json({ message: 'Post must have content or media' })
     }
 
-    // If posting to community, verify membership (skip for now since communities may not be implemented)
-    if (communityId) {
-      try {
-        const membership = await prisma.communityMember.findFirst({
-          where: {
-            userId: req.user.id,
-            communityId
-          }
-        })
-
-        if (!membership) {
-          return res.status(403).json({ message: 'You are not a member of this community' })
-        }
-      } catch (communityError) {
-        console.log('Community check failed (probably table doesnt exist):', communityError.message)
-        // Continue without community check
-      }
-    }
-
-    console.log('Creating post with data:', {
-      content: content?.trim(),
-      mediaUrls,
-      postType,
-      linkPreview,
-      userId: req.user.id,
-      communityId
-    })
-
+    // Create the post
     const post = await prisma.post.create({
       data: {
-        content: content?.trim(),
+        content: content?.trim() || null,
         mediaUrls,
         postType,
-        linkPreview,
+        linkPreview: linkPreview || null,
         userId: req.user.id,
-        communityId
+        communityId: communityId || null
       },
       include: {
         user: {
@@ -149,7 +189,6 @@ const createPost = async (req, res) => {
             firstName: true,
             lastName: true,
             avatarUrl: true
-            // Removed isVerified - field doesn't exist in current schema
           }
         },
         community: {
@@ -160,28 +199,22 @@ const createPost = async (req, res) => {
           }
         },
         _count: {
-          select: {
-            likes: true,
-            comments: true
-          }
+          select: { likes: true }
         }
       }
     })
 
-    console.log('Post created successfully:', post.id)
-
-    // *** ADD THIS: Award gumballs for posting ***
+    // Award gumballs to the user for posting
     try {
-      const gumballResult = await awardGumballs(req.user.id, 10, 'post_created')
+      const gumballResult = await awardGumballs(req.user.id, 10, 'created_post')
       if (gumballResult.success) {
-        console.log(`Awarded 10 gumballs for posting. New total: ${gumballResult.newTotal}`)
+        console.log(`Awarded 10 gumballs to user for posting. New total: ${gumballResult.newTotal}`)
         if (gumballResult.levelChanged) {
           console.log(`User leveled up to: ${gumballResult.newLevel}`)
         }
       }
     } catch (gumballError) {
       console.error('Failed to award gumballs for posting:', gumballError)
-      // Don't fail the request if gumballs update fails
     }
 
     const formattedPost = {
@@ -194,11 +227,11 @@ const createPost = async (req, res) => {
       updatedAt: post.updatedAt,
       user: {
         ...post.user,
-        isVerified: false // Default to false since field doesn't exist
+        isVerified: false
       },
       community: post.community,
       likesCount: post._count.likes,
-      commentsCount: post._count.comments,
+      commentsCount: post.commentsCount, // This will be 0 for new posts
       sharesCount: 0,
       isLiked: false,
       isSaved: false
@@ -213,10 +246,7 @@ const createPost = async (req, res) => {
   } catch (error) {
     console.error('=== CREATE POST ERROR ===')
     console.error('Error:', error)
-    console.error('Error message:', error.message)
-    console.error('Error code:', error.code)
     
-    // Handle specific Prisma errors
     if (error.code === 'P2002') {
       return res.status(400).json({ 
         message: 'Duplicate post detected',
@@ -276,7 +306,7 @@ const likePost = async (req, res) => {
       }
     })
 
-    // *** ADD THIS: Award gumballs to post owner (if not liking own post) ***
+    // Award gumballs to post owner (if not liking own post)
     if (post.userId !== req.user.id) {
       try {
         const gumballResult = await awardGumballs(post.userId, 5, 'received_like')
@@ -288,7 +318,6 @@ const likePost = async (req, res) => {
         }
       } catch (gumballError) {
         console.error('Failed to award gumballs for like:', gumballError)
-        // Don't fail the request
       }
     }
 
@@ -334,76 +363,6 @@ const unlikePost = async (req, res) => {
     res.json({ message: 'Post unliked successfully' })
   } catch (error) {
     console.error('Unlike post error:', error)
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const getPost = async (req, res) => {
-  try {
-    const { id } = req.params
-
-    const post = await prisma.post.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            firstName: true,
-            lastName: true,
-            avatarUrl: true
-            // Removed isVerified - field doesn't exist in current schema
-          }
-        },
-        community: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true
-          }
-        },
-        _count: {
-          select: {
-            likes: true,
-            comments: true
-          }
-        },
-        ...(req.user && {
-          likes: {
-            where: { userId: req.user.id },
-            select: { id: true }
-          }
-        })
-      }
-    })
-
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' })
-    }
-
-    const formattedPost = {
-      id: post.id,
-      content: post.content,
-      mediaUrls: post.mediaUrls,
-      postType: post.postType,
-      linkPreview: post.linkPreview,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      user: {
-        ...post.user,
-        isVerified: false // Default to false since field doesn't exist
-      },
-      community: post.community,
-      likesCount: post._count.likes,
-      commentsCount: post._count.comments,
-      sharesCount: post.sharesCount || 0,
-      isLiked: req.user ? post.likes.length > 0 : false,
-      isSaved: false
-    }
-
-    res.json(formattedPost)
-  } catch (error) {
-    console.error('Get post error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }

@@ -111,8 +111,8 @@ const handleLogin = async () => {
           </div>
 
           <!-- Password -->
-          <div>
-            <label class="block text-xs font-medium mb-2 text-white/80" for="password">Password</label>
+          <div class="flex flex-col gap-2">
+            <label class="block text-xs font-medium text-white/80" for="password">Password</label>
             <input 
               id="password" 
               type="password" 
@@ -122,6 +122,12 @@ const handleLogin = async () => {
               autocomplete="current-password"
               class="w-full text-sm px-3 py-2.5 rounded-lg bg-black/20 border border-white/10 placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 disabled:opacity-50 transition-all" 
             />
+            <RouterLink 
+                to="/forgot-password" 
+                class="self-end text-xs text-blue-400 hover:text-blue-300 transition-colors duration-200"
+              >
+                Forgot Password?
+              </RouterLink>
           </div>
 
           <!-- Submit Button -->
@@ -135,20 +141,20 @@ const handleLogin = async () => {
                 : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent'
             ]"
           >
-            {{ loading ? 'Logging in...' : 'Login' }}
+            {{ loading ? 'Signing in...' : 'Sign In' }}
           </button>
         </form>
 
         <!-- Sign Up Link -->
         <div class="text-center mt-6">
           <p class="text-xs text-white/50 mb-3">
-            New to our community?
+            Don't have an account?
           </p>
           <RouterLink 
             to="/signup" 
             class="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors duration-200 underline-offset-4 hover:underline"
           >
-            Create your account
+            Sign up here
           </RouterLink>
         </div>
       </div>

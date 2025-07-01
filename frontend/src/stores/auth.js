@@ -30,28 +30,28 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     // Initialize auth state from localStorage
     initializeAuth() {
-  const token = localStorage.getItem('authToken')
-  const user = localStorage.getItem('authUser')
-  
-  if (token && user) {
-    try {
-      const parsedUser = JSON.parse(user)
-      this.token = token
-      this.user = parsedUser
-      this.isAuthenticated = true
+      const token = localStorage.getItem('authToken')
+      const user = localStorage.getItem('authUser')
       
-      // Set current user in users store
-      const usersStore = useUsersStore()
-      usersStore.setCurrentUser(parsedUser)
-      
-      // Verify token is still valid by making a quick API call
-      this.verifyToken()
-    } catch (error) {
-      console.error('Error parsing user from localStorage:', error)
-      this.clearAuthData()
-    }
-  }
-},
+      if (token && user) {
+        try {
+          const parsedUser = JSON.parse(user)
+          this.token = token
+          this.user = parsedUser
+          this.isAuthenticated = true
+          
+          // Set current user in users store
+          const usersStore = useUsersStore()
+          usersStore.setCurrentUser(parsedUser)
+          
+          // Verify token is still valid by making a quick API call
+          this.verifyToken()
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error)
+          this.clearAuthData()
+        }
+      }
+    },
 
     // Verify if the stored token is still valid
     async verifyToken() {
@@ -76,133 +76,131 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // Register new user
-    // In your auth store
-async register(userData) {
-  this.loading = true
-  this.error = null
-  
-  try {
-    const response = await authAPI.register(userData)
-    
-    if (response.data.requiresVerification) {
-      // User needs to verify email
-      return { 
-        success: true, 
-        requiresVerification: true,
-        message: response.data.message 
+    async register(userData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await authAPI.register(userData)
+        
+        if (response.data.requiresVerification) {
+          // User needs to verify email
+          return { 
+            success: true, 
+            requiresVerification: true,
+            message: response.data.message 
+          }
+        } else {
+          // Old flow (shouldn't happen with new implementation)
+          const { user, accessToken } = response.data
+          this.user = user
+          this.token = accessToken
+          this.isAuthenticated = true
+          
+          localStorage.setItem('authToken', accessToken)
+          localStorage.setItem('authUser', JSON.stringify(user))
+          
+          return { success: true, user }
+        }
+      } catch (error) {
+        console.error('Registration error:', error)
+        this.error = error.response?.data?.message || 'Registration failed'
+        return { success: false, error: this.error }
+      } finally {
+        this.loading = false
       }
-    } else {
-      // Old flow (shouldn't happen with new implementation)
-      const { user, accessToken } = response.data
-      this.user = user
-      this.token = accessToken
-      this.isAuthenticated = true
-      
-      localStorage.setItem('authToken', accessToken)
-      localStorage.setItem('authUser', JSON.stringify(user))
-      
-      return { success: true, user }
-    }
-  } catch (error) {
-    console.error('Registration error:', error)
-    this.error = error.response?.data?.message || 'Registration failed'
-    return { success: false, error: this.error }
-  } finally {
-    this.loading = false
-  }
-},
+    },
 
     // Login user
-    // Login user
-async login(credentials) {
-  this.loading = true
-  this.error = null
-  
-  try {
-    const response = await authAPI.login(credentials)
-    const { user, accessToken } = response.data
-    
-    // Store auth data FIRST
-    this.user = user
-    this.token = accessToken
-    this.isAuthenticated = true
-    
-    // Persist to localStorage
-    localStorage.setItem('authToken', accessToken)
-    localStorage.setItem('authUser', JSON.stringify(user))
-    
-    // Set current user in users store
-    const usersStore = useUsersStore()
-    usersStore.setCurrentUser(this.user)
-    
-    // Initialize user data (but don't await it to avoid blocking navigation)
-    this.initializeUserData().catch(console.error)
-    
-    return { success: true, user }
-  } catch (error) {
-    console.error('Login error:', error)
-    
-    // Check if this is an email verification error
-    if (error.response?.status === 403 && error.response?.data?.requiresVerification) {
-      return { 
-        success: false, 
-        requiresVerification: true,
-        email: error.response.data.email,
-        error: error.response.data.message
+    async login(credentials) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await authAPI.login(credentials)
+        const { user, accessToken } = response.data
+        
+        // Store auth data FIRST
+        this.user = user
+        this.token = accessToken
+        this.isAuthenticated = true
+        
+        // Persist to localStorage
+        localStorage.setItem('authToken', accessToken)
+        localStorage.setItem('authUser', JSON.stringify(user))
+        
+        // Set current user in users store
+        const usersStore = useUsersStore()
+        usersStore.setCurrentUser(this.user)
+        
+        // Initialize user data (but don't await it to avoid blocking navigation)
+        this.initializeUserData().catch(console.error)
+        
+        return { success: true, user }
+      } catch (error) {
+        console.error('Login error:', error)
+        
+        // Check if this is an email verification error
+        if (error.response?.status === 403 && error.response?.data?.requiresVerification) {
+          return { 
+            success: false, 
+            requiresVerification: true,
+            email: error.response.data.email,
+            error: error.response.data.message
+          }
+        }
+        
+        // Regular login error
+        this.error = error.response?.data?.message || 'Login failed'
+        return { success: false, error: this.error }
+      } finally {
+        this.loading = false
       }
-    }
-    
-    // Regular login error
-    this.error = error.response?.data?.message || 'Login failed'
-    return { success: false, error: this.error }
-  } finally {
-    this.loading = false
-  }
-},
+    },
 
-async initializeUserData() {
-  try {
-    console.log('Initializing user data after login...')
-    
-    // Initialize messages store
-    const messagesStore = useMessagesStore()
-    
-    // Initialize socket connection
-    messagesStore.initializeSocket()
-    
-    // Fetch conversations for the counter
-    await messagesStore.fetchConversations()
-    
-    console.log('User data initialization complete')
-  } catch (error) {
-    console.error('Error initializing user data:', error)
-    // Don't throw error as login was successful
-  }
-},
+    async initializeUserData() {
+      try {
+        console.log('Initializing user data after login...')
+        
+        // Initialize messages store
+        const messagesStore = useMessagesStore()
+        
+        // Initialize socket connection
+        messagesStore.initializeSocket()
+        
+        // Fetch conversations for the counter
+        await messagesStore.fetchConversations()
+        
+        console.log('User data initialization complete')
+      } catch (error) {
+        console.error('Error initializing user data:', error)
+        // Don't throw error as login was successful
+      }
+    },
 
     // Logout user
     async logout() {
-  try {
-    await authAPI.logout()
-  } catch (error) {
-    console.error('Logout API error:', error)
-  } finally {
-    // Clean up auth state
-    this.user = null
-    this.token = null
-    this.isAuthenticated = false
-    
-    // Clean up storage
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('authUser')
-    
-    // Clean up messages store
-    const messagesStore = useMessagesStore()
-    messagesStore.cleanup()
-    
-    console.log('Logged out successfully')
-  }
-},
+      try {
+        await authAPI.logout()
+      } catch (error) {
+        console.error('Logout API error:', error)
+      } finally {
+        // Clean up auth state
+        this.user = null
+        this.token = null
+        this.isAuthenticated = false
+        
+        // Clean up storage
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('authUser')
+        
+        // Clean up messages store
+        const messagesStore = useMessagesStore()
+        messagesStore.cleanup()
+        
+        console.log('Logged out successfully')
+      }
+    },
 
     // Fetch current user profile
     async fetchProfile() {
@@ -227,6 +225,37 @@ async initializeUserData() {
         }
         
         return { success: false, error: error.response?.data?.message || 'Failed to fetch profile' }
+      }
+    },
+
+    // NEW: Refresh user data (for when gumballs are earned)
+    async refreshUser() {
+      if (!this.token) {
+        console.log('No token available for refresh')
+        return { success: false, error: 'No token available' }
+      }
+
+      try {
+        console.log('Refreshing user data...')
+        const response = await authAPI.getProfile()
+        
+        // Update user data in store
+        this.user = response.data.user
+        
+        // Update localStorage
+        localStorage.setItem('authUser', JSON.stringify(this.user))
+        
+        // Update users store if needed
+        const usersStore = useUsersStore()
+        if (usersStore.setCurrentUser) {
+          usersStore.setCurrentUser(this.user)
+        }
+        
+        console.log('User data refreshed successfully. New gumballs:', this.user.gumballs)
+        return { success: true, user: this.user }
+      } catch (error) {
+        console.error('Refresh user error:', error)
+        return { success: false, error: error.response?.data?.message || 'Failed to refresh user data' }
       }
     },
 
@@ -290,34 +319,34 @@ async initializeUserData() {
     },
 
     async restoreSession() {
-  try {
-    const token = localStorage.getItem('authToken')
-    const userJson = localStorage.getItem('authUser')
-    
-    if (!token || !userJson) {
-      return false
-    }
-    
-    // Restore auth state
-    this.token = token
-    this.user = JSON.parse(userJson)
-    this.isAuthenticated = true
-    
-    // Verify token is still valid by fetching profile
-    const response = await authAPI.getProfile()
-    this.user = response.data.user
-    
-    // Initialize user data
-    await this.initializeUserData()
-    
-    return true
-  } catch (error) {
-    console.error('Session restore error:', error)
-    // Clear invalid session
-    this.logout()
-    return false
-  }
-},
+      try {
+        const token = localStorage.getItem('authToken')
+        const userJson = localStorage.getItem('authUser')
+        
+        if (!token || !userJson) {
+          return false
+        }
+        
+        // Restore auth state
+        this.token = token
+        this.user = JSON.parse(userJson)
+        this.isAuthenticated = true
+        
+        // Verify token is still valid by fetching profile
+        const response = await authAPI.getProfile()
+        this.user = response.data.user
+        
+        // Initialize user data
+        await this.initializeUserData()
+        
+        return true
+      } catch (error) {
+        console.error('Session restore error:', error)
+        // Clear invalid session
+        this.logout()
+        return false
+      }
+    },
 
     // Clear error
     clearError() {

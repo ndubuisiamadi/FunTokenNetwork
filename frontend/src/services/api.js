@@ -84,6 +84,40 @@ export const postsAPI = {
     api.get(`/posts/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
 }
 
+// Comments API endpoints
+export const commentsAPI = {
+  // Get comments for a post with sorting
+  getComments: (postId, page = 1, limit = 20, sortBy = 'top') => 
+    api.get(`/comments/posts/${postId}/comments?page=${page}&limit=${limit}&sortBy=${sortBy}`),
+  
+  // Get replies for a specific comment
+  getReplies: (commentId, page = 1, limit = 10) =>
+    api.get(`/comments/comments/${commentId}/replies?page=${page}&limit=${limit}`),
+  
+  // Create a new comment
+  createComment: (postId, content, parentId = null) =>
+    api.post(`/comments/posts/${postId}/comments`, { 
+      content, 
+      ...(parentId && { parentId }) 
+    }),
+  
+  // Like a comment
+  likeComment: (commentId) =>
+    api.post(`/comments/comments/${commentId}/like`),
+  
+  // Unlike a comment
+  unlikeComment: (commentId) =>
+    api.delete(`/comments/comments/${commentId}/like`),
+  
+  // Update a comment
+  updateComment: (commentId, content) =>
+    api.put(`/comments/comments/${commentId}`, { content }),
+  
+  // Delete a comment
+  deleteComment: (commentId) =>
+    api.delete(`/comments/comments/${commentId}`)
+}
+
 // Friends API endpoints
 export const friendsAPI = {
   sendRequest: (userId) => api.post(`/friends/request/${userId}`),

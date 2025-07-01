@@ -64,13 +64,13 @@ const formattedFriendRequestsCount = computed(() => {
                 <img v-if="!isNotLoggedIn('/')" class="size-9 p-2" src="@/components/icons/home-line.svg">
                 <img v-if="isNotLoggedIn('/')" class="size-9 p-2" src="@/components/icons/home-filled.svg">
             </RouterLink>
-            <RouterLink to="/tasks"
-            :class="[isNotLoggedIn('/tasks') ? 
+            <RouterLink to="/earnings"
+            :class="[isNotLoggedIn('/earnings') ? 
             'bg-linear-to-tr from-[#00B043] to-[#195E00] backdrop-blur-xl' : 
             'bg-transparent', 'size-9', 'hover:bg-linear-to-tr from-[#00B043] to-[#195E00] backdrop-blur-xl', 'rounded-full']"
             >
-                <img v-if="!isNotLoggedIn('/tasks')" class="size-9 p-2" src="@/components/icons/check-line.svg">
-                <img v-if="isNotLoggedIn('/tasks')" class="size-9 p-2" src="@/components/icons/check-filled.svg">
+                <img v-if="!isNotLoggedIn('/earnings')" class="size-9 p-2" src="@/components/icons/gumballs-lined.svg">
+                <img v-if="isNotLoggedIn('/earnings')" class="size-9 p-2" src="@/components/icons/gumballs-filled.svg">
             </RouterLink>
             <RouterLink to="/messages" 
             :class="[isNotLoggedIn('/messages') ? 
@@ -135,11 +135,11 @@ const formattedFriendRequestsCount = computed(() => {
                     <img v-if="isNotLoggedIn('/')" class="size-6" src="@/components/icons/home-filled.svg">
                 </RouterLink>
                 
-                <RouterLink to="/tasks" 
+                <RouterLink to="/earnings" 
                 class="flex flex-col items-center rounded-full transition-colors duration-200" 
-                :class="[isNotLoggedIn('/tasks') ? 'bg-linear-to-tr from-[#00B043] to-[#195E00] backdrop-blur-xl p-3' : 'hover:bg-white/10 p-3']">
-                    <img v-if="!isNotLoggedIn('/tasks')" class="size-6" src="@/components/icons/check-line.svg">
-                    <img v-if="isNotLoggedIn('/tasks')" class="size-6" src="@/components/icons/check-filled.svg">
+                :class="[isNotLoggedIn('/earnings') ? 'bg-linear-to-tr from-[#00B043] to-[#195E00] backdrop-blur-xl p-3' : 'hover:bg-white/10 p-3']">
+                    <img v-if="!isNotLoggedIn('/earnings')" class="size-6" src="@/components/icons/gumballs-lined.svg">
+                    <img v-if="isNotLoggedIn('/earnings')" class="size-6" src="@/components/icons/gumballs-filled.svg">
                 </RouterLink>
                 
                 <RouterLink to="/messages" 

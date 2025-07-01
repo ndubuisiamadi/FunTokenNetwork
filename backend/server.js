@@ -9,6 +9,8 @@ const fs = require('fs')
 const { createServer } = require('http')
 const { Server } = require('socket.io')
 
+const referralRoutes = require('./src/routes/referrals')
+
 require('dotenv').config()
 
 const app = express()
@@ -75,6 +77,7 @@ app.use(helmet({
   }
 }))
 
+
 // Rate limiting with different limits for different endpoints
 const createRateLimit = (windowMs, max, message) => rateLimit({
   windowMs,
@@ -120,6 +123,8 @@ app.use(express.urlencoded({
   extended: true, 
   limit: '50mb' 
 }))
+
+app.use('/api/referrals', referralRoutes)
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
@@ -268,7 +273,8 @@ const loadRoutes = () => {
     { path: '/api/users', file: './src/routes/users', name: 'users' }, 
     { path: '/api/friends', file: './src/routes/friends', name: 'friends' },
     { path: '/api/posts', file: './src/routes/posts', name: 'posts' },
-      { path: '/api/communities', file: './src/routes/communities', name: 'communities' },
+    { path: '/api/comments', file: './src/routes/comments', name: 'comments' },
+    { path: '/api/communities', file: './src/routes/communities', name: 'communities' },
     { path: '/api/upload', file: './src/routes/upload', name: 'upload' },
     { path: '/api/messages', file: './src/routes/messages', name: 'messages' },
     { path: '/api/leaderboard', file: './src/routes/leaderboard', name: 'leaderboard' },

@@ -1,9 +1,11 @@
 // src/controllers/auth.js
+const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { validationResult } = require('express-validator')
 const prisma = require('../db')
-const emailService = require('../services/emailService') // Add this import
+const emailService = require('../services/emailService') 
+const referralService = require('../services/referralService')
 
 const generateTokens = (userId) => {
   const accessToken = jwt.sign(
@@ -28,7 +30,7 @@ const register = async (req, res) => {
       return res.status(400).json({ errors: errors.array() })
     }
 
-    const { username, email, password, firstName, lastName } = req.body
+    const { username, email, password, firstName, lastName, referralCode } = req.body
 
     // Normalize username and email
     const normalizedUsername = username.toLowerCase()
@@ -43,7 +45,7 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Username already taken' })
     }
 
-    // Check if email already exists (now using findUnique)
+    // Check if email already exists
     if (normalizedEmail) {
       const existingEmail = await prisma.user.findUnique({
         where: { email: normalizedEmail }
@@ -57,7 +59,16 @@ const register = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Create user
+    // Generate referral code immediately (to avoid null issues)
+    const generateReferralCode = (username) => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 6)
+      return `${username.substring(0, 4).toUpperCase()}${timestamp}${random}`.toUpperCase()
+    }
+
+    const userReferralCode = generateReferralCode(normalizedUsername)
+
+    // Create user WITH generated referral code
     const user = await prisma.user.create({
       data: {
         username: normalizedUsername,
@@ -67,7 +78,14 @@ const register = async (req, res) => {
         lastName: lastName || null,
         gumballs: 0,
         isEmailVerified: false,
-        emailRequired: !!normalizedEmail // true if email provided
+        emailRequired: !!normalizedEmail,
+        // Provide actual values instead of null
+        referralCode: userReferralCode,  // Generated immediately
+        referredBy: null,                // This will be set by referral tracking
+        totalReferrals: 0,
+        activeReferrals: 0,
+        referralEarnings: 0,
+        profileCompleted: false          // NEW: Track if profile is completed
       },
       select: {
         id: true,
@@ -83,6 +101,19 @@ const register = async (req, res) => {
       }
     })
 
+    // MODIFIED: Only track referral relationship, don't award rewards yet
+    if (referralCode) {
+      try {
+        console.log(`Tracking referral signup for user ${user.username} with code ${referralCode}`)
+        await referralService.trackReferralSignup(user.id, referralCode.toUpperCase())
+        console.log(`Referral relationship tracked - rewards will be given after profile completion`)
+      } catch (referralError) {
+        console.error('Referral tracking failed:', referralError)
+        // Continue with registration even if referral tracking fails
+      }
+    }
+
+    // Rest of your registration logic (email verification, etc.)
     // If email provided, send verification code
     if (normalizedEmail && process.env.ENABLE_EMAIL_VERIFICATION === 'true') {
       try {
@@ -108,213 +139,23 @@ const register = async (req, res) => {
         })
       } catch (emailError) {
         console.error('Email sending failed:', emailError)
-        // Continue without email verification if email fails
         return res.status(201).json({
           message: 'User registered successfully. Email verification unavailable.',
           user,
-          requiresVerification: false
+          requiresVerification: true
         })
       }
+    } else {
+      // No email verification required
+      return res.status(201).json({
+        message: 'User registered successfully.',
+        user,
+        requiresVerification: false
+      })
     }
-
-    // If no email or email verification disabled, proceed without verification
-    const { accessToken, refreshToken } = generateTokens(user.id)
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      user,
-      accessToken,
-      refreshToken,
-      requiresVerification: false
-    })
 
   } catch (error) {
     console.error('Registration error:', error)
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-const verifyEmail = async (req, res) => {
-  try {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
-
-    const { email, code } = req.body
-
-    // Find valid verification code
-    const verificationRecord = await prisma.emailVerificationCode.findFirst({
-      where: {
-        email: email.toLowerCase(),
-        code: code,
-        isUsed: false,
-        expiresAt: {
-          gt: new Date()
-        }
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            avatarUrl: true,
-            gumballs: true,
-            isEmailVerified: true,
-            createdAt: true
-          }
-        }
-      }
-    })
-
-    if (!verificationRecord) {
-      return res.status(400).json({ message: 'Invalid or expired verification code' })
-    }
-
-    // Use a transaction to ensure both operations succeed
-    const [updatedCode, updatedUser] = await prisma.$transaction([
-      prisma.emailVerificationCode.update({
-        where: { id: verificationRecord.id },
-        data: { isUsed: true }
-      }),
-      prisma.user.update({
-        where: { id: verificationRecord.userId },
-        data: { isEmailVerified: true },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          avatarUrl: true,
-          gumballs: true,
-          isEmailVerified: true,
-          createdAt: true
-        }
-      })
-    ])
-
-    // Generate tokens for the verified user
-    const { accessToken, refreshToken } = generateTokens(updatedUser.id)
-
-    // Send welcome email
-    try {
-      await emailService.sendWelcomeEmail(email, updatedUser.username)
-    } catch (emailError) {
-      console.error('Welcome email failed:', emailError)
-      // Continue anyway
-    }
-
-    res.json({
-      message: 'Email verified successfully!',
-      user: updatedUser,
-      accessToken,
-      refreshToken
-    })
-
-  } catch (error) {
-    console.error('Email verification error:', error)
-    res.status(500).json({ message: 'Internal server error' })
-  }
-}
-
-// Now you can use findUnique for email
-const resendVerificationCode = async (req, res) => {
-  try {
-    console.log('🔄 RESEND VERIFICATION - START')
-    console.log('Request body:', req.body)
-    
-    const { email } = req.body
-
-    if (!email) {
-      console.log('❌ No email provided')
-      return res.status(400).json({ message: 'Email is required' })
-    }
-
-    const normalizedEmail = email.toLowerCase()
-    console.log('📧 Looking for user with email:', normalizedEmail)
-
-    // Use findUnique since email is now unique
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true, username: true, email: true, isEmailVerified: true }
-    })
-
-    console.log('👤 User found:', user)
-
-    if (!user) {
-      console.log('❌ User not found')
-      return res.status(404).json({ message: 'User not found' })
-    }
-
-    if (user.isEmailVerified) {
-      console.log('❌ Email already verified')
-      return res.status(400).json({ message: 'Email is already verified' })
-    }
-
-    // Check rate limiting
-    const recentCodes = await prisma.emailVerificationCode.count({
-      where: {
-        email: normalizedEmail,
-        createdAt: {
-          gt: new Date(Date.now() - 15 * 60 * 1000)
-        }
-      }
-    })
-
-    console.log('🕒 Recent codes count:', recentCodes)
-
-    if (recentCodes >= 3) {
-      console.log('❌ Rate limit exceeded')
-      return res.status(429).json({ 
-        message: 'Too many verification attempts. Please wait 15 minutes before requesting a new code.' 
-      })
-    }
-
-    // Mark previous codes as used
-    console.log('🗑️ Marking previous codes as used...')
-    await prisma.emailVerificationCode.updateMany({
-      where: {
-        email: normalizedEmail,
-        isUsed: false
-      },
-      data: { isUsed: true }
-    })
-
-    // Generate new verification code
-    const verificationCode = emailService.generateVerificationCode()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
-    
-    console.log('🔢 Generated verification code:', verificationCode)
-    console.log('⏰ Expires at:', expiresAt)
-
-    // Save verification code
-    const savedCode = await prisma.emailVerificationCode.create({
-      data: {
-        code: verificationCode,
-        email: normalizedEmail,
-        userId: user.id,
-        expiresAt
-      }
-    })
-
-    console.log('💾 Saved verification code:', savedCode.id)
-
-    // Send verification email
-    console.log('📤 Sending verification email...')
-    const emailResult = await emailService.sendVerificationEmail(normalizedEmail, verificationCode, user.username)
-    console.log('📤 Email service result:', emailResult)
-
-    console.log('✅ RESEND VERIFICATION - SUCCESS')
-    res.json({
-      message: 'Verification code sent successfully'
-    })
-
-  } catch (error) {
-    console.error('❌ RESEND VERIFICATION - ERROR:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
@@ -323,7 +164,10 @@ const login = async (req, res) => {
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: errors.array() 
+      })
     }
 
     const { username, password } = req.body
@@ -331,36 +175,21 @@ const login = async (req, res) => {
 
     // Find user by username
     const user = await prisma.user.findUnique({
-      where: { username: normalizedUsername },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        password: true,
-        firstName: true,
-        lastName: true,
-        avatarUrl: true,
-        gumballs: true,
-        isEmailVerified: true,
-        emailRequired: true,
-        createdAt: true
-      }
+      where: { username: normalizedUsername }
     })
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Invalid username or password' })
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Invalid username or password' })
     }
 
-    // Check email verification only for users who registered with email requirement
-    const isLegacyUser = !user.emailRequired || user.email?.includes('@legacy.placeholder.local')
-    
-    if (!isLegacyUser && user.email && !user.isEmailVerified && process.env.ENABLE_EMAIL_VERIFICATION === 'true') {
+    // Check if email verification is required
+    if (user.emailRequired && !user.isEmailVerified) {
       return res.status(403).json({ 
         message: 'Please verify your email before logging in',
         requiresVerification: true,
@@ -454,6 +283,21 @@ const updateProfile = async (req, res) => {
 
     const { firstName, lastName, bio, location, birthDate, avatarUrl, bannerUrl } = req.body
 
+    // Get current user to check profile completion status
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        firstName: true,
+        lastName: true,
+        profileCompleted: true,
+        referredBy: true
+      }
+    })
+
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
     const updateData = {}
     
     if (firstName !== undefined) updateData.firstName = firstName?.trim() || null
@@ -463,6 +307,17 @@ const updateProfile = async (req, res) => {
     if (birthDate) updateData.birthDate = new Date(birthDate)
     if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl?.trim() || null
     if (bannerUrl !== undefined) updateData.bannerUrl = bannerUrl?.trim() || null
+
+    // Check if this is the first time completing profile (firstName and lastName are being set)
+    const isFirstTimeCompletion = !currentUser.profileCompleted && 
+                                  !currentUser.firstName && 
+                                  !currentUser.lastName && 
+                                  updateData.firstName && 
+                                  updateData.lastName
+
+    if (isFirstTimeCompletion) {
+      updateData.profileCompleted = true
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
@@ -484,12 +339,353 @@ const updateProfile = async (req, res) => {
       }
     })
 
+    // NEW: Process referral rewards after profile completion
+    if (isFirstTimeCompletion && currentUser.referredBy) {
+      try {
+        console.log(`Processing referral rewards for completed profile: ${updatedUser.username}`)
+        await referralService.processReferralRewards(req.user.id, currentUser.referredBy)
+        console.log(`Referral rewards processed successfully`)
+        
+        // Refresh user data to include updated gumballs
+        const userWithUpdatedGumballs = await prisma.user.findUnique({
+          where: { id: req.user.id },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            bio: true,
+            location: true,
+            birthDate: true,
+            avatarUrl: true,
+            bannerUrl: true,
+            gumballs: true,
+            isEmailVerified: true,
+            createdAt: true
+          }
+        })
+        
+        res.json({ 
+          message: 'Profile updated successfully! Welcome bonus awarded.',
+          user: userWithUpdatedGumballs 
+        })
+        return
+      } catch (referralError) {
+        console.error('Failed to process referral rewards:', referralError)
+        // Continue with normal response even if referral processing fails
+      }
+    }
+
     res.json({ 
       message: 'Profile updated successfully',
       user: updatedUser 
     })
   } catch (error) {
     console.error('Update profile error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// Email verification function
+const verifyEmail = async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { email, code } = req.body
+    const normalizedEmail = email.toLowerCase()
+
+    console.log(`Verifying email: ${normalizedEmail} with code: ${code}`)
+
+    // Find the verification code
+    const verificationRecord = await prisma.emailVerificationCode.findFirst({
+      where: {
+        email: normalizedEmail,
+        code: code,
+        isUsed: false,
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      include: {
+        user: true
+      }
+    })
+
+    if (!verificationRecord) {
+      console.log('Invalid or expired verification code')
+      return res.status(400).json({ message: 'Invalid or expired verification code' })
+    }
+
+    // Mark user as verified and mark code as used
+    const [updatedUser, updatedCode] = await prisma.$transaction([
+      prisma.user.update({
+        where: { id: verificationRecord.userId },
+        data: { isEmailVerified: true },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatarUrl: true,
+          gumballs: true,
+          isEmailVerified: true,
+          createdAt: true
+        }
+      }),
+      prisma.emailVerificationCode.update({
+        where: { id: verificationRecord.id },
+        data: { isUsed: true }
+      })
+    ])
+
+    // Generate tokens for auto-login
+    const { accessToken, refreshToken } = generateTokens(updatedUser.id)
+
+    console.log('Email verified successfully')
+
+    res.json({
+      message: 'Email verified successfully!',
+      user: updatedUser,
+      accessToken,
+      refreshToken
+    })
+  } catch (error) {
+    console.error('Email verification error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// Resend verification code
+const resendVerificationCode = async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { email } = req.body
+    const normalizedEmail = email.toLowerCase()
+
+    console.log(`Resending verification code to: ${normalizedEmail}`)
+
+    // Find user with this email
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail }
+    })
+
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this email address' })
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' })
+    }
+
+    // Invalidate old codes
+    await prisma.emailVerificationCode.updateMany({
+      where: {
+        email: normalizedEmail,
+        isUsed: false
+      },
+      data: { isUsed: true }
+    })
+
+    // Generate new code
+    const verificationCode = emailService.generateVerificationCode()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    await prisma.emailVerificationCode.create({
+      data: {
+        code: verificationCode,
+        email: normalizedEmail,
+        userId: user.id,
+        expiresAt
+      }
+    })
+
+    // Send verification email
+    await emailService.sendVerificationEmail(normalizedEmail, verificationCode, user.username)
+
+    console.log('Verification code resent successfully')
+
+    res.json({ 
+      message: 'Verification code sent! Please check your email.' 
+    })
+  } catch (error) {
+    console.error('Resend verification error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// Forgot password function
+const forgotPassword = async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { email } = req.body
+    const normalizedEmail = email.toLowerCase()
+
+    console.log(`🔄 FORGOT PASSWORD - Email: ${normalizedEmail}`)
+
+    // Find user with this email
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true, username: true, email: true }
+    })
+
+    if (!user) {
+      console.log('❌ User not found')
+      // Don't reveal if email exists or not for security
+      return res.json({ 
+        message: 'If an account with this email exists, you will receive a password reset link.' 
+      })
+    }
+
+    console.log(`👤 User found: ${user.username}`)
+
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex')
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+    // Invalidate old tokens
+    await prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, isUsed: false },
+      data: { isUsed: true }
+    })
+
+    // Create new reset token
+    await prisma.passwordResetToken.create({
+      data: {
+        token: hashedToken,
+        userId: user.id,
+        expiresAt
+      }
+    })
+
+    console.log('💾 Reset token saved to database')
+
+    // Send reset email
+    try {
+      await emailService.sendPasswordResetEmail(normalizedEmail, resetToken, user.username)
+      console.log('📤 Reset email sent successfully')
+    } catch (emailError) {
+      console.error('📤 Failed to send reset email:', emailError)
+      return res.status(500).json({ 
+        message: 'Failed to send reset email. Please try again later.' 
+      })
+    }
+
+    console.log('✅ FORGOT PASSWORD - SUCCESS')
+
+    res.json({ 
+      message: 'If an account with this email exists, you will receive a password reset link.' 
+    })
+  } catch (error) {
+    console.error('❌ FORGOT PASSWORD - ERROR:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// Reset password function
+const resetPassword = async (req, res) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { token, password } = req.body
+
+    console.log(`🔄 RESET PASSWORD - Token: ${token?.substring(0, 8)}...`)
+
+    // Hash the provided token to match database
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
+    console.log('🔒 Token hashed for database lookup')
+
+    // Find valid reset token
+    const resetTokenRecord = await prisma.passwordResetToken.findFirst({
+      where: {
+        token: hashedToken,
+        isUsed: false,
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    })
+
+    console.log('🔍 Database lookup completed. Token found:', !!resetTokenRecord)
+
+    if (!resetTokenRecord) {
+      console.log('❌ Invalid or expired token')
+      return res.status(400).json({ message: 'Invalid or expired reset token' })
+    }
+
+    console.log('👤 User for reset:', resetTokenRecord.user.username)
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 12)
+    console.log('🔒 Password hashed successfully')
+
+    // Use transaction to update password and mark token as used
+    const [updatedUser, updatedToken] = await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetTokenRecord.userId },
+        data: { password: hashedPassword },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          firstName: true,
+          lastName: true
+        }
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetTokenRecord.id },
+        data: { isUsed: true }
+      })
+    ])
+
+    console.log('💾 Password updated and token marked as used')
+
+    // Send confirmation email
+    try {
+      await emailService.sendPasswordChangeConfirmationEmail(
+        resetTokenRecord.user.email, 
+        resetTokenRecord.user.username
+      )
+      console.log('📤 Password change confirmation email sent')
+    } catch (emailError) {
+      console.error('📤 Failed to send confirmation email:', emailError)
+      // Continue anyway
+    }
+
+    console.log('✅ RESET PASSWORD - SUCCESS')
+    res.json({
+      message: 'Password reset successfully! You can now log in with your new password.'
+    })
+
+  } catch (error) {
+    console.error('❌ RESET PASSWORD - ERROR:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
@@ -501,5 +697,7 @@ module.exports = {
   getProfile,
   updateProfile,
   verifyEmail,
-  resendVerificationCode
+  resendVerificationCode,
+  forgotPassword,
+  resetPassword
 }

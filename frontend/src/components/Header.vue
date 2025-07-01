@@ -107,7 +107,7 @@ const toggleMobileSearch = () => {
     <div v-if="!currentPage('/messages')" class="flex items-center justify-between w-full text-xs md:text-base">
     <!-- Left: Page Title -->
     
-    <h1 v-if="currentPage('/tasks')" class="text-[#00B043]">Tasks</h1>
+    <h1 v-if="currentPage('/earnings')" class="text-[#00B043]">Earnings</h1>
     <h1 v-if="currentPage('/messages')" class="text-[#055DFF]">Messages</h1>
     <h1 v-if="currentPage('/communities')" class="text-[#FFA02B]">Communities</h1>
     <h1 v-if="currentPage('/friends')" class="text-[#FA7D7D]">Friends</h1>
