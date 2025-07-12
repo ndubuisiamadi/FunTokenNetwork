@@ -62,7 +62,7 @@ onUnmounted(() => {
       <!-- Floating Action Button -->
       <button
         @click="showCreateModal = true"
-        class="fixed bottom-6 right-6 size-14 bg-[#055CFF] hover:bg-[#044ACC] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 group"
+        class="fixed bottom-6 right-6 size-14 bg-linear-to-tr from-[#FFA02B] to-[#FF1E00] hover:bg-[#044ACC] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 group"
         title="Create Community"
       >
         <svg 
@@ -136,11 +136,11 @@ onUnmounted(() => {
       <!-- Mobile Floating Action Button -->
       <button
         @click="showCreateModal = true"
-        class="fixed bottom-24 right-6 size-14 bg-[#055CFF] hover:bg-[#044ACC] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 group active:scale-95"
+        class="fixed bottom-20 right-6 size-12 p-2 bg-linear-to-tr from-[#FFA02B] to-[#FF1E00] hover:bg-[#044ACC] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 group active:scale-95"
         title="Create Community"
       >
         <svg 
-          class="w-6 h-6 transition-transform group-hover:rotate-90" 
+          class="transition-transform group-hover:rotate-90" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"

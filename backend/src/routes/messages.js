@@ -134,4 +134,6 @@ router.post('/conversations/:conversationId/participants', auth, messagesControl
 // Remove participant from group conversation
 router.delete('/conversations/:conversationId/participants/:userId', auth, messagesController.removeParticipant)
 
+router.get('/unread-count', auth, messagesController.getTotalUnreadCount)
+
 module.exports = router

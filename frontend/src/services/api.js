@@ -147,6 +147,7 @@ export const messagesAPI = {
   sendMessage: (conversationId, messageData) => 
     api.post(`/messages/conversations/${conversationId}/messages`, messageData),
   markAsRead: (conversationId) => api.put(`/messages/conversations/${conversationId}/read`),
+  getTotalUnreadCount: () => api.get('/messages/unread-count'),
   
   // Participants
   addParticipants: (conversationId, participantIds) => 
@@ -162,11 +163,11 @@ export const messagesAPI = {
   },
   getOnlineUsers: () => api.get('/messages/users/online'),
 
-  // Update message status
+ // 🔥 ENHANCED: Update message status with better error handling
   updateMessageStatus: (messageId, status) => 
-    api.put(`/messages/messages/${messageId}/status`, { status }),
+    api.put(`/messages/${messageId}/status`, { status }),
   
-  // Bulk update conversation message status
+  // 🔥 ENHANCED: Bulk update conversation message status
   updateConversationMessageStatus: (conversationId, status, messageIds = null) => 
     api.put(`/messages/conversations/${conversationId}/messages/status`, { 
       status, 
@@ -258,98 +259,116 @@ export const communitiesAPI = {
 }
 
 // Tasks API endpoints
-// export const tasksAPI = {
-//   // Get available tasks with filtering and pagination
-//   getTasks: (page = 1, limit = 20, filters = {}) => {
-//     const params = new URLSearchParams({
-//       page: page.toString(),
-//       limit: limit.toString(),
-//       ...filters
-//     })
-//     return api.get(`/tasks?${params}`)
-//   },
-
-//   // Get task by ID
-//   getTask: (taskId) => api.get(`/tasks/${taskId}`),
-
-//   // Start a task
-//   startTask: (taskId) => api.post(`/tasks/${taskId}/start`),
-
-//   // Complete a task
-//   completeTask: (taskId, submissionData) => 
-//     api.post(`/tasks/${taskId}/complete`, submissionData),
-
-//   // Verify task completion
-//   verifyTask: (taskId, proof) => 
-//     api.post(`/tasks/${taskId}/verify`, proof),
-
-//   // Get user's completed tasks
-//   getCompletedTasks: () => api.get('/tasks/completed'),
-
-//   // Get user's task progress
-//   getTaskProgress: (taskId) => api.get(`/tasks/${taskId}/progress`),
-
-//   // Get task analytics
-//   getAnalytics: () => api.get('/tasks/analytics'),
-
-//   // Get platform configurations
-//   getPlatforms: () => api.get('/tasks/platforms'),
-
-//   // Admin endpoints (for your admin dashboard)
-//   admin: {
-//     // Create new task
-//     createTask: (taskData) => api.post('/admin/tasks', taskData),
-    
-//     // Update task
-//     updateTask: (taskId, updates) => api.put(`/admin/tasks/${taskId}`, updates),
-    
-//     // Delete task
-//     deleteTask: (taskId) => api.delete(`/admin/tasks/${taskId}`),
-    
-//     // Get task analytics
-//     getTaskAnalytics: (taskId) => api.get(`/admin/tasks/${taskId}/analytics`),
-    
-//     // Get all user submissions
-//     getSubmissions: (page = 1, status = 'all') => 
-//       api.get(`/admin/tasks/submissions?page=${page}&status=${status}`),
-    
-//     // Review submission
-//     reviewSubmission: (submissionId, decision, feedback = '') =>
-//       api.post(`/admin/tasks/submissions/${submissionId}/review`, { 
-//         decision, 
-//         feedback 
-//       }),
-
-//     // Bulk operations
-//     bulkUpdateTasks: (taskIds, updates) =>
-//       api.put('/admin/tasks/bulk', { taskIds, updates }),
-
-//     // Platform management
-//     createPlatform: (platformData) => api.post('/admin/platforms', platformData),
-//     updatePlatform: (platformId, updates) => api.put(`/admin/platforms/${platformId}`, updates),
-//     deletePlatform: (platformId) => api.delete(`/admin/platforms/${platformId}`)
-//   }
-// }
-
-// Temporary mock API for development
 export const tasksAPI = {
-  getTasks: () => Promise.resolve({ 
-    data: { 
-      tasks: [], 
-      pagination: { page: 1, hasMore: false },
-      platforms: [] 
-    } 
-  }),
-  getTask: (taskId) => Promise.resolve({ data: { task: { id: taskId } } }),
-  startTask: (taskId) => Promise.resolve({ data: { task: { id: taskId }, userTask: {} } }),
-  completeTask: (taskId, submissionData) => Promise.resolve({ 
-    data: { 
-      task: { id: taskId }, 
-      userTask: {}, 
-      reward: { amount: 15000 } 
-    } 
-  })
+  // 🔧 Twitter Setup (Existing - keep as is)
+  checkTwitterSetup: () => api.get('/tasks/twitter-setup'),
+  setupTwitterId: (data) => api.post('/tasks/setup-twitter', data),
+  
+  // 🆕 ENHANCED: Server-side filtered tasks
+  getFilteredTasks: (filters = {}) => {
+    // Clean up filters and build query params
+    const cleanFilters = {}
+    
+    // Only include non-empty/non-default values
+    if (filters.platform && filters.platform !== 'all') cleanFilters.platform = filters.platform
+    if (filters.status && filters.status !== 'all') cleanFilters.status = filters.status
+    if (filters.difficulty && filters.difficulty !== 'all') cleanFilters.difficulty = filters.difficulty
+    if (filters.search && filters.search.trim()) cleanFilters.search = filters.search.trim()
+    if (filters.dateFrom) cleanFilters.dateFrom = filters.dateFrom
+    if (filters.dateTo) cleanFilters.dateTo = filters.dateTo
+    if (filters.sortBy) cleanFilters.sortBy = filters.sortBy
+    if (filters.sortOrder) cleanFilters.sortOrder = filters.sortOrder
+    if (filters.page && filters.page > 1) cleanFilters.page = filters.page
+    if (filters.limit && filters.limit !== 20) cleanFilters.limit = filters.limit
+    
+    const params = new URLSearchParams(cleanFilters)
+    return api.get(`/tasks/filtered?${params}`)
+  },
+  
+  // 🆕 ENHANCED: Server-side filtered user tasks  
+  getUserTasksFiltered: (filters = {}) => {
+    const cleanFilters = {}
+    
+    if (filters.status && filters.status !== 'all') cleanFilters.status = filters.status
+    if (filters.platform && filters.platform !== 'all') cleanFilters.platform = filters.platform
+    if (filters.difficulty && filters.difficulty !== 'all') cleanFilters.difficulty = filters.difficulty
+    if (filters.search && filters.search.trim()) cleanFilters.search = filters.search.trim()
+    if (filters.dateFrom) cleanFilters.dateFrom = filters.dateFrom
+    if (filters.dateTo) cleanFilters.dateTo = filters.dateTo
+    if (filters.sortBy) cleanFilters.sortBy = filters.sortBy
+    if (filters.sortOrder) cleanFilters.sortOrder = filters.sortOrder
+    if (filters.page && filters.page > 1) cleanFilters.page = filters.page
+    if (filters.limit && filters.limit !== 20) cleanFilters.limit = filters.limit
+    
+    const params = new URLSearchParams(cleanFilters)
+    return api.get(`/tasks/my-tasks?${params}`)
+  },
+
+  // 🔄 LEGACY: Keep existing methods for backward compatibility
+  getAvailableTasks: (filters = {}) => {
+    const params = new URLSearchParams()
+    if (filters.platform && filters.platform !== 'all') params.append('platform', filters.platform)
+    if (filters.difficulty) params.append('difficulty', filters.difficulty)
+    return api.get(`/tasks?${params}`)
+  },
+  
+  getUserTasks: (filters = {}) => {
+    const params = new URLSearchParams()
+    if (filters.status && filters.status !== 'all') params.append('status', filters.status)
+    return api.get(`/tasks/my-tasks?${params}`)
+  },
+  
+  // 🎯 Task Actions (Existing - keep as is)
+  getTaskStatus: (taskId) => api.get(`/tasks/${taskId}/status`),
+  startTask: (taskId) => api.post(`/tasks/${taskId}/start`),
+  verifyTask: (taskId, submissionData = {}) => 
+    api.post(`/tasks/${taskId}/verify`, { submissionData }),
+  
+  // 👨‍💼 Admin Functions (Existing - keep as is)
+  createTask: (taskData) => api.post('/tasks/create', taskData),
+  
+  // 🔍 System Health (Existing - keep as is)
+  checkHealth: () => api.get('/tasks/health'),
+
+  // 🆕 UTILITY: Get available platforms (for filter options)
+  getAvailablePlatforms: async () => {
+    try {
+      const response = await api.get('/tasks/filtered?limit=1')
+      return response.data.meta?.platformStats || []
+    } catch (error) {
+      console.error('Failed to get platforms:', error)
+      return []
+    }
+  },
+
+  // 🆕 UTILITY: Get task statistics (for dashboard)
+  getTaskStats: async (userId) => {
+    try {
+      const [availableResponse, userTasksResponse] = await Promise.all([
+        api.get('/tasks/filtered?status=available&limit=1'),
+        api.get('/tasks/my-tasks?limit=1')
+      ])
+      
+      return {
+        available: availableResponse.data.pagination?.total || 0,
+        userTotal: userTasksResponse.data.pagination?.total || 0,
+        completed: userTasksResponse.data.stats?.completed || 0,
+        inProgress: userTasksResponse.data.stats?.inProgress || 0,
+        totalEarnings: userTasksResponse.data.stats?.totalEarnings || 0
+      }
+    } catch (error) {
+      console.error('Failed to get task stats:', error)
+      return {
+        available: 0,
+        userTotal: 0, 
+        completed: 0,
+        inProgress: 0,
+        totalEarnings: 0
+      }
+    }
+  }
 }
+
 
 // Global Search API - Updated to handle standardized backend response
 export const searchAPI = {

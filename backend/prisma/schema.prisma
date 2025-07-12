@@ -52,6 +52,9 @@ model User {
   activeReferrals  Int       @default(0) @map("active_referrals") // Users who are still active
   referralEarnings Int       @default(0) @map("referral_earnings") // Gumballs earned from referrals
 
+  twitterUserId    String?   @map("twitter_user_id")  // User's Twitter ID
+  twitterSetupAt   DateTime? @map("twitter_setup_at") // When they connected
+
   // Relations
   passwordResetTokens PasswordResetToken[]
   verificationCodes EmailVerificationCode[]
@@ -85,6 +88,8 @@ model User {
   referralRewards  ReferralReward[]
   referredRewards ReferralReward[] @relation("ReferredRewards")
 
+  UserTask UserTask[]
+  
   // INDEXES FOR SEARCH PERFORMANCE
   @@index([firstName])           // Index for firstName searches
   @@index([lastName])            // Index for lastName searches  
@@ -98,8 +103,10 @@ model User {
   @@index([lastSeen])            // For activity tracking
   @@index([referredBy])          // For referral chain queries (referralCode already has @unique)
   @@index([referralCode])
-   @@index([profileCompleted])
+  @@index([profileCompleted])
+  @@index([twitterUserId]) // Index for quick lookups
   @@map("users")
+  
 }
 
 // Referral System
@@ -175,6 +182,104 @@ model EmailVerificationCode {
   @@index([email, isUsed])
   @@map("email_verification_codes")
 }
+
+// Platform model (Twitter, YouTube, Telegram)
+model Platform {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique // "Twitter", "YouTube", "Telegram"
+  iconUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  tasks     Task[]
+  
+  @@map("platforms")
+}
+
+// Task model
+model Task {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  platformId  String   @map("platform_id") @db.ObjectId
+  type        String   // "follow", "like", "retweet", "comment", "subscribe", "watch"
+  title       String
+  description String
+  
+  // Target information (who to follow, what to like, etc.)
+  target      Json     // { handle: "@username", tweetId: "123", videoId: "abc", etc. }
+  
+  // Reward information
+  reward      Int      // Gumballs to award
+  currency    String   @default("Gumballs")
+  
+  // Task properties
+  difficulty  Int      @default(1) // 1-5 scale
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+  
+  // Requirements (optional)
+  requirements Json?   // Array of requirements like account age, follower count, etc.
+  
+  // Verification settings
+  verificationMethod String @default("api") // "api", "screenshot", "manual"
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  platform    Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  userTasks   UserTask[]
+  
+  @@index([platformId])
+  @@index([type])
+  @@index([isActive])
+  @@index([difficulty])
+  @@index([createdAt])
+  @@index([isActive, reward])     // For sorting
+  @@index([isActive, difficulty])         // For difficulty filter
+  @@index([isActive, createdAt])         // For date sorting
+  @@index([platformId, isActive])        // For platform filter
+  @@index([title, description])          // For search
+  @@map("tasks")
+}
+
+// User task completion tracking
+model UserTask {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @map("user_id") @db.ObjectId
+  taskId     String   @map("task_id") @db.ObjectId
+  
+  // Task progress
+  status     String   @default("available") // "available", "in_progress", "completed", "failed", "expired"
+  startedAt  DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  
+  // Verification data
+  submissionData   Json?    // User-submitted data (username, tweet ID, etc.)
+  verificationData Json?    // API verification response
+  
+  // Manual verification (if needed)
+  verifiedBy       String?  @map("verified_by") @db.ObjectId
+  verificationNote String?  @map("verification_note")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, taskId])
+  @@index([userId])
+  @@index([taskId])
+  @@index([status])
+  @@index([completedAt])
+  @@index([userId, status])              // For status filter
+  @@index([userId, completedAt])         // For date filter
+  @@index([taskId, userId])              // For joins
+  @@map("user_tasks")
+}
+
 
 // ===================================
 // FRIENDS SYSTEM

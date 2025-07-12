@@ -12,7 +12,7 @@
             <div class="bg-linear-to-tr from-[#29FF03]/20 to-[#082CFC]/20 rounded-lg p-6 border border-purple-500/20">
               <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <p class="text-base text-white/80 mb-1">Total Earned</p>
+                  <p class="text-base text-white/80 mb-1">Total Gumballs</p>
                   <p class="text-3xl font-bold flex items-center  text-yellow-400">
                     {{ totalEarnings.toLocaleString() }} <img src="@/components/icons/gumball.png" class="inline size-10">
                   </p>
@@ -33,7 +33,7 @@
 
           <!-- Sticky Tab Navigation -->
           <div class="sticky top-0 z-20 mb-6 bg-[#262624]">
-            <div class="flex space-x-1 bg-[#030712]/20 p-1 rounded-lg border border-white/10">
+            <div class="flex space-x-1 bg-[#1a1a1a] p-1 rounded-lg border border-white/10">
               <button
                 @click="activeTab = 'referrals'"
                 :class="[
@@ -65,6 +65,7 @@
               v-if="activeTab === 'referrals'"
               @earnings-updated="handleEarningsUpdate"
               @referral-data-loaded="updatePeriodEarnings"
+              class="sticky top-0"
             />
             
             <TasksDashboard 
@@ -214,7 +215,7 @@
           </div>
         </div>
         <div v-else class="hidden lg:flex lg:flex-1 max-w-sm">
-            <div class="w-full p-6 bg-[#212121] sticky top-0 rounded-2xl h-fit">
+            <div class="w-full p-6 bg-[#030712]/20 sticky top-0 rounded-2xl h-fit">
                 <!-- Header -->
                 <div class="flex items-center gap-3 mb-6">
                     <div class="size-10 bg-[#12BE32]/20 rounded-full flex items-center justify-center">
@@ -279,7 +280,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import ReferralsDashboard from '@/components/ReferralsDashboard.vue'
 import TasksDashboard from '@/components/TasksDashboard.vue'
@@ -297,10 +298,11 @@ const monthlyEarnings = ref(0)
 
 // Computed property that automatically updates when authStore.user changes
 const currentUserGumballs = computed(() => authStore.user?.gumballs || 0)
+const currentUserLevel = computed(() => authStore.user?.level || 'Novice')
 
-// Watch for changes in user gumballs and update display
-watch(currentUserGumballs, (newGumballs) => {
-  console.log('User gumballs changed to:', newGumballs)
+// 🎯 FIXED: Watch for changes in user gumballs and update display immediately
+watch(currentUserGumballs, (newGumballs, oldGumballs) => {
+  console.log(`👀 Gumball change detected: ${oldGumballs} → ${newGumballs}`)
   totalEarnings.value = newGumballs
 }, { immediate: true })
 
@@ -311,7 +313,7 @@ onMounted(async () => {
 
 async function loadEarningsData() {
   try {
-    console.log('Loading earnings data...')
+    console.log('🔄 Loading earnings data...')
     
     // First refresh user data to get latest gumballs
     await authStore.refreshUser()
@@ -320,77 +322,101 @@ async function loadEarningsData() {
     const currentUser = authStore.user
     if (currentUser) {
       totalEarnings.value = currentUser.gumballs || 0
-      console.log('Initial gumballs loaded:', totalEarnings.value)
+      console.log(`💰 Initial gumballs loaded: ${totalEarnings.value}`)
     }
     
     // Weekly/monthly earnings will be calculated when referral data loads
     // from the referral-data-loaded event
     
   } catch (error) {
-    console.error('Error loading earnings data:', error)
+    console.error('❌ Error loading earnings data:', error)
   }
 }
 
-// Handle earnings updates from child components
-async function handleEarningsUpdate(newEarnings) {
-  console.log('Earnings update requested:', newEarnings)
+// 🎯 IMPROVED: Handle earnings updates from child components
+async function handleEarningsUpdate(newEarningsOrRefresh) {
+  console.log('💰 Earnings update requested:', newEarningsOrRefresh)
   
-  // Refresh user data from server to get latest gumballs
-  const refreshResult = await authStore.refreshUser()
-  
-  if (refreshResult.success) {
-    totalEarnings.value = authStore.user.gumballs || 0
-    console.log('Earnings updated to:', totalEarnings.value)
-  } else {
-    console.error('Failed to refresh user data:', refreshResult.error)
-    // Fallback to the provided value
-    totalEarnings.value = newEarnings
+  try {
+    // Always refresh user data from server to get latest gumballs
+    console.log('🔄 Refreshing user data from server...')
+    const refreshResult = await authStore.refreshUser()
+    
+    if (refreshResult.success && authStore.user) {
+      const newGumballs = authStore.user.gumballs || 0
+      totalEarnings.value = newGumballs
+      console.log(`✅ Earnings updated from server: ${newGumballs}`)
+      
+      // Force reactive update
+      await nextTick()
+      
+    } else {
+      console.error('❌ Failed to refresh user data:', refreshResult.error)
+      
+      // Fallback: use provided value if it's a number
+      if (typeof newEarningsOrRefresh === 'number') {
+        totalEarnings.value = newEarningsOrRefresh
+        console.log(`📝 Using provided fallback value: ${newEarningsOrRefresh}`)
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error handling earnings update:', error)
+    
+    // Last resort fallback
+    if (typeof newEarningsOrRefresh === 'number') {
+      totalEarnings.value = newEarningsOrRefresh
+    }
   }
 }
 
 // Calculate weekly and monthly earnings from referral data
+function handleReferralDataLoaded(referralData) {
+  console.log('📊 Referral data loaded, calculating period earnings')
+  calculatePeriodEarnings(referralData)
+}
+
 function calculatePeriodEarnings(referralData) {
   if (!referralData.referralRewards || !Array.isArray(referralData.referralRewards)) {
-    return { weekly: 0, monthly: 0 }
+    console.log('No referral rewards data available')
+    return
   }
-
+  
   const now = new Date()
   const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-  let weeklyTotal = 0
-  let monthlyTotal = 0
-
-  referralData.referralRewards.forEach(reward => {
-    const rewardDate = new Date(reward.createdAt)
-    const amount = reward.amount || 0
-
-    if (rewardDate >= oneWeekAgo) {
-      weeklyTotal += amount
-    }
-    if (rewardDate >= oneMonthAgo) {
-      monthlyTotal += amount
-    }
-  })
-
-  return { weekly: weeklyTotal, monthly: monthlyTotal }
-}
-
-// Listen for referral data updates to recalculate period earnings
-function updatePeriodEarnings(referralData) {
-  console.log('Updating period earnings from referral data')
-  const periodEarnings = calculatePeriodEarnings(referralData)
-  weeklyEarnings.value = periodEarnings.weekly
-  monthlyEarnings.value = periodEarnings.monthly
   
-  console.log('Period earnings calculated:', periodEarnings)
+  // Calculate weekly earnings
+  weeklyEarnings.value = referralData.referralRewards
+    .filter(reward => new Date(reward.createdAt) >= oneWeekAgo)
+    .reduce((sum, reward) => sum + reward.amount, 0)
+  
+  // Calculate monthly earnings
+  monthlyEarnings.value = referralData.referralRewards
+    .filter(reward => new Date(reward.createdAt) >= oneMonthAgo)
+    .reduce((sum, reward) => sum + reward.amount, 0)
+  
+  console.log(`📊 Period earnings calculated - Weekly: ${weeklyEarnings.value}, Monthly: ${monthlyEarnings.value}`)
 }
 
-// Periodically refresh user data in case earnings changed from other sources
-setInterval(async () => {
-  if (authStore.isAuthenticated) {
-    console.log('Periodic refresh of user data...')
+// 🎯 BONUS: Add a method to force refresh user data
+async function forceRefreshUserData() {
+  console.log('🔄 Force refreshing user data...')
+  
+  try {
     await authStore.refreshUser()
+    
+    if (authStore.user) {
+      totalEarnings.value = authStore.user.gumballs || 0
+      console.log(`✅ Force refresh complete: ${totalEarnings.value} gumballs`)
+    }
+  } catch (error) {
+    console.error('❌ Force refresh failed:', error)
   }
-}, 60000) // Refresh every minute
+}
+
+// Number formatting helper
+function formatNumber(num) {
+  if (num === null || num === undefined) return '0'
+  return new Intl.NumberFormat().format(num)
+}
 </script>

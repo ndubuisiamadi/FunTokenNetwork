@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { friendsAPI, uploadAPI } from '@/services/api'
@@ -34,29 +34,18 @@ const groupAvatarFile = ref(null)
 const avatarInput = ref(null)
 const uploadingAvatar = ref(false)
 
-// Computed
-const conversations = computed(() => messagesStore.currentConversations)
+// ENHANCED: Force reactive conversations with watcher
+const conversations = computed(() => {
+  // This will trigger when messagesStore.lastConversationUpdate changes
+  return messagesStore.currentConversations
+})
+
 const currentConversation = computed(() => messagesStore.currentConversation)
 
-const directUnreadCount = computed(() => {
-  if (!messagesStore.conversations) return 0
-  
-  return messagesStore.conversations
-    .filter(conv => !conv.isGroup)
-    .reduce((total, conversation) => {
-      return total + (conversation.unreadCount || 0)
-    }, 0)
-})
+// ENHANCED: Reactive unread counts with watchers
+const directUnreadCount = computed(() => messagesStore.directUnreadCount)
+const groupUnreadCount = computed(() => messagesStore.groupUnreadCount)
 
-const groupUnreadCount = computed(() => {
-  if (!messagesStore.conversations) return 0
-  
-  return messagesStore.conversations
-    .filter(conv => conv.isGroup)
-    .reduce((total, conversation) => {
-      return total + (conversation.unreadCount || 0)
-    }, 0)
-})
 
 const filteredFriends = computed(() => {
   if (!friendsSearchQuery.value.trim()) {
@@ -76,6 +65,25 @@ const canCreateConversation = computed(() => {
     return selectedUsers.value.length === 1
   } else {
     return selectedUsers.value.length >= 1 && groupName.value.trim().length > 0
+  }
+})
+
+watch(conversations, (newConversations, oldConversations) => {
+  if (newConversations && oldConversations) {
+    console.log('🔄 ConversationSidebar: Conversations updated', {
+      count: newConversations.length,
+      hasChanges: newConversations !== oldConversations
+    })
+  }
+}, { deep: true })
+
+// NEW: Watch for unread count changes
+watch([directUnreadCount, groupUnreadCount], ([newDirect, newGroup], [oldDirect, oldGroup]) => {
+  if (newDirect !== oldDirect || newGroup !== oldGroup) {
+    console.log('🔄 ConversationSidebar: Unread counts updated', {
+      direct: `${oldDirect} → ${newDirect}`,
+      group: `${oldGroup} → ${newGroup}`
+    })
   }
 })
 
@@ -112,6 +120,7 @@ const formatTime = (date) => {
 }
 
 const selectConversation = async (conversation) => {
+  console.log('🎯 ConversationSidebar: Selecting conversation', conversation.id)
   const result = await messagesStore.selectConversation(conversation.id)
   if (result.success) {
     emit('conversationSelected', conversation)
@@ -287,6 +296,7 @@ const getConversationAvatar = (conversation) => {
   return conversation.otherParticipant?.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg'
 }
 
+// ENHANCED: Better conversation preview with real-time updates
 const getConversationPreview = (conversation) => {
   if (!conversation.lastMessage && (!conversation.lastMessageData?.mediaUrls || conversation.lastMessageData.mediaUrls.length === 0)) {
     return 'No messages yet'
@@ -304,6 +314,9 @@ const getConversationPreview = (conversation) => {
 
   return conversation.lastMessage || 'No messages yet'
 }
+
+// NEW: Force refresh conversations periodically as fallback
+let refreshInterval = null
 
 const isOnline = (conversation) => {
   if (conversation.isGroup) return false
@@ -333,89 +346,154 @@ const handleConversationClick = async (conversation) => {
     emit('conversation-selected', conversation)
   }
 }
+
+onMounted(() => {
+  console.log('🔄 ConversationSidebar: Component mounted, setting up real-time updates')
+  
+  // Set up periodic refresh as fallback (every 30 seconds)
+  refreshInterval = setInterval(() => {
+    if (!messagesStore.loading && conversations.value.length > 0) {
+      console.log('🔄 ConversationSidebar: Periodic conversation refresh')
+      // Only refresh if we're not actively in a conversation to avoid disruption
+      if (!currentConversation.value) {
+        messagesStore.fetchConversations()
+      }
+    }
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+})
 </script>
 
 <template>
-  <aside class="w-full md:w-80 bg-[#262624] md:bg-[#101010] flex flex-col" :class="isMobile ? 'h-full' : 'rounded-l-2xl'">
+  <aside class="w-full md:w-80 bg-[#262624] md:bg-[#030712]/20 flex flex-col" :class="isMobile ? 'h-full' : 'rounded-l-2xl'">
     <!-- Tab-Style Header -->
-    <div class="px-3 md:p-4 border-b border-white/10">
+    <div class="px-3 pb-3 md:p-4 border-b border-white/10">
       <!-- Mobile Header -->
-      <div v-if="isMobile" class="flex items-center justify-between mb-4">
-        <h1 class="text-[1.8em]! font-semibold text-[#00BFFF]">Messages</h1>
-        <button 
-          @click="openNewConversationModal"
-          class="w-8 h-8 bg-[#055CFF] hover:bg-[#0550e5] rounded-lg flex items-center justify-center transition-colors" 
-          title="New chat"
-        >
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
-        </button>
+      <div v-if="isMobile" class="flex items-center justify-between my-2">
+        <h1 class="text-[1.8em]! font-semibold text-[#00BFFF]">{{ messagesStore.selectedChatType === 'direct' ? 'Chats' : 'Groups' }}</h1>
+        <!-- Chat Type Tabs with enhanced unread badges -->
+        <div class="flex bg-[#2C2F36] rounded-full p-1">
+          <button
+            @click="messagesStore.selectedChatType = 'direct'"
+            :class="[
+              'flex-1 size-10 p-3 rounded-full text-sm font-medium transition-all duration-200 relative cursor-pointer',
+              messagesStore.selectedChatType === 'direct'
+                ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
+            ]"
+          >
+            <div class="flex items-center justify-center gap-2">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+              
+              <div 
+                v-if="directUnreadCount > 0"
+                class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
+                :key="`direct-${directUnreadCount}`"
+              >
+                {{ formatUnreadCount(directUnreadCount) }}
+              </div>
+            </div>
+          </button>
+          
+          <button
+            @click="messagesStore.selectedChatType = 'group'"
+            :class="[
+              'flex-1 size-10 p-3 rounded-full text-sm font-medium transition-all duration-200 relative cursor-pointer',
+              messagesStore.selectedChatType === 'group'
+                ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
+            ]"
+          >
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+              <div 
+                v-if="groupUnreadCount > 0"
+                class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
+                :key="`group-${groupUnreadCount}`"
+              >
+                {{ formatUnreadCount(groupUnreadCount) }}
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
 
-      <!-- Chat Type Tabs -->
-      <div class="flex bg-[#2C2F36] rounded-xl p-1 mb-4">
-        <button
-          @click="messagesStore.selectedChatType = 'direct'"
-          :class="[
-            'flex-1 py-1.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 relative',
-            messagesStore.selectedChatType === 'direct'
-              ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
-              : 'text-white/70 hover:text-white hover:bg-white/5'
-          ]"
-        >
-          <div class="flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-            <span>Chats</span>
-            <div 
-              v-if="directUnreadCount > 0"
-              class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
-            >
-              {{ formatUnreadCount(directUnreadCount) }}
-            </div>
-          </div>
-        </button>
-        
-        <button
-          @click="messagesStore.selectedChatType = 'group'"
-          :class="[
-            'flex-1 py-1.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 relative',
-            messagesStore.selectedChatType === 'group'
-              ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
-              : 'text-white/70 hover:text-white hover:bg-white/5'
-          ]"
-        >
-          <div class="flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            <span>Groups</span>
-            <div 
-              v-if="groupUnreadCount > 0"
-              class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
-            >
-              {{ formatUnreadCount(groupUnreadCount) }}
-            </div>
-          </div>
-        </button>
-      </div>
-
+      
       <!-- Desktop New Chat Button -->
       <div v-if="!isMobile" class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-white">
-          {{ messagesStore.selectedChatType === 'direct' ? 'Direct Messages' : 'Group Chats' }}
-        </h2>
-        <button 
-          @click="openNewConversationModal"
-          class="w-8 h-8 bg-[#055CFF] hover:bg-[#0550e5] rounded-lg flex items-center justify-center transition-colors" 
-          title="New chat"
-        >
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
-        </button>
+        <h1 class="!text-3xl font-semibold text-[#00BFFF]">
+          {{ messagesStore.selectedChatType === 'direct' ? 'Chats' : 'Groups' }}
+        </h1>
+
+        <div class="flex gap-2 items-center">
+          
+          <!-- Chat Type Tabs -->
+          <div class="flex bg-[#2C2F36] rounded-full p-1">
+            <button
+              @click="messagesStore.selectedChatType = 'direct'"
+              :class="[
+                'flex-1 py-1.5 px-2 rounded-full text-sm font-medium transition-all duration-200 relative cursor-pointer',
+                messagesStore.selectedChatType === 'direct'
+                  ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              ]"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                
+                <div 
+                  v-if="directUnreadCount > 0"
+                  class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
+                >
+                  {{ formatUnreadCount(directUnreadCount) }}
+                </div>
+              </div>
+            </button>
+            
+            <button
+              @click="messagesStore.selectedChatType = 'group'"
+              :class="[
+                'flex-1 py-1.5 px-2 rounded-full text-sm font-medium transition-all duration-200 relative cursor-pointer',
+                messagesStore.selectedChatType === 'group'
+                  ? 'bg-linear-to-tr from-[#055DFF] to-[#00BFFF] text-white shadow-lg'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              ]"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <div 
+                  v-if="groupUnreadCount > 0"
+                  class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
+                >
+                  {{ formatUnreadCount(groupUnreadCount) }}
+                </div>
+              </div>
+            </button>
+          </div>
+            <button 
+              @click="openNewConversationModal"
+              class="w-8 h-8 bg-linear-to-tr from-[#055DFF] to-[#00BFFF] hover:bg-[#0550e5] rounded-full flex items-center justify-center transition-colors cursor-pointer" 
+              title="New chat"
+            >
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+            </button>
+          </div>
+        
       </div>
       
       <!-- Search -->
@@ -428,7 +506,7 @@ const handleConversationClick = async (conversation) => {
           @input="handleSearch(searchInput)"
           type="text"
           placeholder="Search conversations..."
-          class="w-full bg-[#2a2a2a] rounded-lg pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#055CFF] text-white placeholder-white/50"
+          class="w-full bg-[#2a2a2a] rounded-md pl-10 pr-8 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#055CFF] text-white placeholder-white/50"
         >
         <button 
           v-if="searchInput"
@@ -440,6 +518,17 @@ const handleConversationClick = async (conversation) => {
           </svg>
         </button>
       </div>
+
+      <button 
+    v-if="isMobile"
+      @click="openNewConversationModal"
+      class="size-12 p-2 bg-linear-to-tr from-[#055DFF] to-[#00BFFF] hover:bg-[#0550e5] rounded-full flex items-center justify-center transition-colors cursor-pointer absolute right-6 bottom-20" 
+      title="New chat"
+    >
+      <svg class=" text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+    </button>
     </div>
     
     <!-- Loading State -->
@@ -467,10 +556,10 @@ const handleConversationClick = async (conversation) => {
     
     <!-- Conversations List -->
     <div v-else class="flex-1 overflow-y-auto scrollbar-hide">
-      <ul class="divide-y divide-white/5">
+      <ul class="divide-y divide-white/5" :key="`conversations-${messagesStore.lastConversationUpdate}`">
         <li 
           v-for="conversation in conversations" 
-          :key="conversation.id" 
+          :key="`${conversation.id}-${conversation.lastActivity}-${conversation.unreadCount}`"
           @click="selectConversation(conversation)"
           :class="[
             'flex items-center gap-3 py-4 px-3 hover:bg-[#2C2F36] cursor-pointer transition-colors',
@@ -494,49 +583,47 @@ const handleConversationClick = async (conversation) => {
               <h3 class="font-medium text-sm text-white truncate">{{ getConversationName(conversation) }}</h3>
               <div class="flex items-center gap-2">
                 <span class="text-[10px] text-white/50">{{ formatTime(conversation.lastMessageTime) }}</span>
-                
-                
               </div>
             </div>
             
-            <!-- Enhanced Preview -->
+            <!-- Enhanced Preview with real-time updates -->
              <div class="flex justify-between gap-3 items-center">
-              <p class="text-sm text-white/60 truncate">
-              {{ getConversationPreview(conversation) }}
-            </p>
-            <!-- Message Status for Sender -->
-                <div v-if="isLastMessageFromSender(conversation)" class="flex-shrink-0">
-                  <div v-if="getLastMessageStatus(conversation) === 'sending'" 
-                       class="w-3 h-3 border border-white/30 border-t-transparent rounded-full animate-spin"
-                       title="Sending..."></div>
-                  <svg v-else-if="getLastMessageStatus(conversation) === 'sent'" class="w-3 h-3 text-white/50" fill="currentColor" viewBox="0 0 20 20">
+              <p class="text-xs text-white/60 truncate">
+                {{ getConversationPreview(conversation) }}
+              </p>
+              <!-- Message Status for Sender -->
+              <div v-if="isLastMessageFromSender(conversation)" class="flex-shrink-0">
+                <div v-if="getLastMessageStatus(conversation) === 'sending'" 
+                     class="w-3 h-3 border border-white/30 border-t-transparent rounded-full animate-spin"
+                     title="Sending..."></div>
+                <svg v-else-if="getLastMessageStatus(conversation) === 'sent'" class="w-3 h-3 text-white/50" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <div v-else-if="getLastMessageStatus(conversation) === 'delivered'" class="flex">
+                  <svg class="w-3 h-3 text-white/70" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                   </svg>
-                  <div v-else-if="getLastMessageStatus(conversation) === 'delivered'" class="flex">
-                    <svg class="w-3 h-3 text-white/70" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    <svg class="w-3 h-3 text-white/70 -ml-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                  </div>
-                  <svg v-else-if="getLastMessageStatus(conversation) === 'read'" class="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <svg class="w-3 h-3 text-white/70 -ml-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                   </svg>
-                  <svg v-else-if="getLastMessageStatus(conversation) === 'failed'" class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
                 </div>
-                
-                <!-- Unread Count -->
-                <div 
-                  v-if="conversation.unreadCount > 0"
-                  class="bg-[#055CFF] text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold"
-                >
-                  {{ formatUnreadCount(conversation.unreadCount) }}
-                </div>
+                <svg v-else-if="getLastMessageStatus(conversation) === 'read'" class="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <svg v-else-if="getLastMessageStatus(conversation) === 'failed'" class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              
+              <!-- ENHANCED: Unread Count with animation -->
+              <div 
+                v-if="conversation.unreadCount > 0"
+                class="bg-[#055CFF] text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold transition-all duration-200"
+                :key="`unread-${conversation.id}-${conversation.unreadCount}`"
+              >
+                {{ formatUnreadCount(conversation.unreadCount) }}
+              </div>
              </div>
-            
           </div>
         </li>
       </ul>
@@ -553,7 +640,7 @@ const handleConversationClick = async (conversation) => {
         class="bg-[#1A1A1A] rounded-2xl w-full max-w-lg h-[600px] flex flex-col overflow-hidden"
       >
         <!-- Fixed Header -->
-        <div class="flex items-center justify-between p-6 border-b border-white/10">
+        <div class="flex items-center justify-between px-6 py-3 border-b border-white/10">
           <h3 class="text-xl font-semibold text-white">New Conversation</h3>
           <button 
             @click="closeNewConversationModal"
@@ -571,13 +658,13 @@ const handleConversationClick = async (conversation) => {
               <button
                 @click="conversationType = 'direct'"
                 :class="[
-                  'flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors',
+                  'flex-1 flex p-2 justify-center items-center gap-2 rounded-lg text-xs font-medium transition-colors',
                   conversationType === 'direct' 
                     ? 'bg-[#055CFF] text-white' 
                     : 'bg-[#2C2F36] text-white/70 hover:text-white hover:bg-[#3C3F46]'
                 ]"
               >
-                <svg class="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 Direct Chat
@@ -585,13 +672,13 @@ const handleConversationClick = async (conversation) => {
               <button
                 @click="conversationType = 'group'"
                 :class="[
-                  'flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-colors',
+                  'flex-1 flex p-2 justify-center items-center gap-2 py-3 px-4 rounded-lg text-xs font-medium transition-colors',
                   conversationType === 'group' 
                     ? 'bg-[#055CFF] text-white' 
                     : 'bg-[#2C2F36] text-white/70 hover:text-white hover:bg-[#3C3F46]'
                 ]"
               >
-                <svg class="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
                 Group Chat
@@ -655,7 +742,7 @@ const handleConversationClick = async (conversation) => {
             </div>
 
             <!-- Friends Selection -->
-            <div class="space-y-4">
+            <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <h4 class="text-sm font-medium text-white/90">
                   {{ conversationType === 'direct' ? 'Select Friend' : 'Add Members' }}
@@ -673,7 +760,7 @@ const handleConversationClick = async (conversation) => {
                   v-model="friendsSearchQuery"
                   type="text"
                   placeholder="Search friends..."
-                  class="w-full bg-[#2C2F36] border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-white/50 focus:outline-none focus:border-[#055CFF] text-sm"
+                  class="w-full bg-[#2C2F36] border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-white/50 focus:outline-none focus:border-[#055CFF] text-xs"
                 />
               </div>
 
@@ -685,9 +772,7 @@ const handleConversationClick = async (conversation) => {
               </div>
 
               <div v-else-if="availableFriends.length === 0" class="text-center py-8">
-                <svg class="w-12 h-12 mx-auto mb-3 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                </svg>
+                <img src="@/components/icons/friends-line.svg" class="w-12 h-12 mx-auto opacity-30">
                 <p class="text-sm text-white/60 mb-2">No friends yet</p>
                 <p class="text-xs text-white/40">Add some friends first to start conversations</p>
               </div>
@@ -741,7 +826,7 @@ const handleConversationClick = async (conversation) => {
           <div class="flex gap-3">
             <button 
               @click="closeNewConversationModal"
-              class="flex-1 py-3 px-4 bg-[#2C2F36] text-white rounded-lg hover:bg-[#3C3F46] transition-colors font-medium"
+              class="flex-1 p-2 bg-[#2C2F36] text-white rounded-lg hover:bg-[#3C3F46] transition-colors font-medium"
             >
               Cancel
             </button>
@@ -749,7 +834,7 @@ const handleConversationClick = async (conversation) => {
               @click="createConversation"
               :disabled="!canCreateConversation || uploadingAvatar"
               :class="[
-                'flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200',
+                'flex-1 p-2 rounded-lg font-medium transition-all duration-200',
                 canCreateConversation && !uploadingAvatar
                   ? 'bg-[#055CFF] text-white hover:bg-[#0550e5]' 
                   : 'bg-white/10 text-white/40 cursor-not-allowed'
@@ -761,5 +846,7 @@ const handleConversationClick = async (conversation) => {
         </div>
       </div>
     </div>
+
+    
   </aside>
 </template>

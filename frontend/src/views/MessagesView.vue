@@ -114,7 +114,7 @@ onUnmounted(() => {
 <!-- Rest of template stays the same -->
 <template>
   <!-- Desktop Layout (md and above) -->
-  <div class="hidden md:flex h-full text-white">
+  <div class="hidden md:flex h-full p-3 text-white">
     <!-- Sidebar -->
     <ConversationSidebar 
       :is-mobile="false"

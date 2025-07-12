@@ -278,7 +278,8 @@ const loadRoutes = () => {
     { path: '/api/upload', file: './src/routes/upload', name: 'upload' },
     { path: '/api/messages', file: './src/routes/messages', name: 'messages' },
     { path: '/api/leaderboard', file: './src/routes/leaderboard', name: 'leaderboard' },
-    { path: '/api/search', file: './src/routes/search', name: 'search' }
+    { path: '/api/search', file: './src/routes/search', name: 'search' },
+    { path: '/api/tasks', file: './src/routes/tasks', name: 'tasks' }
 
   ]
 

@@ -3,14 +3,14 @@
     <!-- Mobile Version -->
     <div class="md:hidden">
       <!-- Tab Navigation -->
-      <div class="bg-[#212121] rounded-t-2xl border-b border-white/10">
+      <div class="rounded-t-2xl border-b border-white/10">
         <div class="flex">
           <button 
             @click="activeTab = 'leaderboard'"
             :class="[
               'flex-1 py-4 px-6 text-center font-medium transition-colors relative',
               activeTab === 'leaderboard' 
-                ? 'text-[#055CFF] bg-[#055CFF]/10' 
+                ? 'text-[#FCCA00]' 
                 : 'text-white/70 hover:text-white'
             ]"
           >
@@ -22,7 +22,7 @@
             </div>
             <div 
               v-if="activeTab === 'leaderboard'"
-              class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#055CFF]"
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FCCA00]"
             ></div>
           </button>
           <button 
@@ -30,7 +30,7 @@
             :class="[
               'flex-1 py-4 px-6 text-center font-medium transition-colors relative',
               activeTab === 'stats' 
-                ? 'text-[#055CFF] bg-[#055CFF]/10' 
+                ? 'text-[#FCCA00]' 
                 : 'text-white/70 hover:text-white'
             ]"
           >
@@ -43,18 +43,18 @@
             </div>
             <div 
               v-if="activeTab === 'stats'"
-              class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#055CFF]"
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FCCA00]"
             ></div>
           </button>
         </div>
       </div>
 
       <!-- Mobile Content -->
-      <div class="bg-[#212121] rounded-b-2xl overflow-hidden" style="height: calc(100vh - 180px);">
+      <div class="rounded-b-2xl overflow-hidden" style="height: calc(100vh - 180px);">
         <!-- Leaderboard Tab Content -->
         <div v-if="activeTab === 'leaderboard'" class="h-full flex flex-col">
           <!-- Mobile Filters and Search -->
-          <div class="p-4 border-b border-white/10 space-y-3">
+          <div class="py-4 border-b border-white/10 space-y-3">
             <!-- Period Filters -->
             <div class="flex items-center gap-2 overflow-x-auto">
               <button 
@@ -64,7 +64,7 @@
                 :class="[
                   'px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 whitespace-nowrap',
                   selectedPeriod === option.value 
-                    ? 'bg-[#055CFF] text-white' 
+                    ? 'bg-linear-to-tr from-[#FCCA00] to-[#82681A] text-white' 
                     : 'text-white/70 hover:text-white bg-[#1a1a1a]'
                 ]"
               >
@@ -167,7 +167,7 @@
         </div>
 
         <!-- Stats Tab Content -->
-        <div v-else-if="activeTab === 'stats'" class="h-full overflow-auto p-4">
+        <div v-else-if="activeTab === 'stats'" class="h-full overflow-auto py-4">
           <UserRankCard 
             :user-rank-info="leaderboardStore.userRankInfo"
             :top-achievers="leaderboardStore.topAchievers"
@@ -315,11 +315,11 @@
               </div>
 
               <!-- Achievements -->
-              <div class="flex gap-1">
+              <!-- <div class="flex gap-1">
                 <svg v-for="achievement in user.achievements" :key="achievement" class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
-              </div>
+              </div> -->
             </div>
           </div>
 

@@ -119,7 +119,7 @@ const retryLoad = () => {
 
 <template>
   <!-- Outer wrapper ensures full screen height -->
-  <div class="h-full grow flex gap-8">
+  <div class="h-full grow flex gap-4">
     
     <!-- Scrollable Middle Column -->
     <div 

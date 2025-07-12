@@ -1,119 +1,276 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { tasksAPI } from '@/services/api'
+
+import doneIcon from '@/components/icons/done-filled.svg'
+import playIcon from '@/components/icons/play-filled.svg'
+import progressIcon from '@/components/icons/clock-filled.svg'
+import retryIcon from '@/components/icons/retry-filled.svg'
 
 const props = defineProps({
   task: {
     type: Object,
     required: true
-  },
-  userProgress: {
-    type: Object,
-    default: null
-  },
-  starting: {
-    type: Boolean,
-    default: false
-  },
-  completing: {
-    type: Boolean,
-    default: false
   }
 })
 
-const emit = defineEmits(['start', 'complete', 'verify'])
+const emit = defineEmits(['task-updated', 'task-completed', 'task-failed'])
 
-// Computed properties
-const isLoading = computed(() => {
-  return (props.starting || props.completing) && 
-         (props.task.status === 'available' || props.task.status === 'in-progress')
+// State
+const isStarting = ref(false)
+const isRetrying = ref(false)
+const isPolling = ref(false)
+const taskProgress = ref(null)
+const pollingInterval = ref(null)
+
+// Start polling when task is in progress
+watch(() => props.task.userStatus, (newStatus, oldStatus) => {
+  if (newStatus === 'in_progress') {
+    startPolling()
+  } else {
+    stopPolling()
+  }
 })
 
-const isDisabled = computed(() => {
-  return isLoading.value || 
-         props.task.status === 'completed' ||
-         props.task.status === 'pending-verification' ||
-         !props.task.isActive ||
-         (props.task.requirements && props.task.requirements.some(req => !req.met))
-})
+// Polling management
+const startPolling = () => {
+  if (isPolling.value) return // Already polling
+  
+  console.log(`🔄 Starting polling for task ${props.task.id}`)
+  isPolling.value = true
+  
+  // Poll every 3 seconds
+  pollingInterval.value = setInterval(async () => {
+    await checkTaskStatus()
+  }, 3000)
+  
+  // Stop polling after 70 seconds (safety measure)
+  setTimeout(() => {
+    if (isPolling.value) {
+      stopPolling()
+    }
+  }, 70000)
+}
 
-// Methods
-const handleAction = () => {
-  if (isDisabled.value) return
-
-  switch (props.task.status) {
-    case 'available':
-      emit('start', props.task)
-      break
-    case 'in-progress':
-      emit('complete', props.task)
-      break
-    case 'pending-verification':
-      emit('verify', props.task)
-      break
+const stopPolling = () => {
+  if (!isPolling.value) return
+  
+  console.log(`🛑 Stopping polling for task ${props.task.id}`)
+  isPolling.value = false
+  taskProgress.value = null
+  
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+    pollingInterval.value = null
   }
 }
 
-const getButtonText = () => {
-  if (isLoading.value) {
-    return props.starting ? 'Starting...' : 'Completing...'
-  }
-  
-  switch (props.task.status) {
-    case 'available':
-      return 'Start'
-    case 'in-progress':
-      return 'Complete'
-    case 'completed':
-      return 'Done'
-    case 'pending-verification':
-      return 'Pending'
-    default:
-      return 'Start'
+// Check task status via API
+const checkTaskStatus = async () => {
+  try {
+    const response = await tasksAPI.getTaskStatus(props.task.id)
+    
+    if (response.data.success) {
+      const { status, progress, reward, autoVerified } = response.data
+      
+      // Update progress
+      if (progress) {
+        taskProgress.value = progress
+      }
+      
+      // Check if status changed
+      if (status !== props.task.userStatus) {
+        console.log(`📊 Task ${props.task.id} status changed: ${props.task.userStatus} → ${status}`)
+        
+        if (status === 'completed') {
+          stopPolling()
+          emit('task-completed', {
+            taskId: props.task.id,
+            verified: true,
+            reward,
+            autoVerified,
+            message: `🎉 Task completed! You earned ${reward} gumballs! ${autoVerified ? '(Auto-verified)' : ''}`
+          })
+        } else if (status === 'failed') {
+          stopPolling()
+          emit('task-failed', {
+            taskId: props.task.id,
+            verified: false,
+            canRetry: true,
+            message: 'Task verification failed. You can retry this task.'
+          })
+        }
+        
+        // Emit status update
+        emit('task-updated', {
+          taskId: props.task.id,
+          status,
+          progress,
+          autoVerified
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Error checking task status:', error)
   }
 }
 
-const getButtonStyle = () => {
-  const baseClasses = 'size-8 sm:size-10 rounded-full font-medium text-xs sm:text-sm transition-all duration-200'
+// Task actions
+const startTask = async () => {
+isStarting.value = true
   
-  if (isDisabled.value) {
-    return `${baseClasses} bg-gray-600 text-gray-400 cursor-not-allowed`
+  try {
+    console.log('Starting task:', props.task.id)
+    const response = await tasksAPI.startTask(props.task.id)
+    
+    if (response.data.success) {
+      // ✨ AUTOMATICALLY OPEN TWITTER
+      openTwitterForTask()
+
+      // Task started successfully, polling will begin automatically
+      emit('task-updated', {
+        taskId: props.task.id,
+        status: 'in_progress',
+        message: 'Task started! Complete the action on Twitter - we\'ll check automatically.'
+      })
+    } else {
+      console.error('Failed to start task:', response.data.message)
+    }
+  } catch (error) {
+    console.error('Error starting task:', error)
+  } finally {
+    isStarting.value = false
   }
   
-  switch (props.task.status) {
-    case 'available':
-      return `${baseClasses} bg-[#12BE32] text-white hover:bg-[#0ea025] hover:scale-105`
-    case 'in-progress':
-      return `${baseClasses} bg-blue-600 text-white hover:bg-blue-700 hover:scale-105`
-    case 'pending-verification':
-      return `${baseClasses} bg-orange-600 text-white cursor-not-allowed`
-    case 'completed':
-      return `${baseClasses} bg-green-600 text-white cursor-not-allowed`
-    default:
-      return `${baseClasses} bg-gray-600 text-gray-400`
+}
+
+const retryTask = async () => {
+  isRetrying.value = true
+  
+  try {
+    console.log('Retrying task:', props.task.id)
+    const response = await tasksAPI.startTask(props.task.id)
+    
+    if (response.data.success) {
+      // ✨ AUTOMATICALLY OPEN TWITTER
+      openTwitterForTask()
+
+      // Task retry started, polling will begin automatically
+      emit('task-updated', {
+        taskId: props.task.id,
+        status: 'in_progress',
+        message: 'Task retry started! Complete the action on Twitter.',
+        isRetry: true
+      })
+    } else {
+      console.error('Failed to retry task:', response.data.message)
+    }
+  } catch (error) {
+    console.error('Error retrying task:', error)
+  } finally {
+    isRetrying.value = false
   }
 }
 
+// 🔗 Open Twitter automatically based on task type
+const openTwitterForTask = () => {
+  const task = props.task
+  let twitterUrl = 'https://x.com'
+  
+  try {
+    switch (task.type) {
+      case 'follow':
+        twitterUrl = `https://x.com/${task.target.username}`
+        break
+        
+      case 'like':
+      case 'retweet':
+      case 'comment':
+        if (task.target.tweetId) {
+          twitterUrl = `https://x.com/${task.target.username}/status/${task.target.tweetId}`
+        } else {
+          twitterUrl = `https://x.com/${task.target.username}`
+        }
+        break
+        
+      default:
+        twitterUrl = `https://x.com/${task.target.username}`
+    }
+    
+    console.log('🔗 Opening X:', twitterUrl)
+    window.open(twitterUrl, '_blank', 'noopener,noreferrer')
+    
+  } catch (error) {
+    console.error('Error opening Twitter:', error)
+    window.open('https://x.com', '_blank', 'noopener,noreferrer')
+  }
+}
+
+// Helper functions
 const getTaskTypeBadge = (type) => {
   const badges = {
     follow: 'bg-blue-500/20 text-blue-400',
-    like: 'bg-red-500/20 text-red-400',
-    comment: 'bg-green-500/20 text-green-400',
-    share: 'bg-purple-500/20 text-purple-400',
-    retweet: 'bg-purple-500/20 text-purple-400',
-    subscribe: 'bg-orange-500/20 text-orange-400',
-    watch: 'bg-red-500/20 text-red-400',
-    join: 'bg-blue-500/20 text-blue-400'
+    like: 'bg-pink-500/20 text-pink-400',
+    retweet: 'bg-green-500/20 text-green-400',
+    comment: 'bg-purple-500/20 text-purple-400',
+    subscribe: 'bg-red-500/20 text-red-400',
+    watch: 'bg-orange-500/20 text-orange-400',
+    join: 'bg-indigo-500/20 text-indigo-400'
   }
   return badges[type] || 'bg-gray-500/20 text-gray-400'
+}
+
+const getStatusBadge = (status) => {
+  const badges = {
+    available: 'bg-gray-500/20 text-gray-400',
+    in_progress: 'bg-yellow-500/20 text-yellow-400',
+    completed: 'bg-green-500/20 text-green-400',
+    failed: 'bg-red-500/20 text-red-400'
+  }
+  return badges[status] || 'bg-gray-500/20 text-gray-400'
+}
+
+const getStatusText = (status) => {
+  const texts = {
+    available: 'Available',
+    in_progress: 'In Progress',
+    completed: 'Completed',
+    failed: 'Failed'
+  }
+  return texts[status] || status
 }
 
 const getDifficultyColor = (difficulty) => {
   const colors = {
     1: 'bg-green-500 text-white',
     2: 'bg-yellow-500 text-black',
-    3: 'bg-red-500 text-white'
+    3: 'bg-orange-500 text-white',
+    4: 'bg-red-500 text-white',
+    5: 'bg-purple-500 text-white'
   }
   return colors[difficulty] || 'bg-gray-500 text-white'
+}
+
+const getStatusColor = (status) => {
+  const colors = {
+    available: 'bg-[linear-gradient(135deg,#055CFF_0%,#0066ff_50%,#00aaff_100%)] hover:shadow-[0_12px_35px_rgba(5,92,255,0.6),inset_0_2px_15px_rgba(255,255,255,0.4)]',
+    in_progress: 'bg-[linear-gradient(135deg,#CF8217_0%,#F7A73E_50%,#B05E00_100%)] hover:shadow-[0_12px_35px_rgba(207,161,23,0.6),inset_0_2px_15px_rgba(255,255,255,0.4)]',
+    completed: 'bg-[linear-gradient(135deg,#17CF45_0%,#3EF7A1_50%,#00B058_100%)] hover:shadow-[0_12px_35px_rgba(23,207,69,0.6),inset_0_2px_15px_rgba(255,255,255,0.4)]',
+    failed: 'bg-[linear-gradient(135deg,#CF3F17_0%,#F7633E_50%,#B01500_100%)] hover:shadow-[0_12px_35px_rgba(207,48,23,0.6),inset_0_2px_15px_rgba(255,255,255,0.4)]'
+  }
+  if (status === 'in_progress') {
+    return colors.in_progress
+  }
+  
+  return colors[status] || colors.available
+}
+
+const getRewardColor = (reward) => {
+  if (reward >= 15000) {
+    return 'text-[#FFCF00]'  
+  } else {
+    return 'text-green-500'   
+  }
 }
 
 const formatNumber = (num) => {
@@ -133,21 +290,50 @@ const getTimeRemaining = (expiresAt) => {
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
   
+  if (hours > 24) {
+    const days = Math.floor(hours / 24)
+    return `${days}d ${hours % 24}h`
+  }
+  
   if (hours > 0) {
     return `${hours}h ${minutes}m`
   }
   return `${minutes}m`
 }
+
+// Initialize polling if task is already in progress
+onMounted(() => {
+  if (props.task.userStatus === 'in_progress') {
+    startPolling()
+  }
+})
+
+// Cleanup
+onUnmounted(() => {
+  stopPolling()
+})
 </script>
 
 <template>
-  <div class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-[#2a2a2a] rounded-xl transition-all duration-200 hover:bg-[#333] group">
+  <div class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-[#2a2a2a] rounded-xl transition-all duration-200 hover:bg-[#333] group relative overflow-hidden">
+    <!-- Auto-verification progress bar -->
+    <div 
+      v-if="isPolling && taskProgress" 
+      class="absolute top-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500 rounded-t-xl"
+      :style="{ width: `${taskProgress.percent}%` }"
+    >
+      <div class="absolute top-0 right-0 w-2 h-1 bg-white/50 animate-pulse"></div>
+    </div>
+
     <!-- Task Platform Icon with Difficulty -->
     <div class="relative flex-shrink-0">
       <img 
         :src="task.platform.iconUrl" 
         :alt="task.platform.name"
-        class="size-8 sm:size-10 rounded-full object-cover"
+        :class="[
+          'size-8 sm:size-10 rounded-full object-cover transition-all duration-300',
+          isPolling ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-[#2a2a2a]' : ''
+        ]"
       />
       <div 
         v-if="task.difficulty"
@@ -158,113 +344,132 @@ const getTimeRemaining = (expiresAt) => {
       >
         {{ task.difficulty }}
       </div>
+      
+      <!-- Auto-verification spinner overlay -->
+      <div 
+        v-if="isPolling"
+        class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full"
+      >
+        <div class="size-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+      </div>
     </div>
 
     <!-- Task Info -->
     <div class="flex-1 min-w-0">
-      <div class="flex flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-        <p class="text-lg sm:text-2xl font-bold text-[#FFCF00] leading-none">
+      <div class="flex  md:flex-row items-center gap-2 mb-1">
+        <p :class="['text-sm sm:text-2xl font-bold leading-none', getRewardColor(task.reward)]">
           +{{ formatNumber(task.reward) }}
         </p>
-        <span class="text-xs text-white/60">{{ task.currency || 'Gs' }}</span>
+        <!-- <span class="text-xs text-white/60">{{ task.currency || 'Gs' }}</span> -->
         
         <!-- Task Type Badge -->
         <span 
           :class="[
-            'text-xs px-2 py-1 rounded-full font-medium self-start sm:self-auto',
+            'text-[9px] px-2 py-1 rounded-full font-medium self-start sm:self-auto',
             getTaskTypeBadge(task.type)
           ]"
         >
           {{ task.type.toUpperCase() }}
         </span>
+
+        <!-- Status Badge -->
+        <!-- <span 
+          v-if="task.userStatus"
+          :class="[
+            'text-xs px-2 py-1 rounded-full font-medium self-start sm:self-auto ml-auto',
+            getStatusBadge(task.userStatus)
+          ]"
+        >
+          {{ getStatusText(task.userStatus) }}
+        </span> -->
       </div>
 
       <div class="space-y-1">
-        <p class="text-sm sm:text-lg font-medium truncate">{{ task.target.handle }}</p>
-        <p class="text-xs sm:text-sm text-white/80 line-clamp-2">{{ task.description }}</p>
+        <p class="text-xs sm:text-base font-medium truncate lowercase">
+          {{ task.target?.handle || task.target?.username || 'Unknown target' }}
+        </p>
+        <!-- <p class="text-xs sm:text-sm text-white/80 line-clamp-2">{{ task.description }}</p> -->
         
-        <!-- Requirements -->
-        <div v-if="task.requirements && task.requirements.length > 0" class="flex flex-wrap gap-1 sm:gap-2 mt-2">
-          <span 
-            v-for="req in task.requirements"
-            :key="req.id"
-            :class="[
-              'text-xs px-2 py-1 rounded-full border',
-              req.met 
-                ? 'border-green-500 text-green-400 bg-green-500/10'
-                : 'border-orange-500 text-orange-400 bg-orange-500/10'
-            ]"
-          >
-            {{ req.description }}
-          </span>
-        </div>
+        <!-- Auto-verification status with polling updates -->
+               
 
-        <!-- Progress Bar -->
-        <div v-if="userProgress && task.status === 'in-progress'" class="mt-2">
-          <div class="flex justify-between text-xs text-white/60 mb-1">
-            <span>Progress</span>
-            <span>{{ userProgress.progress }}%</span>
-          </div>
-          <div class="w-full bg-white/10 rounded-full h-1">
-            <div 
-              class="bg-[#12BE32] h-1 rounded-full transition-all duration-300"
-              :style="{ width: `${userProgress.progress}%` }"
-            ></div>
-          </div>
+        <!-- Expiry Warning -->
+        <div v-if="task.expiresAt && getTimeRemaining(task.expiresAt)" class="flex items-center gap-1 text-xs text-orange-400">
+          <!-- <span>⏰</span> -->
+          <span>{{ getTimeRemaining(task.expiresAt) }} remaining</span>
         </div>
       </div>
     </div>
 
     <!-- Action Button -->
-    <div class="flex items-center gap-2 flex-shrink-0">
-      <!-- Timer -->
-      <div v-if="task.expiresAt" class="text-xs text-orange-400 text-center sm:mr-2">
-        <div class="flex flex-col sm:flex-row items-center gap-1">
-          <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <span class="text-xs">{{ getTimeRemaining(task.expiresAt) }}</span>
-        </div>
-      </div>
-      
-      <!-- ICON-BASED ACTION BUTTON -->
+    <div class="flex-shrink-0">
+      <!-- Start Task Button -->
       <button
-        @click.stop="handleAction"
-        :disabled="isDisabled"
-        :class="getButtonStyle()"
-        :title="getButtonText()"
+        @click="startTask"
+        :disabled="isStarting"
+        class=" shrink-0 cursor-pointer"
       >
-        <!-- Loading Spinner -->
-        <div v-if="isLoading" class="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-        
-        <!-- Status Icons -->
-        <template v-else>
-          <!-- Available: Play icon -->
-          <svg v-if="task.status === 'available'" class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-          
-          <!-- In Progress: Check icon -->
-          <svg v-else-if="task.status === 'in-progress'" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-          </svg>
-          
-          <!-- Completed: Double check -->
-          <svg v-else-if="task.status === 'completed'" class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          
-          <!-- Pending: Clock icon -->
-          <svg v-else-if="task.status === 'pending-verification'" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          
-          <!-- Default: Arrow -->
-          <svg v-else class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-          </svg>
-        </template>
+      <div :class="['size-12 rounded-[45%_55%_60%_40%/50%_45%_55%_50%] relative flex items-center justify-center transition-all duration-300 ease-in-out  hover:scale-110 animate-bulb-rotate hover:animate-bulb-rotate-reverse',
+        getStatusColor(task.userStatus)
+      ]">
+    <img :src="[task.userStatus === 'in_progress' || isStarting ? progressIcon : 
+    task.userStatus === 'completed' ? doneIcon : task.userStatus === 'failed' ? retryIcon : playIcon]" class="relative size-6 animate-stay-still" >
+    </div>
       </button>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Keyframes and animations that Tailwind can't handle */
+@keyframes bulbRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes glow {
+  from {
+    opacity: 0.2;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.animate-bulb-rotate {
+  animation: bulbRotate 4s linear infinite;
+}
+
+.animate-bulb-rotate-reverse:hover {
+  animation-direction: reverse;
+}
+
+.cta-button-bulb::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  /* background: linear-gradient(135deg, #00B043, #195E00); */
+  border-radius: 45% 55% 60% 40% / 50% 45% 55% 50%;
+  opacity: 0.3;
+  animation: 
+    bulbRotate 4s linear infinite,
+    glow 2s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+.animate-stay-still {
+  animation: stayStill 4s linear infinite;
+}
+
+/* Keep play icon stationary while bulb rotates */
+@keyframes stayStill {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+</style>

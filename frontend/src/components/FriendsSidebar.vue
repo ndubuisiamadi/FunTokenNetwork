@@ -404,7 +404,7 @@ onMounted(async () => {
             type="text"
             placeholder="Search for new people..."
             :class="[
-              'w-full border border-white/20 rounded-lg pl-10 pr-10 py-2 text-white placeholder-white/50 focus:outline-none focus:border-[#055CFF] text-sm',
+              'w-full border border-white/20 rounded-lg pl-10 pr-10 py-2 text-white placeholder-white/50 focus:outline-none focus:border-[#055CFF] text-xs',
               isMobile ? 'bg-[#212121]' : 'bg-[#2C2F36]'
             ]"
           />

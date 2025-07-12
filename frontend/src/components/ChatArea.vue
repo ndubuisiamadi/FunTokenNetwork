@@ -61,22 +61,6 @@ const isGroupAdmin = computed(() => {
          currentConversation.value.participants[0]?.userId === currentUserId
 })
 
-// Methods - keep all the existing methods exactly the same
-const scrollToBottom = (force = false) => {
-  if (!messagesContainer.value) return
-  
-  if (force || isAtBottom.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-  }
-}
-
-const handleScroll = () => {
-  if (!messagesContainer.value) return
-  
-  const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
-  isAtBottom.value = scrollTop + clientHeight >= scrollHeight - 10
-}
-
 const loadMoreMessages = async () => {
   if (!currentConversation.value) return
   await messagesStore.loadMoreMessages(currentConversation.value.id)
@@ -479,24 +463,100 @@ const formatDate = (date) => {
 }
 
 // Watchers
-watch(messages, async (newMessages, oldMessages) => {
-  if (newMessages.length > oldMessages.length && isAtBottom.value) {
-    await nextTick()
-    scrollToBottom(true)
+// Watch for new messages and auto-scroll
+watch(() => messages.value, (newMessages, oldMessages) => {
+  if (!newMessages || !oldMessages) return
+  
+  // Check if new messages were added
+  if (newMessages.length > oldMessages.length) {
+    nextTick(() => {
+      // Auto-scroll only if user was near the bottom
+      if (isAtBottom.value || isNearBottom()) {
+        scrollToBottom(true)
+      }
+    })
   }
 }, { deep: true })
 
-// Lifecycle
-onMounted(() => {
-  if (typeof messageInputValue.value !== 'string') {
-    messageInputValue.value = ''
+// Watch for conversation changes
+watch(() => currentConversation.value?.id, (newConvId, oldConvId) => {
+  if (newConvId && newConvId !== oldConvId) {
+    nextTick(() => {
+      scrollToBottom(false) // Smooth scroll to bottom when switching conversations
+      markMessagesAsRead() // Mark messages as read when opening conversation
+    })
   }
-
-  document.addEventListener('click', handleClickOutside)
 })
 
+// Enhanced scroll methods
+const scrollToBottom = (instant = false) => {
+  if (!messagesContainer.value) return
+  
+  const container = messagesContainer.value
+  const scrollOptions = {
+    top: container.scrollHeight,
+    behavior: instant ? 'instant' : 'smooth'
+  }
+  
+  container.scrollTo(scrollOptions)
+  isAtBottom.value = true
+}
+
+const isNearBottom = () => {
+  if (!messagesContainer.value) return true
+  
+  const container = messagesContainer.value
+  const threshold = 100 // pixels from bottom
+  return (container.scrollHeight - container.scrollTop - container.clientHeight) <= threshold
+}
+
+const handleScroll = () => {
+  if (!messagesContainer.value) return
+  
+  const container = messagesContainer.value
+  const threshold = 50
+  
+  // Update isAtBottom state
+  isAtBottom.value = (container.scrollHeight - container.scrollTop - container.clientHeight) <= threshold
+  
+  // Mark messages as read when scrolling (debounced)
+  clearTimeout(scrollTimeout.value)
+  scrollTimeout.value = setTimeout(() => {
+    if (currentConversation.value) {
+      markMessagesAsRead()
+    }
+  }, 500)
+}
+
+// Auto-mark messages as read
+const markMessagesAsRead = async () => {
+  if (!currentConversation.value) return
+  
+  try {
+    await messagesStore.autoMarkAsRead(currentConversation.value.id)
+  } catch (error) {
+    console.error('Failed to mark messages as read:', error)
+  }
+}
+
+// Add scroll timeout ref
+const scrollTimeout = ref(null)
+
+// Add scroll listener on mount
+onMounted(() => {
+  if (messagesContainer.value) {
+    messagesContainer.value.addEventListener('scroll', handleScroll)
+  }
+})
+
+// Remove scroll listener on unmount
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+  if (messagesContainer.value) {
+    messagesContainer.value.removeEventListener('scroll', handleScroll)
+  }
+  if (scrollTimeout.value) {
+    clearTimeout(scrollTimeout.value)
+  }
 })
 </script>
 
@@ -722,7 +782,7 @@ onUnmounted(() => {
       ref="messagesContainer"
       @scroll="handleScroll"
       :class="[
-        'bg-[url(../assets/chat-background.png)] [--bg-opacity:10%] flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide',
+        'bg-[url(../assets/chat-background.png)] flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide',
         isDragging ? 'bg-[#055CFF]/10 border-2 border-dashed border-[#055CFF]' : ''
       ]"
     >
@@ -831,7 +891,7 @@ onUnmounted(() => {
           
           <!-- Outgoing Message (from current user) -->
           <div v-else class="flex gap-2 items-end max-w-[70%]">
-            <div class="bg-[#2979FF0A] px-3 py-2 rounded-tl-lg rounded-b-lg text-white">
+            <div class="bg-[#2979FF] px-3 py-2 rounded-tl-lg rounded-b-lg text-white">
               <!-- Media content for outgoing messages (similar structure) -->
               <div v-if="message.mediaUrls && message.mediaUrls.length > 0" class="mb-2 space-y-2">
                 <div v-for="mediaUrl in message.mediaUrls" :key="mediaUrl" class="relative">
