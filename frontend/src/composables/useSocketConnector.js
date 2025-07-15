@@ -1,5 +1,5 @@
-// src/composables/useSocketConnector.js - CRITICAL CONNECTOR
-import { onMounted, onUnmounted } from 'vue'
+// src/composables/useSocketConnector.js - SIMPLIFIED VERSION
+import { onUnmounted } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { socketService } from '@/services/socket'
@@ -8,6 +8,7 @@ export function useSocketConnector() {
   const messagesStore = useMessagesStore()
   const authStore = useAuthStore()
 
+  // 🔥 SIMPLIFIED: Remove complex unread count handling
   const connectSocket = async () => {
     if (!authStore.isLoggedIn) {
       console.log('🚫 Socket connector: User not logged in, skipping socket connection')
@@ -30,6 +31,7 @@ export function useSocketConnector() {
         if (!messagesStore.isInitialized()) {
           await messagesStore.fetchConversations()
         }
+        
       } else {
         console.error('❌ Socket connector: Failed to connect')
       }
@@ -43,8 +45,20 @@ export function useSocketConnector() {
     socketService.disconnect()
   }
 
+  // 🔥 SIMPLIFIED: Basic refresh method
+  const refreshUnreadCounts = () => {
+    console.log('📊 Socket connector: Refreshing unread counts')
+    messagesStore.refreshUnreadCounts?.()
+  }
+
+  // Clean up on unmount
+  onUnmounted(() => {
+    // Basic cleanup only
+  })
+
   return {
     connectSocket,
-    disconnectSocket
+    disconnectSocket,
+    refreshUnreadCounts
   }
 }

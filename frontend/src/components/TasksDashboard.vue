@@ -529,7 +529,7 @@ onMounted(() => {
     </div>
 
     <!-- Development Task Creator -->
-    <div v-if="isDevelopment" class="space-y-4">
+    <!-- <div v-if="isDevelopment" class="space-y-4">
       <div class="flex items-center gap-3">
         <h3 class="text-lg font-bold">Development Tools</h3>
         <button
@@ -543,7 +543,7 @@ onMounted(() => {
       <div v-if="showTaskCreator">
         <TaskCreator @task-created="handleTaskCreated" />
       </div>
-    </div>
+    </div> -->
 
     <!-- Notifications -->
     <div class="fixed top-4 right-4 z-50 space-y-2">

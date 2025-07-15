@@ -106,6 +106,7 @@ app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 100, 'Too many message 
 app.use(cors({
   origin: [
     'http://localhost:5173',
+    'http://localhost:5163',
     'http://192.168.0.159:5173',
     'http://127.0.0.1:5173'
   ],

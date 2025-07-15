@@ -1,20 +1,8 @@
-// src/stores/messages.js
+// src/stores/messages.js - FIXED RACE CONDITION VERSION
 import { defineStore } from 'pinia'
 import { messagesAPI } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { socketService } from '@/services/socket'
-
-// Convert database fields to status string
-// const getMessageStatus = (message, currentUserId) => {
-//   // For messages sent by current user
-//   if (message.senderId === currentUserId) {
-//     if (message.isRead) return 'read'
-//     if (message.isDelivered) return 'delivered'
-//     return 'sent'
-//   }
-//   // For received messages, they're automatically delivered when received
-//   return 'delivered'
-// }
 
 // Convert status string to database fields
 const statusToDbFields = (status) => {
@@ -28,6 +16,44 @@ const statusToDbFields = (status) => {
     default:
       return { isDelivered: false, isRead: false }
   }
+}
+
+const getMessageStatus = (message, currentUserId) => {
+  // Only show status for messages sent by current user
+  if (message.senderId !== currentUserId) {
+    return null // Don't show status for received messages
+  }
+
+  // Handle optimistic messages (still being sent)
+  if (message.isOptimistic || message.status === 'sending') {
+    return 'sending'
+  }
+
+  // Handle failed messages
+  if (message.status === 'failed' || message.error) {
+    return 'failed'
+  }
+
+  // Determine status based on flags
+  if (message.isRead) {
+    return 'read'
+  } else if (message.isDelivered) {
+    return 'delivered'
+  } else {
+    return 'sent'
+  }
+}
+
+// 🔥 NEW: Standardized conversation preview status
+const getConversationPreviewStatus = (conversation, currentUserId) => {
+  const lastMessage = conversation.lastMessageData
+
+  if (!lastMessage || lastMessage.senderId !== currentUserId) {
+    return null // Don't show status for received messages or no messages
+  }
+
+  // Use the same logic as individual messages
+  return getMessageStatus(lastMessage, currentUserId)
 }
 
 // Helper function to create message preview data
@@ -53,13 +79,6 @@ const sortConversationsByActivity = (conversations) => {
   })
 }
 
-const clearCurrentConversation = () => {
-  currentConversation.value = null
-}
-
-// Export it
-export { clearCurrentConversation }
-
 export const useMessagesStore = defineStore('messages', {
   state: () => ({
     conversations: [],
@@ -77,23 +96,35 @@ export const useMessagesStore = defineStore('messages', {
     searchQuery: '',
     newConversationModal: false,
     typingTimer: null,
-    lastUpdate: 0,
-    socketConnected: false
+    lastUpdate: 0, // 🔥 ENHANCED: Reactivity trigger
+    socketConnected: false,
+    unreadCountUpdateTrigger: 0, // 🔥 NEW: Specific trigger for unread counts
+    messageProcessingQueue: new Map(), // 🔥 NEW: Prevent duplicate processing
+    currentConversationId: null, // 🔥 NEW: More reliable current conversation tracking
+    onlineStatusUpdateTrigger: 0,
+    userOnlineStatus: new Map(),
   }),
 
   getters: {
+    // 🔥 ENHANCED: All getters now include online status reactivity
     directChats: (state) => {
-      const _ = state.lastUpdate // Force reactivity
+      const _ = state.lastUpdate
+      const __ = state.unreadCountUpdateTrigger
+      const ___ = state.onlineStatusUpdateTrigger // 🔥 NEW: Online status reactivity
       return state.conversations.filter(conv => !conv.isGroup)
     },
 
     groupChats: (state) => {
-      const _ = state.lastUpdate // Force reactivity
+      const _ = state.lastUpdate
+      const __ = state.unreadCountUpdateTrigger
+      const ___ = state.onlineStatusUpdateTrigger // 🔥 NEW: Online status reactivity
       return state.conversations.filter(conv => conv.isGroup)
     },
 
     currentConversations: (state) => {
-      const _ = state.lastUpdate // Force reactivity
+      const _ = state.lastUpdate
+      const __ = state.unreadCountUpdateTrigger
+      const ___ = state.onlineStatusUpdateTrigger // 🔥 NEW: Online status reactivity
       const conversations = state.selectedChatType === 'direct'
         ? state.conversations.filter(conv => !conv.isGroup)
         : state.conversations.filter(conv => conv.isGroup)
@@ -111,28 +142,74 @@ export const useMessagesStore = defineStore('messages', {
       return conversations
     },
 
+    // 🔥 NEW: Get real-time online status for a user
+    getUserOnlineStatus: (state) => (userId) => {
+      const _ = state.onlineStatusUpdateTrigger // Force reactivity
+      return state.userOnlineStatus.get(userId) || false
+    },
+
+    // 🔥 NEW: Count of conversations with unread messages (not total messages)
+    directChatsWithUnread: (state) => {
+      const _ = state.lastUpdate
+      const __ = state.unreadCountUpdateTrigger
+
+      const count = state.conversations
+        .filter(conv => !conv.isGroup && (conv.unreadCount || 0) > 0)
+        .length
+
+      console.log('📊 Store: Direct chats with unread count:', count)
+      return count
+    },
+
+    groupChatsWithUnread: (state) => {
+      const _ = state.lastUpdate
+      const __ = state.unreadCountUpdateTrigger
+
+      const count = state.conversations
+        .filter(conv => conv.isGroup && (conv.unreadCount || 0) > 0)
+        .length
+
+      console.log('📊 Store: Group chats with unread count:', count)
+      return count
+    },
+
+    totalChatsWithUnread: (state) => {
+      const _ = state.lastUpdate
+      const __ = state.unreadCountUpdateTrigger
+
+      const count = state.conversations
+        .filter(conv => (conv.unreadCount || 0) > 0)
+        .length
+
+      console.log('📊 Store: Total chats with unread count:', count)
+      return count
+    },
+
+    // 🔥 OPTIMIZED: Simplified existing getters to reduce reactivity noise
     directUnreadCount: (state) => {
-      const _ = state.lastUpdate // Force reactivity
-      return state.conversations
+      const count = state.conversations
         .filter(conv => !conv.isGroup)
         .reduce((total, conv) => total + (conv.unreadCount || 0), 0)
+
+      return count
     },
 
     groupUnreadCount: (state) => {
-      const _ = state.lastUpdate // Force reactivity
-      return state.conversations
+      const count = state.conversations
         .filter(conv => conv.isGroup)
         .reduce((total, conv) => total + (conv.unreadCount || 0), 0)
+
+      return count
+    },
+
+    totalUnreadCount: (state) => {
+      const count = state.conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0)
+      return count
     },
 
     currentMessages: (state) => {
       if (!state.currentConversation) return []
       return state.messages[state.currentConversation.id] || []
-    },
-
-    totalUnreadCount: (state) => {
-      const _ = state.lastUpdate // Force reactivity
-      return state.conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0)
     },
 
     // Check if user is typing in current conversation
@@ -146,13 +223,6 @@ export const useMessagesStore = defineStore('messages', {
     typingUsersNames: (state) => {
       if (!state.currentConversation) return []
       return state.typingUsers[state.currentConversation.id] || []
-    },
-
-    // Total unread count across all conversations
-    totalUnreadCount: (state) => {
-      return state.conversations.reduce((total, conversation) => {
-        return total + (conversation.unreadCount || 0)
-      }, 0)
     },
 
     // Unread count for a specific conversation
@@ -169,15 +239,132 @@ export const useMessagesStore = defineStore('messages', {
 
     // Get conversations with unread messages
     conversationsWithUnread: (state) => {
+      const _ = state.unreadCountUpdateTrigger // Force reactivity for unread counts
       return state.conversations.filter(conv => (conv.unreadCount || 0) > 0)
     }
   },
 
   actions: {
-    // CRITICAL: Force reactivity trigger
-    triggerUpdate() {
+    // 🔥 ENHANCED: Trigger reactivity with online status support
+    triggerUpdate(type = 'general') {
       this.lastUpdate = Date.now()
-      console.log('🔄 Triggered reactivity update:', this.lastUpdate)
+
+      if (type === 'unread' || type === 'general') {
+        this.unreadCountUpdateTrigger = Date.now()
+      }
+
+      if (type === 'online' || type === 'general') {
+        this.onlineStatusUpdateTrigger = Date.now()
+      }
+
+      console.log(`🔄 Triggered ${type} reactivity update:`, {
+        lastUpdate: this.lastUpdate,
+        unreadTrigger: this.unreadCountUpdateTrigger,
+        onlineTrigger: this.onlineStatusUpdateTrigger
+      })
+    },
+
+    // 🔥 NEW: Update user online status with reactivity
+    updateUserOnlineStatus(userId, isOnline, source = 'unknown') {
+      console.log(`👤 Updating online status for ${userId}:`, { isOnline, source })
+
+      // Update the central online status map
+      this.userOnlineStatus.set(userId, isOnline)
+
+      // Update in onlineUsers set for compatibility
+      if (isOnline) {
+        this.onlineUsers.add(userId)
+      } else {
+        this.onlineUsers.delete(userId)
+      }
+
+      // 🔥 CRITICAL: Update all conversations that include this user
+      let conversationsUpdated = 0
+      this.conversations.forEach(conversation => {
+        // For direct chats, check if this user is the other participant
+        if (!conversation.isGroup && conversation.otherParticipant?.id === userId) {
+          conversation.otherParticipant.isOnline = isOnline
+          conversationsUpdated++
+        }
+
+        // For group chats, update participant status
+        if (conversation.participants) {
+          const participant = conversation.participants.find(p => p.userId === userId)
+          if (participant && participant.user) {
+            participant.user.isOnline = isOnline
+            conversationsUpdated++
+          }
+        }
+      })
+
+      console.log(`✅ Updated online status in ${conversationsUpdated} conversations`)
+
+      // 🔥 CRITICAL: Trigger online status reactivity
+      this.triggerUpdate('online')
+    },
+
+    updateUnreadCount(conversationId, count, source = 'unknown') {
+      const conversation = this.conversations.find(c => c.id === conversationId)
+      if (!conversation) {
+        console.warn(`⚠️ Conversation ${conversationId} not found for unread update`)
+        return
+      }
+
+      const oldCount = conversation.unreadCount || 0
+      const newCount = Math.max(0, count)
+
+      if (oldCount !== newCount) {
+        conversation.unreadCount = newCount
+
+        console.log(`📊 Updated unread count for ${conversationId}:`, {
+          from: oldCount,
+          to: newCount,
+          source
+        })
+
+        this.triggerUpdate('unread')
+      }
+    },
+
+    incrementUnreadCount(conversationId, source = 'unknown') {
+      const conversation = this.conversations.find(c => c.id === conversationId)
+      if (!conversation) return
+
+      if (this.currentConversationId === conversationId) {
+        console.log(`🚫 Not incrementing unread count for ${conversationId} - currently viewing`)
+        return
+      }
+
+      const oldCount = conversation.unreadCount || 0
+      const newCount = oldCount + 1
+      conversation.unreadCount = newCount
+
+      console.log(`📈 Incremented unread count for ${conversationId}:`, {
+        from: oldCount,
+        to: newCount,
+        source,
+        currentlyViewing: this.currentConversationId
+      })
+
+      this.triggerUpdate('unread')
+    },
+
+    clearUnreadCount(conversationId, source = 'unknown') {
+      const conversation = this.conversations.find(c => c.id === conversationId)
+      if (!conversation) return
+
+      const oldCount = conversation.unreadCount || 0
+      if (oldCount > 0) {
+        conversation.unreadCount = 0
+
+        console.log(`🧹 Cleared unread count for ${conversationId}:`, {
+          from: oldCount,
+          to: 0,
+          source
+        })
+
+        this.triggerUpdate('unread')
+      }
     },
 
     // Initialize socket connection when store loads
@@ -189,15 +376,13 @@ export const useMessagesStore = defineStore('messages', {
         if (connected) {
           console.log('✅ Messages Store: Socket initialized successfully')
           this.socketConnected = true
-          
-          // CRITICAL: Set up event listeners immediately
+
           this.setupSocketListeners(socketService)
-          
-          // Join all existing conversations
+
           this.conversations.forEach(conv => {
             socketService.joinConversation(conv.id)
           })
-          
+
           this.triggerUpdate()
         } else {
           console.error('❌ Messages Store: Failed to initialize socket')
@@ -209,7 +394,6 @@ export const useMessagesStore = defineStore('messages', {
       }
     },
 
-    // NEW: Setup socket event listeners
     setupSocketListeners(socketService) {
       if (!socketService.socket) {
         console.error('❌ No socket available for event listeners')
@@ -218,29 +402,43 @@ export const useMessagesStore = defineStore('messages', {
 
       console.log('🔧 Setting up socket event listeners in messages store')
 
-      // Listen for new messages - MOST CRITICAL
       socketService.socket.on('message:new', (messageData) => {
         console.log('📨 SOCKET EVENT: New message received in store:', messageData)
         this.handleIncomingMessage(messageData)
       })
 
-      // Listen for message status updates
       socketService.socket.on('message:status_updated', (data) => {
         console.log('📱 SOCKET EVENT: Message status update:', data)
         this.handleMessageStatusUpdate(data)
       })
 
-      // Listen for conversation updates
       socketService.socket.on('conversation:updated', (data) => {
         console.log('💬 SOCKET EVENT: Conversation update:', data)
         this.handleConversationUpdate(data)
       })
 
+      socketService.socket.on('conversation:status_updated', (data) => {
+        console.log('💬 SOCKET EVENT: Conversation status update:', data)
+        this.handleConversationStatusUpdate(data)
+      })
+
+      // 🔥 ENHANCED: Online status socket events with proper handling
+      socketService.socket.on('user:online', (data) => {
+        console.log('🟢 SOCKET EVENT: User online:', data.userId)
+        this.handleUserOnline(data.userId)
+      })
+
+      socketService.socket.on('user:offline', (data) => {
+        console.log('🔴 SOCKET EVENT: User offline:', data.userId)
+        this.handleUserOffline(data.userId)
+      })
+
       console.log('✅ Socket event listeners set up in messages store')
     },
 
-    // COMPLETELY REWRITTEN: Handle incoming messages for real-time updates
-    handleIncomingMessage(messageData) {
+
+    // 🔥 FIXED: Handle incoming messages with proper race condition prevention
+    async handleIncomingMessage(messageData) {
       try {
         console.log('📨 Processing incoming message:', {
           id: messageData.id,
@@ -263,35 +461,81 @@ export const useMessagesStore = defineStore('messages', {
           return
         }
 
+        // 🔥 NEW: Prevent duplicate processing
+        const messageKey = `${messageData.id}_${conversationId}`
+        if (this.messageProcessingQueue.has(messageKey)) {
+          console.log('🚫 Message already being processed, skipping duplicate')
+          return
+        }
+        this.messageProcessingQueue.set(messageKey, Date.now())
+
+        // 🔥 NEW: Clean up old entries from processing queue (prevent memory leak)
+        const now = Date.now()
+        for (const [key, timestamp] of this.messageProcessingQueue.entries()) {
+          if (now - timestamp > 10000) { // 10 seconds
+            this.messageProcessingQueue.delete(key)
+          }
+        }
+
         // Find or create conversation in list
         let conversation = this.conversations.find(c => c.id === conversationId)
-        
+
         if (!conversation) {
           console.warn('⚠️ Conversation not found, will refresh conversations')
-          // Refresh conversations to get the new one
           this.fetchConversations()
           return
         }
 
+        // 🔥 NEW: Mark message as delivered immediately since we received it
+        const processedMessage = {
+          ...messageData,
+          isDelivered: true,
+          timestamp: new Date(messageData.createdAt),
+          status: 'delivered' // Received messages are always delivered
+        }
+
         // CRITICAL: Update conversation preview and move to top
-        this.updateConversationWithMessage(conversation, messageData, currentUserId)
+        this.updateConversationWithMessage(conversation, processedMessage, currentUserId)
 
         // Add message to conversation messages if loaded
         if (this.messages[conversationId]) {
-          this.addMessageToConversation(conversationId, messageData, currentUserId)
+          this.addMessageToConversation(conversationId, processedMessage, currentUserId)
         }
 
-        // CRITICAL: Trigger reactivity
-        this.triggerUpdate()
+        // 🔥 FIXED: Better current conversation detection and unread handling
+        const isCurrentlyViewing = this.currentConversationId === conversationId &&
+          this.currentConversation?.id === conversationId
+
+        if (!isCurrentlyViewing) {
+          console.log(`📈 Incrementing unread count - not currently viewing ${conversationId}`)
+          this.incrementUnreadCount(conversationId, 'incoming_message')
+        } else {
+          console.log(`📖 Auto-marking as read - currently viewing ${conversationId}`)
+          // If currently viewing, mark as read immediately without delay
+          this.autoMarkAsRead(conversationId)
+        }
+
+        // 🔥 NEW: Auto-send delivery confirmation via socket
+        const { socketService } = await import('@/services/socket')
+        if (socketService.isSocketConnected()) {
+          socketService.markMessageAsDelivered(messageData.id, conversationId)
+        }
+
+        this.triggerUpdate('unread')
 
         console.log('✅ Successfully processed incoming message')
+
+        // Clean up processing queue entry
+        setTimeout(() => {
+          this.messageProcessingQueue.delete(messageKey)
+        }, 5000)
 
       } catch (error) {
         console.error('❌ Error handling incoming message:', error)
       }
     },
 
-    // NEW: Update conversation with new message
+    // Update conversation with new message
     updateConversationWithMessage(conversation, messageData, currentUserId) {
       const isFromOtherUser = messageData.senderId !== currentUserId
 
@@ -303,6 +547,9 @@ export const useMessagesStore = defineStore('messages', {
         previewContent = messageData.content || ''
       }
 
+      // 🔥 FIXED: Proper status determination for conversation preview
+      const messageStatus = getMessageStatus(messageData, currentUserId)
+
       // Update conversation data
       conversation.lastMessage = previewContent
       conversation.lastActivity = messageData.createdAt || new Date().toISOString()
@@ -313,36 +560,25 @@ export const useMessagesStore = defineStore('messages', {
         mediaUrls: messageData.mediaUrls || [],
         senderId: messageData.senderId,
         createdAt: messageData.createdAt,
-        status: 'delivered',
-        isRead: false,
-        isDelivered: true
-      }
-
-      // Update unread count for messages from others
-      if (isFromOtherUser) {
-        if (!this.currentConversation || this.currentConversation.id !== conversation.id) {
-          conversation.unreadCount = (conversation.unreadCount || 0) + 1
-          console.log(`📈 Updated unread count for ${conversation.id}: ${conversation.unreadCount}`)
-        }
+        status: messageStatus || 'delivered',
+        isRead: messageData.isRead || false,
+        isDelivered: messageData.isDelivered || false
       }
 
       // Move conversation to top
       const currentIndex = this.conversations.findIndex(c => c.id === conversation.id)
       if (currentIndex > 0) {
-        // Remove from current position and add to top
         this.conversations.splice(currentIndex, 1)
         this.conversations.unshift(conversation)
-        console.log(`🔝 Moved conversation ${conversation.id} to top`)
       } else if (currentIndex === 0) {
-        // Already at top, just ensure reactivity
         this.conversations[0] = { ...conversation }
       }
     },
 
-    // NEW: Add message to conversation messages
+    // Add message to conversation messages
     addMessageToConversation(conversationId, messageData, currentUserId) {
       const messages = this.messages[conversationId]
-      
+
       // Check for duplicates
       const exists = messages.find(m => m.id === messageData.id)
       if (exists) {
@@ -359,26 +595,144 @@ export const useMessagesStore = defineStore('messages', {
       }
 
       messages.push(processedMessage)
-      
+
       // Sort messages by timestamp
       messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
 
       console.log(`✅ Added message to conversation ${conversationId}`)
     },
 
-    // ENHANCED: Send message with optimistic updates
+    // 🔥 NEW: Handle conversation status updates from socket
+    handleMessageStatusUpdate(data) {
+      try {
+        const { messageId, conversationId, status, updatedBy } = data
+        console.log(`📱 STORE: Processing message status update:`, {
+          messageId,
+          conversationId,
+          status,
+          updatedBy
+        })
+
+        // Find the conversation
+        const conversation = this.conversations.find(c => c.id === conversationId)
+        if (!conversation) {
+          console.warn(`⚠️ Conversation ${conversationId} not found for status update`)
+          return
+        }
+
+        // Update message in conversation messages if loaded
+        const messages = this.messages[conversationId]
+        if (messages) {
+          const messageIndex = messages.findIndex(m => m.id === messageId)
+          if (messageIndex !== -1) {
+            const message = messages[messageIndex]
+
+            // Update message status
+            if (status === 'delivered') {
+              message.isDelivered = true
+              message.status = 'delivered'
+            } else if (status === 'read') {
+              message.isRead = true
+              message.isDelivered = true
+              message.status = 'read'
+            }
+
+            console.log(`✅ Updated message ${messageId} status to ${status}`)
+          }
+        }
+
+        // Update conversation preview status if this is the last message
+        if (conversation.lastMessageData && conversation.lastMessageData.id === messageId) {
+          if (status === 'delivered') {
+            conversation.lastMessageData.isDelivered = true
+            conversation.lastMessageData.status = 'delivered'
+          } else if (status === 'read') {
+            conversation.lastMessageData.isRead = true
+            conversation.lastMessageData.isDelivered = true
+            conversation.lastMessageData.status = 'read'
+          }
+
+          console.log(`✅ Updated conversation preview status for ${conversationId}`)
+        }
+
+        // Trigger reactivity
+        this.triggerUpdate()
+
+      } catch (error) {
+        console.error('❌ Error handling message status update:', error)
+      }
+    },
+
+    handleConversationStatusUpdate(data) {
+      try {
+        const { conversationId, status, count, updatedBy } = data
+        console.log(`💬 STORE: Processing conversation status update:`, {
+          conversationId,
+          status,
+          count,
+          updatedBy
+        })
+
+        // Find the conversation
+        const conversation = this.conversations.find(c => c.id === conversationId)
+        if (!conversation) {
+          console.warn(`⚠️ Conversation ${conversationId} not found for status update`)
+          return
+        }
+
+        if (status === 'read') {
+          // Messages were marked as read, reduce unread count
+          const currentUnread = conversation.unreadCount || 0
+          const messagesToReduce = count || 1
+          const newUnreadCount = Math.max(0, currentUnread - messagesToReduce)
+
+          console.log(`📖 Reducing unread count for ${conversationId}: ${currentUnread} → ${newUnreadCount}`)
+
+          this.updateUnreadCount(conversationId, newUnreadCount, 'conversation_status_update')
+
+          // Update messages in memory if they're loaded
+          const messages = this.messages[conversationId]
+          if (messages) {
+            // Mark recent messages as read
+            let markedCount = 0
+            for (let i = messages.length - 1; i >= 0 && markedCount < messagesToReduce; i--) {
+              const message = messages[i]
+              // Only mark messages from other users that aren't already read
+              if (message.senderId !== updatedBy && !message.isRead) {
+                message.isRead = true
+                message.isDelivered = true
+                message.status = this.getMessageStatus(message, updatedBy)
+                markedCount++
+              }
+            }
+
+            console.log(`✅ Marked ${markedCount} messages as read in conversation ${conversationId}`)
+          }
+        }
+
+        // Trigger reactivity to update UI
+        this.triggerUpdate('unread')
+
+        console.log(`✅ Handled conversation status update: ${conversationId} → ${status}`)
+
+      } catch (error) {
+        console.error('❌ Error handling conversation status update:', error)
+      }
+    },
+
+    // 🔥 ENHANCED: Send message with optimistic updates and proper unread handling
     async sendMessage(content, mediaUrls = [], messageType = 'text') {
       if (!this.currentConversation || (!content.trim() && mediaUrls.length === 0)) {
         return { success: false, error: 'Invalid message content' }
       }
-      
+
       this.sendingMessage = true
       this.error = null
-      
+
       const conversationId = this.currentConversation.id
       const authStore = useAuthStore()
-      
-      // Create optimistic message with specific markers
+
+      // Create optimistic message
       const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       const optimisticMessage = {
         id: tempId,
@@ -395,34 +749,34 @@ export const useMessagesStore = defineStore('messages', {
         isDelivered: false,
         isEdited: false,
         isOptimistic: true,
-        tempId: tempId // Track temp ID for replacement
+        tempId: tempId
       }
-      
+
       // Add optimistic message
       if (!this.messages[conversationId]) {
         this.messages[conversationId] = []
       }
       this.messages[conversationId].push(optimisticMessage)
-      
+
       // Update conversation preview optimistically
       this.updateConversationWithMessage(
-        this.currentConversation, 
-        optimisticMessage, 
+        this.currentConversation,
+        optimisticMessage,
         authStore.currentUser.id
       )
-      
+
       this.triggerUpdate()
-      
+
       try {
         const response = await messagesAPI.sendMessage(conversationId, {
           content: content.trim(),
           mediaUrls,
           messageType
         })
-        
+
         const realMessage = response.data.message
-        
-        // CRITICAL: Replace optimistic message with real message
+
+        // 🔥 FIXED: Replace optimistic message with proper status
         const messages = this.messages[conversationId]
         const tempIndex = messages.findIndex(m => m.tempId === tempId)
         if (tempIndex !== -1) {
@@ -430,29 +784,30 @@ export const useMessagesStore = defineStore('messages', {
           messages[tempIndex] = {
             ...realMessage,
             timestamp: new Date(realMessage.createdAt),
-            status: 'sent',
+            status: 'sent', // 🔥 IMPORTANT: Start with "sent" status
+            isDelivered: false, // Will be updated via socket when delivered
+            isRead: false, // Will be updated via socket when read
             isOptimistic: false,
-            realMessageId: realMessage.id // Mark as real message
+            realMessageId: realMessage.id
           }
-        } else {
-          console.warn('⚠️ Could not find optimistic message to replace')
         }
-        
-        // Update conversation preview
+
+        // Update conversation preview with sent status
+        const updatedMessage = messages[tempIndex]
         this.updateConversationWithMessage(
           this.currentConversation,
-          realMessage,
+          updatedMessage,
           authStore.currentUser.id
         )
-        
+
         this.triggerUpdate()
-        
+
         console.log('✅ Message sent successfully:', realMessage.id)
         return { success: true, message: realMessage }
-        
+
       } catch (error) {
         console.error('❌ Send message error:', error)
-        
+
         // Mark optimistic message as failed
         const messages = this.messages[conversationId]
         const tempIndex = messages.findIndex(m => m.tempId === tempId)
@@ -460,7 +815,7 @@ export const useMessagesStore = defineStore('messages', {
           messages[tempIndex].status = 'failed'
           messages[tempIndex].error = true
         }
-        
+
         this.triggerUpdate()
         this.error = error.response?.data?.message || 'Failed to send message'
         return { success: false, error: this.error }
@@ -469,107 +824,57 @@ export const useMessagesStore = defineStore('messages', {
       }
     },
 
-    // ENHANCED: Fetch conversations with socket setup
-    async fetchConversations() {
-      this.loading = true
-      this.error = null
-      
-      try {
-        const response = await messagesAPI.getConversations()
-        this.conversations = response.data.conversations.map(conv => ({
-          ...conv,
-          lastMessageTime: conv.lastMessageTime 
-            ? new Date(conv.lastMessageTime) 
-            : new Date(conv.createdAt),
-          lastMessageData: conv.lastMessageData || null
-        }))
-        
-        console.log(`✅ Loaded ${this.conversations.length} conversations`)
-        
-        // Initialize socket if not already done
-        if (!this.socketConnected) {
-          await this.initializeSocket()
-        }
-        
-        this.triggerUpdate()
-        return { success: true }
-        
-      } catch (error) {
-        console.error('❌ Fetch conversations error:', error)
-        this.error = error.response?.data?.message || 'Failed to load conversations'
-        return { success: false, error: this.error }
-      } finally {
-        this.loading = false
-      }
-    },
-
-    // Enhanced message status update
-    handleMessageStatusUpdate(data) {
-      try {
-        const { messageId, conversationId, status } = data
-        
-        // Update in messages if loaded
-        const messages = this.messages[conversationId]
-        if (messages) {
-          const message = messages.find(m => m.id === messageId)
-          if (message) {
-            message.status = status
-            if (status === 'delivered') {
-              message.isDelivered = true
-            } else if (status === 'read') {
-              message.isRead = true
-              message.isDelivered = true
-            }
-          }
-        }
-        
-        // Update conversation preview
-        const conversation = this.conversations.find(c => c.id === conversationId)
-        if (conversation && conversation.lastMessageData?.id === messageId) {
-          conversation.lastMessageData.status = status
-          if (status === 'delivered') {
-            conversation.lastMessageData.isDelivered = true
-          } else if (status === 'read') {
-            conversation.lastMessageData.isRead = true
-            conversation.lastMessageData.isDelivered = true
-          }
-        }
-        
-        this.triggerUpdate()
-      } catch (error) {
-        console.error('❌ Error handling message status update:', error)
-      }
-    },
-
-    // Select conversation
+    // 🔥 FIXED: Don't clear unread count immediately when selecting conversation
     async selectConversation(conversationId) {
       const conversation = this.conversations.find(c => c.id === conversationId)
       if (!conversation) return { success: false, error: 'Conversation not found' }
-      
+
+      console.log(`🎯 Selecting conversation ${conversationId}`, {
+        hasMessages: !!this.messages[conversationId],
+        messageCount: this.messages[conversationId]?.length || 0,
+        unreadCount: conversation.unreadCount || 0
+      })
+
       // Leave previous conversation
       if (this.currentConversation) {
         const { socketService } = await import('@/services/socket')
         socketService.leaveConversation(this.currentConversation.id)
       }
-      
+
+      // 🔥 NEW: Set current conversation ID first for better race condition handling
+      this.currentConversationId = conversationId
       this.currentConversation = conversation
-      
+
       // Join new conversation
       const { socketService } = await import('@/services/socket')
       socketService.joinConversation(conversationId)
-      
-      // Clear unread count
-      if (conversation.unreadCount > 0) {
-        conversation.unreadCount = 0
-        this.triggerUpdate()
-      }
-      
-      // Fetch messages if not loaded
+
+      // 🔥 ENHANCED: Load messages BEFORE any unread count manipulation
+      let messagesLoaded = false
       if (!this.messages[conversationId]) {
-        return await this.fetchMessages(conversationId)
+        console.log(`📨 Loading messages for conversation ${conversationId}`)
+        const result = await this.fetchMessages(conversationId)
+        messagesLoaded = result.success
+
+        if (!messagesLoaded) {
+          console.error(`❌ Failed to load messages for ${conversationId}`)
+          return result
+        }
+      } else {
+        messagesLoaded = true
+        console.log(`📨 Messages already loaded for ${conversationId}`)
       }
-      
-      return { success: true }
+
+      // 🔥 CRITICAL: DON'T clear unread count here
+      // Let ChatArea handle the divider display and then clear unread count
+      // Only mark as read after user has had time to see the unread state
+
+      console.log(`✅ Conversation selected: ${conversationId} (unread count preserved for divider)`)
+
+      // Trigger update to notify UI
+      this.triggerUpdate()
+
+      return { success: true, messagesLoaded }
     },
 
     // Enhanced fetch messages
@@ -583,6 +888,8 @@ export const useMessagesStore = defineStore('messages', {
       }
 
       try {
+        console.log(`📨 Fetching messages for conversation ${conversationId}, page ${page}`)
+
         const response = await messagesAPI.getMessages(conversationId, page)
         const { messages: rawMessages, pagination } = response.data
         const authStore = useAuthStore()
@@ -608,12 +915,17 @@ export const useMessagesStore = defineStore('messages', {
 
         if (isFirstPage) {
           this.messages[conversationId] = processedMessages.reverse()
+          console.log(`✅ Loaded ${processedMessages.length} messages for ${conversationId}`)
         } else {
           const existing = this.messages[conversationId] || []
           this.messages[conversationId] = [...processedMessages.reverse(), ...existing]
+          console.log(`✅ Loaded ${processedMessages.length} more messages for ${conversationId}`)
         }
 
         this.hasMoreMessages[conversationId] = pagination.hasMore
+
+        // 🔥 NEW: Trigger update to notify UI that messages are loaded
+        this.triggerUpdate()
 
         return { success: true, messages: processedMessages }
       } catch (error) {
@@ -626,219 +938,22 @@ export const useMessagesStore = defineStore('messages', {
       }
     },
 
-    // NEW: Enhanced socket event handlers
-    setupSocketEventHandlers(socketService) {
-      // Listen for new messages that affect conversation list
-      socketService.socket?.on('message:new', (messageData) => {
-        this.handleNewMessage(messageData)
-      })
-
-      // Listen for conversation updates
-      socketService.socket?.on('conversation:updated', (conversationData) => {
-        this.handleConversationUpdate(conversationData)
-      })
-
-      // Listen for message status updates that affect conversation previews
-      socketService.socket?.on('message:status_updated', (data) => {
-        this.handleMessageStatusUpdate(data)
-      })
-
-      console.log('✅ Enhanced socket event handlers set up')
-    },
-
-    handleNewMessage(messageData) {
-      try {
-        console.log('📨 Handling new message for conversation list:', messageData)
-        
-        const conversationId = messageData.conversationId
-        const authStore = useAuthStore()
-        const currentUserId = authStore.currentUser?.id
-        
-        if (!this.conversations) {
-          this.conversations = []
-        }
-        
-        let conversation = this.conversations.find(c => c.id === conversationId)
-        if (!conversation) {
-          console.warn('⚠️ Conversation not found, fetching conversations...')
-          this.fetchConversations()
-          return
-        }
-
-        console.log('🔄 Updating conversation preview and order')
-        
-        // Store original position
-        const originalIndex = this.conversations.findIndex(c => c.id === conversationId)
-        
-        // Handle message in conversation messages if conversation is loaded
-        if (this.messages[conversationId]) {
-          const messages = this.messages[conversationId]
-          
-          // Check for duplicates
-          const isDuplicate = messages.some(m => m.id === messageData.id)
-          
-          if (!isDuplicate) {
-            if (messageData.senderId === currentUserId) {
-              // Handle own message (from another device)
-              const optimisticIndex = messages.findIndex(m => 
-                m.isOptimistic && 
-                m.content === messageData.content &&
-                m.senderId === currentUserId
-              )
-              
-              if (optimisticIndex !== -1) {
-                messages[optimisticIndex] = {
-                  ...messageData,
-                  timestamp: new Date(messageData.createdAt),
-                  status: 'sent',
-                  isOptimistic: false
-                }
-              } else {
-                messages.push({
-                  ...messageData,
-                  timestamp: new Date(messageData.createdAt),
-                  status: 'sent',
-                  isOptimistic: false
-                })
-              }
-            } else {
-              // Message from other user
-              const processedMessage = {
-                ...messageData,
-                timestamp: new Date(messageData.createdAt),
-                status: 'delivered',
-                isDelivered: true,
-                isOptimistic: false
-              }
-              
-              messages.push(processedMessage)
-              
-              // Mark as delivered
-              import('@/services/socket').then(({ socketService }) => {
-                socketService.markMessageAsDelivered(messageData.id, conversationId)
-              }).catch(console.error)
-            }
-            
-            // Sort messages
-            messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-          }
-        }
-
-        // UPDATE CONVERSATION PREVIEW AND ORDER
-        this.updateConversationPreview(conversationId, messageData)
-        
-        // Handle unread count for messages from others
-        if (messageData.senderId !== currentUserId) {
-          if (this.currentConversation?.id !== conversationId) {
-            // Increment unread count if not in this conversation
-            conversation.unreadCount = (conversation.unreadCount || 0) + 1
-            console.log(`📈 Incremented unread count for ${conversationId}: ${conversation.unreadCount}`)
-          }
-        }
-
-        // FORCE MOVE CONVERSATION TO TOP
-        if (originalIndex > 0) {
-          // Remove from current position
-          const [updatedConv] = this.conversations.splice(originalIndex, 1)
-          // Add to top
-          this.conversations.unshift(updatedConv)
-          console.log(`🔝 Moved conversation ${conversationId} to top`)
-        } else if (originalIndex === 0) {
-          // Already at top, just update the reference to trigger reactivity
-          this.conversations[0] = { ...conversation }
-        }
-
-        // TRIGGER REACTIVITY
-        this.lastConversationUpdate = Date.now()
-        
-        console.log('✅ Conversation list updated with new message')
-        
-      } catch (error) {
-        console.error('❌ Error handling new message for conversation list:', error)
-      }
-    },
-
-    // Enhanced message status update handling
-    updateMessageStatus(messageId, conversationId, status) {
-      console.log(`🔄 Updating message ${messageId} to ${status}`)
-      
-      // Update message in chat
-      const messages = this.messages[conversationId]
-      if (messages) {
-        const message = messages.find(m => m.id === messageId)
-        if (message) {
-          message.status = status
-          
-          if (status === 'delivered') {
-            message.isDelivered = true
-          } else if (status === 'read') {
-            message.isRead = true
-            message.isDelivered = true
-          }
-          
-          console.log(`✅ Message ${messageId} status updated to: ${status}`)
-        }
-      }
-      
-      // Update conversation preview if this is the last message
-      const conversation = this.conversations.find(c => c.id === conversationId)
-      if (conversation && conversation.lastMessageData?.id === messageId) {
-        conversation.lastMessageData.status = status
-        if (status === 'delivered') {
-          conversation.lastMessageData.isDelivered = true
-        } else if (status === 'read') {
-          conversation.lastMessageData.isRead = true
-          conversation.lastMessageData.isDelivered = true
-        }
-      }
-    },
-
-    // NEW: Clear unread count for conversation
-    clearUnreadCount(conversationId) {
-      const conversation = this.conversations.find(c => c.id === conversationId)
-      if (conversation && conversation.unreadCount > 0) {
-        conversation.unreadCount = 0
-        console.log(`🧹 Cleared unread count for ${conversationId}`)
-      }
-    },
-
-    // 🔥 NEW: Refresh unread counts from server (fallback)
-    async refreshUnreadCounts() {
-      try {
-        // Get fresh conversation data with unread counts
-        const response = await messagesAPI.getConversations()
-        const freshConversations = response.data.conversations
-        
-        // Update unread counts in existing conversations
-        freshConversations.forEach(freshConv => {
-          const existingConv = this.conversations.find(c => c.id === freshConv.id)
-          if (existingConv) {
-            existingConv.unreadCount = freshConv.unreadCount || 0
-          }
-        })
-        
-        console.log('✅ Unread counts refreshed from server')
-      } catch (error) {
-        console.error('❌ Failed to refresh unread counts:', error)
-      }
-    },
-
     // Enhanced typing handlers
     handleTypingStart(data) {
       try {
         const { conversationId, user } = data
         const authStore = useAuthStore()
-        
+
         // Don't show typing for own messages
         if (user?.id === authStore.currentUser?.id) return
-        
+
         if (!this.typingUsers[conversationId]) {
           this.typingUsers[conversationId] = new Set()
         }
-        
+
         this.typingUsers[conversationId].add(user?.id || data.userId)
         console.log(`⌨️ User ${user?.username || data.userId} started typing in ${conversationId}`)
-        
+
       } catch (error) {
         console.error('❌ Error handling typing start:', error)
       }
@@ -847,67 +962,124 @@ export const useMessagesStore = defineStore('messages', {
     handleTypingStop(data) {
       try {
         const { conversationId, user } = data
-        
+
         if (this.typingUsers[conversationId]) {
           this.typingUsers[conversationId].delete(user?.id || data.userId)
-          
+
           if (this.typingUsers[conversationId].size === 0) {
             delete this.typingUsers[conversationId]
           }
         }
-        
+
         console.log(`⌨️ User ${user?.username || data.userId} stopped typing in ${conversationId}`)
-        
+
       } catch (error) {
         console.error('❌ Error handling typing stop:', error)
       }
     },
 
-    // Enhanced user status handlers
+    // 🔥 FIXED: Handle user coming online with proper reactivity
     handleUserOnline(userId) {
       try {
-        this.onlineUsers.add(userId)
-        
-        // Update conversation participant status
-        this.conversations.forEach(conversation => {
-          if (conversation.participants) {
-            const participant = conversation.participants.find(p => p.userId === userId)
-            if (participant) {
-              participant.user.isOnline = true
-            }
-          }
-        })
-        
-        console.log(`🟢 User ${userId} is now online`)
-        
+        console.log(`🟢 User ${userId} came online`)
+        this.updateUserOnlineStatus(userId, true, 'socket_online')
       } catch (error) {
         console.error('❌ Error handling user online:', error)
       }
     },
 
+    // 🔥 FIXED: Handle user going offline with proper reactivity
     handleUserOffline(userId) {
       try {
-        this.onlineUsers.delete(userId)
-        
-        // Update conversation participant status
-        this.conversations.forEach(conversation => {
-          if (conversation.participants) {
-            const participant = conversation.participants.find(p => p.userId === userId)
-            if (participant) {
-              participant.user.isOnline = false
-            }
-          }
-        })
-        
         console.log(`🔴 User ${userId} went offline`)
-        
+        this.updateUserOnlineStatus(userId, false, 'socket_offline')
       } catch (error) {
         console.error('❌ Error handling user offline:', error)
       }
     },
 
+    // 🔥 NEW: Get real-time online status for a user (used in components)
+    isUserOnline(userId) {
+      const _ = this.onlineStatusUpdateTrigger // Force reactivity
+      return this.userOnlineStatus.get(userId) || false
+    },
+
+    // 🔥 NEW: Initialize online status from conversations
+    initializeOnlineStatus() {
+      console.log('🔄 Initializing online status from conversations...')
+
+      this.conversations.forEach(conversation => {
+        // Initialize direct chat participants
+        if (!conversation.isGroup && conversation.otherParticipant) {
+          const userId = conversation.otherParticipant.id
+          const isOnline = conversation.otherParticipant.isOnline || false
+          this.userOnlineStatus.set(userId, isOnline)
+
+          if (isOnline) {
+            this.onlineUsers.add(userId)
+          }
+        }
+
+        // Initialize group chat participants
+        if (conversation.participants) {
+          conversation.participants.forEach(participant => {
+            if (participant.user) {
+              const userId = participant.user.id
+              const isOnline = participant.user.isOnline || false
+              this.userOnlineStatus.set(userId, isOnline)
+
+              if (isOnline) {
+                this.onlineUsers.add(userId)
+              }
+            }
+          })
+        }
+      })
+
+      console.log(`✅ Initialized online status for ${this.userOnlineStatus.size} users`)
+      this.triggerUpdate('online')
+    },
+
+    // 🔥 ENHANCED: Fetch conversations with online status initialization
+    async fetchConversations() {
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await messagesAPI.getConversations()
+        this.conversations = response.data.conversations.map(conv => ({
+          ...conv,
+          lastMessageTime: conv.lastMessageTime
+            ? new Date(conv.lastMessageTime)
+            : new Date(conv.createdAt),
+          lastMessageData: conv.lastMessageData || null,
+          unreadCount: conv.unreadCount || 0
+        }))
+
+        console.log(`✅ Loaded ${this.conversations.length} conversations`)
+
+        // 🔥 NEW: Initialize online status from fresh data
+        this.initializeOnlineStatus()
+
+        // Initialize socket if not already done
+        if (!this.socketConnected) {
+          await this.initializeSocket()
+        }
+
+        this.triggerUpdate('general')
+        return { success: true }
+
+      } catch (error) {
+        console.error('❌ Fetch conversations error:', error)
+        this.error = error.response?.data?.message || 'Failed to load conversations'
+        return { success: false, error: this.error }
+      } finally {
+        this.loading = false
+      }
+    },
+
     // Create new conversation
-    createConversation: async function(participantIds, isGroup = false, name = null, avatarUrl = null) {
+    createConversation: async function (participantIds, isGroup = false, name = null, avatarUrl = null) {
       this.loading = true
       this.error = null
 
@@ -925,13 +1097,14 @@ export const useMessagesStore = defineStore('messages', {
           lastMessageTime: newConversation.lastMessageTime
             ? new Date(newConversation.lastMessageTime)
             : new Date(newConversation.createdAt),
-          lastMessageData: newConversation.lastMessageData || null
+          lastMessageData: newConversation.lastMessageData || null,
+          unreadCount: 0 // New conversations start with 0 unread
         }
 
         this.conversations.unshift(processedConversation)
         await this.selectConversation(processedConversation.id)
-        
-        this.triggerUpdate()
+
+        this.triggerUpdate('unread')
 
         return { success: true, conversation: processedConversation }
       } catch (error) {
@@ -943,7 +1116,7 @@ export const useMessagesStore = defineStore('messages', {
       }
     },
 
-    // Enhanced markConversationAsRead that updates conversation preview
+    // 🔥 ENHANCED: Mark conversation as read with proper unread count handling
     async markConversationAsRead(conversationId) {
       const conversation = this.conversations.find(c => c.id === conversationId)
       if (!conversation || conversation.unreadCount === 0) return
@@ -951,8 +1124,8 @@ export const useMessagesStore = defineStore('messages', {
       try {
         await messagesAPI.markAsRead(conversationId)
 
-        // Update local state
-        conversation.unreadCount = 0
+        // 🔥 ENHANCED: Update local state with proper reactivity
+        this.clearUnreadCount(conversationId, 'mark_as_read')
 
         // Mark messages as read
         const messages = this.messages[conversationId] || []
@@ -972,8 +1145,64 @@ export const useMessagesStore = defineStore('messages', {
           conversation.lastMessageData.status = 'read'
         }
 
+        console.log(`✅ Marked conversation ${conversationId} as read`)
+
       } catch (error) {
-        console.error('Mark as read error:', error)
+        console.error('❌ Mark as read error:', error)
+      }
+    },
+
+    // 🔥 FIXED: Auto-mark as read without delays
+    async autoMarkAsRead(conversationId) {
+      const messages = this.messages[conversationId] || []
+      const authStore = useAuthStore()
+      const currentUserId = authStore.currentUser?.id
+
+      // Find unread messages from other users
+      const unreadMessages = messages.filter(msg =>
+        msg.senderId !== currentUserId &&
+        !msg.isRead
+      )
+
+      if (unreadMessages.length === 0) return
+
+      console.log(`📖 Auto-marking ${unreadMessages.length} messages as read`)
+
+      // 🔥 FIXED: Clear unread count immediately, no delays
+      this.clearUnreadCount(conversationId, 'auto_mark_read')
+
+      // Mark as read locally first (optimistic update)
+      unreadMessages.forEach(msg => {
+        msg.isRead = true
+        msg.status = 'read'
+      })
+
+      // Persist to database and emit socket events (async, don't wait)
+      try {
+        const messageIds = unreadMessages.map(msg => msg.id)
+
+        // Bulk update in database
+        messagesAPI.updateConversationMessageStatus(conversationId, 'read', messageIds).catch(error => {
+          console.error('❌ Failed to mark messages as read on server:', error)
+        })
+
+        // Emit socket events for each message
+        const { socketService } = await import('@/services/socket')
+        if (socketService.isSocketConnected()) {
+          unreadMessages.forEach(msg => {
+            socketService.markMessageAsRead(msg.id, conversationId)
+          })
+
+          // Also mark conversation as read
+          messagesAPI.markAsRead(conversationId).catch(error => {
+            console.error('❌ Failed to mark conversation as read on server:', error)
+          })
+        }
+
+        console.log(`✅ Successfully marked ${unreadMessages.length} messages as read`)
+
+      } catch (error) {
+        console.error('❌ Failed to process auto mark as read:', error)
       }
     },
 
@@ -992,12 +1221,15 @@ export const useMessagesStore = defineStore('messages', {
     // Search conversations
     setSearchQuery(query) {
       this.searchQuery = query
+      this.triggerUpdate()
     },
 
     // Switch chat type
     setChatType(type) {
       this.selectedChatType = type
       this.currentConversation = null
+      this.currentConversationId = null // 🔥 NEW: Also clear ID tracking
+      this.triggerUpdate()
     },
 
     // Upload media for message
@@ -1014,83 +1246,23 @@ export const useMessagesStore = defineStore('messages', {
       }
     },
 
-    updateConversationPreview(conversationId, message) {
-      const convIndex = this.conversations.findIndex(c => c.id === conversationId)
-      if (convIndex === -1) return
-
-      const conversation = this.conversations[convIndex]
-      const authStore = useAuthStore()
-      const currentUserId = authStore.currentUser?.id
-
-      // Create timestamp
-      let timestamp
-      try {
-        timestamp = new Date(message.createdAt || new Date())
-        if (isNaN(timestamp.getTime())) {
-          timestamp = new Date()
-        }
-      } catch (error) {
-        timestamp = new Date()
-      }
-
-      // Create preview content
-      let previewContent = ''
-      if (message.mediaUrls && message.mediaUrls.length > 0) {
-        if (message.content && message.content.trim()) {
-          previewContent = message.content.trim()
-        } else {
-          previewContent = '📎 Media'
-        }
-      } else {
-        previewContent = message.content || ''
-      }
-
-      // Update conversation data
-      const updatedConversation = {
-        ...conversation,
-        lastMessage: previewContent,
-        lastActivity: message.createdAt || new Date().toISOString(),
-        lastMessageTime: timestamp,
-        lastMessageData: {
-          id: message.id,
-          content: message.content || '',
-          mediaUrls: message.mediaUrls || [],
-          senderId: message.senderId,
-          createdAt: message.createdAt,
-          status: message.status || 'sent',
-          isRead: message.isRead || false,
-          isDelivered: message.isDelivered || false
-        }
-      }
-
-      // Update the conversation in place
-      this.conversations[convIndex] = updatedConversation
-
-      // TRIGGER REACTIVITY
-      this.lastConversationUpdate = Date.now()
-
-      console.log('✅ Updated conversation preview for:', conversationId)
-    },
-
-    // NEW: Handle conversation updates from socket
+    // Handle conversation updates from socket
     handleConversationUpdate(conversationData) {
       try {
         console.log('💬 Handling conversation update:', conversationData.id)
-        
+
         const index = this.conversations.findIndex(c => c.id === conversationData.id)
         if (index !== -1) {
           // Update existing conversation
           this.conversations[index] = {
             ...this.conversations[index],
             ...conversationData,
-            lastMessageTime: conversationData.lastMessageTime 
+            lastMessageTime: conversationData.lastMessageTime
               ? new Date(conversationData.lastMessageTime)
               : this.conversations[index].lastMessageTime
           }
-          
-          // TRIGGER REACTIVITY
-          this.lastConversationUpdate = Date.now()
-          
+
+          this.triggerUpdate()
           console.log('✅ Conversation updated in list')
         }
       } catch (error) {
@@ -1137,139 +1309,6 @@ export const useMessagesStore = defineStore('messages', {
       }, 1000)
     },
 
-    // Update message status with database persistence
-    async updateMessageStatus(messageId, conversationId, status) {
-      const messages = this.messages[conversationId]
-      if (!messages) return
-
-      const message = messages.find(m => m.id === messageId)
-      if (!message) return
-
-      const authStore = useAuthStore()
-      const currentUserId = authStore.currentUser?.id
-
-      // Don't update own messages via this method
-      if (message.senderId === currentUserId) return
-
-      // Update local state immediately
-      message.status = status
-      Object.assign(message, statusToDbFields(status))
-
-      // Persist to database
-      try {
-        await messagesAPI.updateMessageStatus(messageId, status)
-        console.log(`Message ${messageId} status updated to ${status} in database`)
-      } catch (error) {
-        console.error('Failed to update message status in database:', error)
-        // Revert local state on error
-        message.status = getMessageStatus(message, currentUserId)
-      }
-    },
-
-    // Set message status when sending
-    setMessageStatus(messageId, conversationId, status) {
-      const messages = this.messages[conversationId]
-      if (messages) {
-        const message = messages.find(m => m.id === messageId)
-        if (message) {
-          message.status = status
-        }
-      }
-    },
-
-    // Enhanced auto-mark as read with proper API calls
-    async autoMarkAsRead(conversationId) {
-      const messages = this.messages[conversationId] || []
-      const authStore = useAuthStore()
-      const currentUserId = authStore.currentUser?.id
-      
-      // Find unread messages from other users
-      const unreadMessages = messages.filter(msg => 
-        msg.senderId !== currentUserId && 
-        !msg.isRead
-      )
-      
-      if (unreadMessages.length === 0) return
-      
-      console.log(`📖 Auto-marking ${unreadMessages.length} messages as read`)
-      
-      // Mark as read locally first (optimistic update)
-      unreadMessages.forEach(msg => {
-        msg.isRead = true
-        msg.status = 'read'
-      })
-      
-      // Update conversation unread count
-      const conversation = this.conversations.find(c => c.id === conversationId)
-      if (conversation) {
-        conversation.unreadCount = 0
-      }
-      
-      // Persist to database and emit socket events
-      try {
-        const messageIds = unreadMessages.map(msg => msg.id)
-        
-        // Bulk update in database
-        await messagesAPI.updateConversationMessageStatus(conversationId, 'read', messageIds)
-        
-        // Emit socket events for each message
-        unreadMessages.forEach(msg => {
-          socketService.markMessageAsRead(msg.id, conversationId)
-        })
-        
-        // Also mark conversation as read
-        await messagesAPI.markAsRead(conversationId)
-        
-        console.log(`✅ Successfully marked ${unreadMessages.length} messages as read`)
-        
-      } catch (error) {
-        console.error('❌ Failed to mark messages as read:', error)
-        
-        // Revert optimistic updates on error
-        unreadMessages.forEach(msg => {
-          msg.isRead = false
-          msg.status = 'delivered'
-        })
-        
-        if (conversation) {
-          conversation.unreadCount = unreadMessages.length
-        }
-      }
-    },
-
-    // 🔥 NEW: Update conversation unread count
-    updateConversationUnreadCount(conversationId, count) {
-      const conversation = this.conversations.find(c => c.id === conversationId)
-      if (conversation) {
-        conversation.unreadCount = Math.max(0, count)
-        console.log(`📊 Updated unread count for ${conversationId}: ${conversation.unreadCount}`)
-      }
-    },
-
-    clearUnreadCount(conversationId) {
-      const conversation = this.conversations.find(c => c.id === conversationId)
-      if (conversation && conversation.unreadCount > 0) {
-        conversation.unreadCount = 0
-        
-        // TRIGGER REACTIVITY
-        this.lastConversationUpdate = Date.now()
-        
-        console.log(`🧹 Cleared unread count for ${conversationId}`)
-      }
-    },
-
-    incrementUnreadCount(conversationId) {
-      const conversation = this.conversations.find(c => c.id === conversationId)
-      if (conversation) {
-        conversation.unreadCount = (conversation.unreadCount || 0) + 1
-        
-        // TRIGGER REACTIVITY
-        this.lastConversationUpdate = Date.now()
-        
-        console.log(`📈 Incremented unread count for ${conversationId}: ${conversation.unreadCount}`)
-      }
-    },
-
     // Helper method to get message status
     getMessageStatus(message, currentUserId) {
       if (message.senderId === currentUserId) {
@@ -1280,15 +1319,25 @@ export const useMessagesStore = defineStore('messages', {
       return 'delivered'
     },
 
-    // Utility methods
-    setChatType(type) {
-      this.selectedChatType = type
-      this.triggerUpdate()
-    },
+    clearCurrentConversation() {
+      console.log('🧹 Clearing current conversation')
 
-    setSearchQuery(query) {
-      this.searchQuery = query
-      this.triggerUpdate()
+      // Leave current conversation room if connected
+      if (this.currentConversation && socketService.isSocketConnected()) {
+        socketService.leaveConversation(this.currentConversation.id)
+      }
+
+      // Clear conversation state
+      this.currentConversation = null
+      this.currentConversationId = null
+
+      // Clear any typing timers
+      if (this.typingTimer) {
+        clearTimeout(this.typingTimer)
+        this.typingTimer = null
+      }
+
+      console.log('✅ Current conversation cleared')
     },
 
     clearError() {
@@ -1300,9 +1349,9 @@ export const useMessagesStore = defineStore('messages', {
       return this.conversations.length > 0 || this.loading
     },
 
-    // Reset store
+    // 🔥 ENHANCED: Reset store with proper cleanup
     cleanup() {
-      console.log('Cleaning up messages store...')
+      console.log('🧹 Cleaning up messages store...')
 
       // Disconnect socket
       if (this.socketService) {
@@ -1313,16 +1362,27 @@ export const useMessagesStore = defineStore('messages', {
       this.conversations = []
       this.messages = {}
       this.currentConversation = null
+      this.currentConversationId = null // 🔥 NEW: Also clear ID tracking
       this.socketConnected = false
-      this.triggerUpdate()
       this.typingUsers = {}
       this.searchQuery = ''
       this.loading = false
       this.sendingMessage = false
       this.error = null
       this.hasMoreMessages = {}
+      this.lastUpdate = 0
+      this.unreadCountUpdateTrigger = 0
+      this.messageProcessingQueue.clear() // 🔥 NEW: Clear processing queue
 
-      console.log('Messages store cleanup complete')
-    },
+      // 🔥 NEW: Clear online status
+      this.onlineStatusUpdateTrigger = 0
+      this.userOnlineStatus.clear()
+      this.onlineUsers.clear()
+
+      // 🔥 CRITICAL: Trigger final reactivity update
+      this.triggerUpdate('unread')
+
+      console.log('✅ Messages store cleanup complete')
+    }
   }
 })

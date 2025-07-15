@@ -5,6 +5,7 @@ import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { uploadAPI } from '@/services/api'
 import GroupInfoModal from '@/components/GroupInfoModal.vue'
+import NewMessagesDivider from '@/components/NewMessagesDivider.vue'
 
 const router = useRouter()
 const messagesStore = useMessagesStore()
@@ -14,12 +15,26 @@ const props = defineProps({
   isMobile: {
     type: Boolean,
     default: false
+  },
+  // 🔥 FIX: Add missing props to prevent Vue warnings
+  isDraft: {
+    type: Boolean,
+    default: false
+  },
+  draftRecipients: {
+    type: Array,
+    default: () => []
+  },
+  draftGroupName: {
+    type: String,
+    default: ''
   }
 })
 
-const emit = defineEmits(['back'])
+// 🔥 FIX: Add missing emits to prevent Vue warnings
+const emit = defineEmits(['back', 'conversationCreated'])
 
-// Refs - keep exactly the same as before
+// Refs
 const messagesContainer = ref(null)
 const messageInputValue = ref('')
 const selectedFiles = ref([])
@@ -30,10 +45,17 @@ const showDirectMessageOptions = ref(false)
 const showGroupOptions = ref(false)
 const showGroupInfoModal = ref(false)
 
-// Computed - back to original
+// 🔥 FIXED: Divider state with proper persistence logic
+const showUnreadDivider = ref(false)
+const dividerUnreadCount = ref(0) // Store the original unread count when divider was shown
+
+// Computed
 const currentConversation = computed(() => messagesStore.currentConversation)
 const messages = computed(() => messagesStore.currentMessages)
 const typingUsers = computed(() => messagesStore.typingUsers || [])
+
+// 🔥 FIXED: Use the ref directly in template
+const shouldShowDivider = computed(() => showUnreadDivider.value)
 
 const canLoadMore = computed(() => {
   if (!currentConversation.value) return false
@@ -61,142 +83,104 @@ const isGroupAdmin = computed(() => {
          currentConversation.value.participants[0]?.userId === currentUserId
 })
 
+// 🔥 FIXED: Use stored unread count for divider (doesn't change when messages are marked as read)
+const unreadMessagesCount = computed(() => {
+  return dividerUnreadCount.value
+})
+
+const dividerPosition = computed(() => {
+  if (!shouldShowDivider.value || !messages.value?.length) return -1
+  
+  const totalMessages = messages.value.length
+  const unreadCount = unreadMessagesCount.value
+  
+  const position = Math.max(0, totalMessages - Math.min(unreadCount, 5))
+  return position
+})
+
+// 🔥 FIXED: Show divider ONLY when entering conversation with unread messages
+const showDividerForConversation = () => {
+  const unreadCount = currentConversation.value?.unreadCount || 0
+  
+  if (unreadCount > 0) {
+    console.log('📍 Showing divider for conversation with', unreadCount, 'unread messages')
+    showUnreadDivider.value = true
+    dividerUnreadCount.value = unreadCount // Store original count
+  } else {
+    console.log('📍 No unread messages, not showing divider')
+    showUnreadDivider.value = false
+    dividerUnreadCount.value = 0
+  }
+}
+
+// 🔥 FIXED: Hide divider ONLY when user sends message or exits
+const hideDivider = () => {
+  console.log('📍 Hiding divider (user action)')
+  showUnreadDivider.value = false
+  dividerUnreadCount.value = 0
+}
+
+// Simple scroll functions
+const scrollToBottom = (smooth = false) => {
+  if (!messagesContainer.value) return
+  
+  const container = messagesContainer.value
+  
+  requestAnimationFrame(() => {
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: smooth ? 'smooth' : 'instant'
+    })
+    isAtBottom.value = true
+  })
+}
+
+const checkIfAtBottom = () => {
+  if (!messagesContainer.value) return true
+  
+  const container = messagesContainer.value
+  const threshold = 100
+  const atBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) <= threshold
+  
+  isAtBottom.value = atBottom
+  return atBottom
+}
+
+const handleScroll = () => {
+  checkIfAtBottom()
+  
+  // 🔥 FIXED: Mark as read but don't hide divider
+  if (isAtBottom.value && currentConversation.value) {
+    markMessagesAsRead()
+  }
+}
+
+// Mark messages as read (but don't hide divider)
+const markMessagesAsRead = async () => {
+  if (!currentConversation.value) return
+  
+  try {
+    await messagesStore.autoMarkAsRead(currentConversation.value.id)
+    console.log('✅ Messages marked as read (divider stays visible)')
+    // 🔥 IMPORTANT: Don't hide divider here
+  } catch (error) {
+    console.error('Failed to mark messages as read:', error)
+  }
+}
+
 const loadMoreMessages = async () => {
   if (!currentConversation.value) return
   await messagesStore.loadMoreMessages(currentConversation.value.id)
 }
 
-// Drag and drop
-const handleDragEnter = (e) => {
-  e.preventDefault()
-  isDragging.value = true
-}
-
-const handleDragLeave = (e) => {
-  e.preventDefault()
-  if (!e.currentTarget.contains(e.relatedTarget)) {
-    isDragging.value = false
-  }
-}
-
-const handleDragOver = (e) => {
-  e.preventDefault()
-}
-
-const handleDrop = (e) => {
-  e.preventDefault()
-  isDragging.value = false
-  
-  const files = Array.from(e.dataTransfer.files)
-  handleFilesDrop(files)
-}
-
-const handleFilesDrop = async (files) => {
-  for (const file of files) {
-    if (selectedFiles.value.length >= 10) {
-      alert('Maximum 10 files allowed')
-      break
-    }
-
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      
-      const response = await uploadAPI.uploadFile(formData)
-      
-      selectedFiles.value.push({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url: response.data.url,
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
-      })
-    } catch (error) {
-      console.error('Failed to upload file:', error)
-      alert(`Failed to upload ${file.name}`)
-    }
-  }
-}
-
-// Navigation helpers
-const navigateToProfile = () => {
-  if (!currentConversation.value?.otherParticipant) return
-  router.push(`/user/${currentConversation.value.otherParticipant.id}`)
-}
-
-const navigateToGroupInfo = () => {
-  showGroupInfoModal.value = true
-}
-
-// Conversation actions
-const viewUserProfile = () => {
-  navigateToProfile()
-}
-
-const toggleMuteConversation = async () => {
-  console.log('Toggle mute conversation')
-}
-
-const toggleMuteGroup = async () => {
-  console.log('Toggle mute group')
-}
-
-const openSearchInConversation = () => {
-  console.log('Open search in conversation')
-}
-
-const clearChatHistory = async () => {
-  if (confirm('Are you sure you want to clear the chat history? This action cannot be undone.')) {
-    try {
-      console.log('Clear chat history')
-    } catch (error) {
-      console.error('Failed to clear chat history:', error)
-    }
-  }
-}
-
-const blockUser = async () => {
-  if (confirm('Are you sure you want to block this user?')) {
-    try {
-      console.log('Block user')
-    } catch (error) {
-      console.error('Failed to block user:', error)
-    }
-  }
-}
-
-const leaveGroup = async () => {
-  if (confirm('Are you sure you want to leave this group?')) {
-    try {
-      const result = await messagesStore.leaveConversation(currentConversation.value.id)
-      if (result.success) {
-        if (props.isMobile) {
-          emit('back')
-        } else {
-          router.push('/messages')
-        }
-      }
-    } catch (error) {
-      console.error('Failed to leave group:', error)
-    }
-  }
-}
-
-const deleteGroup = async () => {
-  if (confirm('Are you sure you want to delete this group? This action cannot be undone and will remove the group for all members.')) {
-    try {
-      console.log('Delete group')
-    } catch (error) {
-      console.error('Failed to delete group:', error)
-    }
-  }
-}
-
-// SIMPLIFIED Message handling - this is the key change
+// 🔥 FIXED: Hide divider when user sends a message
 const sendMessage = async () => {
   if (!canSendMessage.value || !currentConversation.value) {
     return
   }
+
+  // 🔥 FIXED: Hide divider when user sends a reply
+    hideDivider()
 
   const content = messageInputValue.value.trim()
   const mediaUrls = selectedFiles.value.map(file => file.url).filter(Boolean)
@@ -231,12 +215,15 @@ const sendMessage = async () => {
 
   console.log('Sending message:', { content, mediaUrls, messageType })
 
-  // Just send the message - no conversation creation logic here
   const result = await messagesStore.sendMessage(content, mediaUrls, messageType)
 
   if (result.success) {
     messageInputValue.value = ''
     selectedFiles.value = []
+    
+    
+    
+    // Always scroll to bottom after sending a message
     await nextTick()
     scrollToBottom(true)
   } else {
@@ -251,11 +238,12 @@ const handleKeyPress = (event) => {
   }
 }
 
+// Handle input changes for typing indicator
 const handleInputChange = () => {
-  // Handle typing indicators here if needed
+  messagesStore.handleTypingInput()
 }
 
-// File handling
+// File handling functions
 const triggerFileUpload = () => {
   fileInput.value?.click()
 }
@@ -296,7 +284,7 @@ const removeFile = (index) => {
   selectedFiles.value.splice(index, 1)
 }
 
-// Helper functions - keep all existing ones
+// Helper functions
 const getFileExtension = (url) => {
   return url.split('.').pop().toLowerCase()
 }
@@ -328,6 +316,7 @@ const downloadFile = (url, filename) => {
   document.body.removeChild(link)
 }
 
+// Conversation helper functions
 const getConversationName = (conversation) => {
   if (conversation.isGroup) {
     return conversation.name || 'Group Chat'
@@ -350,20 +339,28 @@ const getConversationAvatar = (conversation) => {
   return conversation.otherParticipant?.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg'
 }
 
+const isOnline = (conversation) => {
+  if (conversation.isGroup) return false
+  
+  if (!conversation.otherParticipant?.id) return false
+  
+  // 🔥 NEW: Get real-time online status from store instead of stale data
+  return messagesStore.isUserOnline(conversation.otherParticipant.id)
+}
+
+// 🔥 ENHANCED: Update getConversationStatus to use real-time data
 const getConversationStatus = (conversation) => {
   if (conversation.isGroup) {
     const memberCount = conversation.participants?.length || 0
     return `${memberCount} members`
   }
   
-  return isOnline(conversation) 
+  // 🔥 FIXED: Use real-time online status
+  const userIsOnline = messagesStore.isUserOnline(conversation.otherParticipant?.id)
+  
+  return userIsOnline 
     ? 'Online' 
     : `Last seen ${formatLastSeen(conversation.otherParticipant?.lastSeen)}`
-}
-
-const isOnline = (conversation) => {
-  if (conversation.isGroup) return false
-  return conversation.otherParticipant?.isOnline || false
 }
 
 const formatLastSeen = (date) => {
@@ -386,19 +383,6 @@ const formatLastSeen = (date) => {
   } catch (error) {
     console.error('Error formatting last seen:', error, 'Date:', date)
     return 'Unknown'
-  }
-}
-
-const closeDropdowns = () => {
-  showDirectMessageOptions.value = false
-  showGroupOptions.value = false
-}
-
-const handleClickOutside = (event) => {
-  const isClickInsideDropdown = event.target.closest('.relative')
-  if (!isClickInsideDropdown) {
-    showDirectMessageOptions.value = false
-    showGroupOptions.value = false
   }
 }
 
@@ -462,106 +446,201 @@ const formatDate = (date) => {
   }
 }
 
-// Watchers
-// Watch for new messages and auto-scroll
-watch(() => messages.value, (newMessages, oldMessages) => {
-  if (!newMessages || !oldMessages) return
+// Navigation and action functions
+const navigateToProfile = () => {
+  if (!currentConversation.value?.otherParticipant) return
+  router.push(`/user/${currentConversation.value.otherParticipant.id}`)
+}
+
+const navigateToGroupInfo = () => {
+  showGroupInfoModal.value = true
+}
+
+const viewUserProfile = () => {
+  navigateToProfile()
+}
+
+const toggleMuteConversation = async () => {
+  console.log('Toggle mute conversation')
+}
+
+const toggleMuteGroup = async () => {
+  console.log('Toggle mute group')
+}
+
+const openSearchInConversation = () => {
+  console.log('Open search in conversation')
+}
+
+const clearChatHistory = async () => {
+  if (confirm('Are you sure you want to clear the chat history? This action cannot be undone.')) {
+    try {
+      console.log('Clear chat history')
+    } catch (error) {
+      console.error('Failed to clear chat history:', error)
+    }
+  }
+}
+
+const blockUser = async () => {
+  if (confirm('Are you sure you want to block this user?')) {
+    try {
+      console.log('Block user')
+    } catch (error) {
+      console.error('Failed to block user:', error)
+    }
+  }
+}
+
+const leaveGroup = async () => {
+  if (confirm('Are you sure you want to leave this group?')) {
+    try {
+      const result = await messagesStore.leaveConversation(currentConversation.value.id)
+      if (result.success) {
+        if (props.isMobile) {
+          emit('back')
+        } else {
+          router.push('/messages')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to leave group:', error)
+    }
+  }
+}
+
+const deleteGroup = async () => {
+  if (confirm('Are you sure you want to delete this group? This action cannot be undone and will remove the group for all members.')) {
+    try {
+      console.log('Delete group')
+    } catch (error) {
+      console.error('Failed to delete group:', error)
+    }
+  }
+}
+
+// Drag and drop handlers
+const handleDragEnter = (e) => {
+  e.preventDefault()
+  isDragging.value = true
+}
+
+const handleDragLeave = (e) => {
+  e.preventDefault()
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    isDragging.value = false
+  }
+}
+
+const handleDragOver = (e) => {
+  e.preventDefault()
+}
+
+const handleDrop = (e) => {
+  e.preventDefault()
+  isDragging.value = false
   
-  // Check if new messages were added
-  if (newMessages.length > oldMessages.length) {
+  const files = Array.from(e.dataTransfer.files)
+  handleFilesDrop(files)
+}
+
+const handleFilesDrop = async (files) => {
+  for (const file of files) {
+    if (selectedFiles.value.length >= 10) {
+      alert('Maximum 10 files allowed')
+      break
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await uploadAPI.uploadFile(formData)
+      
+      selectedFiles.value.push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: response.data.url,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+      })
+    } catch (error) {
+      console.error('Failed to upload file:', error)
+      alert(`Failed to upload ${file.name}`)
+    }
+  }
+}
+
+// 🔥 FIXED: Watch for conversation changes - show divider on entry
+watch(() => currentConversation.value?.id, async (newConvId, oldConvId) => {
+  if (newConvId && newConvId !== oldConvId) {
+    console.log(`🔄 Conversation changed to: ${newConvId}`)
+    
+    await nextTick()
+    
+    // 🔥 FIXED: Show divider if entering conversation with unread messages
+    showDividerForConversation()
+    
+    setTimeout(() => {
+      if (messagesContainer.value && messages.value?.length > 0) {
+        scrollToBottom(false)
+      }
+    }, 300)
+    
+    // Mark as read after delay (but don't hide divider)
+    setTimeout(() => {
+      if (currentConversation.value?.id === newConvId) {
+        markMessagesAsRead()
+      }
+    }, 2000)
+  }
+})
+
+watch(() => messages.value, (newMessages) => {
+  if (newMessages && newMessages.length > 0 && messagesContainer.value) {
     nextTick(() => {
-      // Auto-scroll only if user was near the bottom
-      if (isAtBottom.value || isNearBottom()) {
-        scrollToBottom(true)
+      const container = messagesContainer.value
+      if (container.scrollTop === 0 && container.scrollHeight > container.clientHeight) {
+        setTimeout(() => scrollToBottom(false), 200)
       }
     })
   }
-}, { deep: true })
+}, { immediate: true })
 
-// Watch for conversation changes
-watch(() => currentConversation.value?.id, (newConvId, oldConvId) => {
-  if (newConvId && newConvId !== oldConvId) {
+watch(() => messages.value?.length, (newLength, oldLength) => {
+  if (newLength > oldLength && isAtBottom.value) {
     nextTick(() => {
-      scrollToBottom(false) // Smooth scroll to bottom when switching conversations
-      markMessagesAsRead() // Mark messages as read when opening conversation
+      scrollToBottom(true)
     })
   }
 })
 
-// Enhanced scroll methods
-const scrollToBottom = (instant = false) => {
-  if (!messagesContainer.value) return
-  
-  const container = messagesContainer.value
-  const scrollOptions = {
-    top: container.scrollHeight,
-    behavior: instant ? 'instant' : 'smooth'
-  }
-  
-  container.scrollTo(scrollOptions)
-  isAtBottom.value = true
-}
-
-const isNearBottom = () => {
-  if (!messagesContainer.value) return true
-  
-  const container = messagesContainer.value
-  const threshold = 100 // pixels from bottom
-  return (container.scrollHeight - container.scrollTop - container.clientHeight) <= threshold
-}
-
-const handleScroll = () => {
-  if (!messagesContainer.value) return
-  
-  const container = messagesContainer.value
-  const threshold = 50
-  
-  // Update isAtBottom state
-  isAtBottom.value = (container.scrollHeight - container.scrollTop - container.clientHeight) <= threshold
-  
-  // Mark messages as read when scrolling (debounced)
-  clearTimeout(scrollTimeout.value)
-  scrollTimeout.value = setTimeout(() => {
-    if (currentConversation.value) {
-      markMessagesAsRead()
-    }
-  }, 500)
-}
-
-// Auto-mark messages as read
-const markMessagesAsRead = async () => {
-  if (!currentConversation.value) return
-  
-  try {
-    await messagesStore.autoMarkAsRead(currentConversation.value.id)
-  } catch (error) {
-    console.error('Failed to mark messages as read:', error)
-  }
-}
-
-// Add scroll timeout ref
-const scrollTimeout = ref(null)
-
-// Add scroll listener on mount
 onMounted(() => {
+  console.log('📱 ChatArea mounted')
+  
   if (messagesContainer.value) {
-    messagesContainer.value.addEventListener('scroll', handleScroll)
+    messagesContainer.value.addEventListener('scroll', handleScroll, { passive: true })
+  }
+  
+  // 🔥 FIXED: Show divider on mount if needed
+  showDividerForConversation()
+  
+  if (currentConversation.value && messages.value?.length > 0) {
+    setTimeout(() => scrollToBottom(false), 300)
   }
 })
 
-// Remove scroll listener on unmount
 onUnmounted(() => {
   if (messagesContainer.value) {
     messagesContainer.value.removeEventListener('scroll', handleScroll)
   }
-  if (scrollTimeout.value) {
-    clearTimeout(scrollTimeout.value)
-  }
+  
+  // 🔥 FIXED: Hide divider when exiting chat (one of the two conditions)
+  hideDivider()
 })
 </script>
 
 <template>
-  <!-- EXACT SAME TEMPLATE AS BEFORE - NO CHANGES -->
   <main 
     v-if="currentConversation"
     class="flex-1 flex flex-col bg-[#141619] relative"
@@ -586,34 +665,34 @@ onUnmounted(() => {
         </button>
 
         <div class="flex items-center gap-3">
-            <!-- Profile Image & Info -->
-        <div 
-          class="relative cursor-pointer"
-          :class="{ 'hover:opacity-80 transition-opacity': true }"
-          @click="currentConversation.isGroup ? navigateToGroupInfo() : navigateToProfile()"
-        >
-          <img 
-            :src="getConversationAvatar(currentConversation)"
-            :alt="getConversationName(currentConversation)"
-            class="w-10 h-10 rounded-full object-cover"
-          />
+          <!-- Profile Image & Info -->
           <div 
-            v-if="!currentConversation.isGroup && isOnline(currentConversation)"
-            class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1A1A1A]"
-          ></div>
-        </div>
-        
-        <div>
-          <h2 
-            class="font-medium text-white cursor-pointer hover:text-white/80 transition-colors"
+            class="relative cursor-pointer"
+            :class="{ 'hover:opacity-80 transition-opacity': true }"
             @click="currentConversation.isGroup ? navigateToGroupInfo() : navigateToProfile()"
           >
-            {{ getConversationName(currentConversation) }}
-          </h2>
-          <p class="text-xs text-white/50">
-            {{ getConversationStatus(currentConversation) }}
-          </p>
-        </div>
+            <img 
+              :src="getConversationAvatar(currentConversation)"
+              :alt="getConversationName(currentConversation)"
+              class="w-10 h-10 rounded-full object-cover"
+            />
+            <div 
+              v-if="!currentConversation.isGroup && isOnline(currentConversation)"
+              class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1A1A1A]"
+            ></div>
+          </div>
+          
+          <div>
+            <h2 
+              class="font-medium text-white cursor-pointer hover:text-white/80 transition-colors"
+              @click="currentConversation.isGroup ? navigateToGroupInfo() : navigateToProfile()"
+            >
+              {{ getConversationName(currentConversation) }}
+            </h2>
+            <p class="text-xs text-white/50">
+              {{ getConversationStatus(currentConversation) }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -797,6 +876,15 @@ onUnmounted(() => {
         </button>
       </div>
 
+      <!-- 🔥 DEBUG: Show divider state (only in development) -->
+      <div v-if="currentConversation" class="text-xs text-white/50 text-center mb-2 bg-black/20 p-2 rounded">
+        Conv: {{ currentConversation.id.slice(-6) }} | 
+        Unread: {{ unreadMessagesCount }} | 
+        Show divider: {{ shouldShowDivider }} | 
+        Position: {{ dividerPosition }} |
+        Messages: {{ messages?.length || 0 }}
+      </div>
+
       <!-- Messages -->
       <div v-for="(message, index) in messages" :key="message.id">
         
@@ -809,6 +897,13 @@ onUnmounted(() => {
             {{ formatDate(message.timestamp) }}
           </span>
         </div>
+
+        <!-- 🔥 SUPER SIMPLE: Divider appears when there are unread messages -->
+        <div v-if="shouldShowDivider && dividerPosition === index" 
+             class="my-6 new-messages-divider">
+          <NewMessagesDivider :unread-count="unreadMessagesCount" />
+        </div>
+
         
         <div class="flex" :class="message.senderId === authStore.currentUser?.id ? 'justify-end' : 'justify-start'">
           
@@ -954,11 +1049,42 @@ onUnmounted(() => {
             
             <!-- Message status for sender -->
             <div class="flex-shrink-0 self-end mb-1">
-              <div v-if="message.status === 'sending'" class="w-4 h-4 border border-white/30 border-t-transparent rounded-full animate-spin"></div>
-              <svg v-else-if="message.status === 'sent'" class="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 20 20">
+              <!-- Sending status -->
+              <div 
+                v-if="message.status === 'sending'" 
+                class="w-4 h-4 border border-white/30 border-t-transparent rounded-full animate-spin"
+                title="Sending..."
+              ></div>
+              
+              <!-- Failed status -->
+              <svg 
+                v-else-if="message.status === 'failed'" 
+                class="w-4 h-4 text-red-400" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                title="Failed to send"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              
+              <!-- Sent status - Single gray tick -->
+              <svg 
+                v-else-if="message.status === 'sent'" 
+                class="w-4 h-4 text-white/50" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+                title="Sent"
+              >
                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
               </svg>
-              <div v-else-if="message.status === 'delivered'" class="flex">
+              
+              <!-- Delivered status - Two gray ticks -->
+              <div 
+                v-else-if="message.status === 'delivered'" 
+                class="flex"
+                title="Delivered"
+              >
                 <svg class="w-4 h-4 text-white/70" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                 </svg>
@@ -966,7 +1092,13 @@ onUnmounted(() => {
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                 </svg>
               </div>
-              <div v-else-if="message.status === 'read'" class="flex">
+              
+              <!-- Read status - Two blue ticks -->
+              <div 
+                v-else-if="message.status === 'read'" 
+                class="flex"
+                title="Read"
+              >
                 <svg class="w-4 h-4 text-[#055CFF]" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                 </svg>
@@ -1015,17 +1147,17 @@ onUnmounted(() => {
     <div class="p-3 border-t border-white/10 bg-[#1A1A1A]" :class="isMobile ? '' : 'rounded-br-2xl'">
       <div class="flex items-center gap-3">
         <div class="flex flex-row items-start grow bg-[#2a2a2a] rounded-lg px-4 py-3 gap-2">
-            <button 
-          @click="triggerFileUpload"
-          class=" text-white/60 cursor-pointer"
-          title="Attach files"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
-          </svg>
-        </button>
-        
-        <textarea
+          <button 
+            @click="triggerFileUpload"
+            class=" text-white/60 cursor-pointer"
+            title="Attach files"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+            </svg>
+          </button>
+          
+          <textarea
             v-model="messageInputValue"
             @input="handleInputChange"
             @keydown="handleKeyPress"
@@ -1034,7 +1166,6 @@ onUnmounted(() => {
             rows="1"
           ></textarea>
         </div>
-        
         
         <button 
           @click="sendMessage"

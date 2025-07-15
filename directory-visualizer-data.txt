@@ -1,0 +1,267 @@
+FUNTOKENNETWORK
+ ┣ admin-dashboard
+ ┃  ┣ src
+ ┃  ┃  ┣ assets
+ ┃  ┃  ┃  ┣ base.css
+ ┃  ┃  ┃  ┣ logo.svg
+ ┃  ┃  ┃  ┗ main.css
+ ┃  ┃  ┣ components
+ ┃  ┃  ┃  ┣ icons
+ ┃  ┃  ┃  ┃  ┣ IconCommunity.vue
+ ┃  ┃  ┃  ┃  ┣ IconDocumentation.vue
+ ┃  ┃  ┃  ┃  ┣ IconEcosystem.vue
+ ┃  ┃  ┃  ┃  ┣ IconSupport.vue
+ ┃  ┃  ┃  ┃  ┗ IconTooling.vue
+ ┃  ┃  ┃  ┣ HelloWorld.vue
+ ┃  ┃  ┃  ┣ TheWelcome.vue
+ ┃  ┃  ┃  ┗ WelcomeItem.vue
+ ┃  ┃  ┣ router
+ ┃  ┃  ┃  ┗ index.js
+ ┃  ┃  ┣ stores
+ ┃  ┃  ┃  ┗ counter.js
+ ┃  ┃  ┣ views
+ ┃  ┃  ┃  ┣ AboutView.vue
+ ┃  ┃  ┃  ┗ HomeView.vue
+ ┃  ┃  ┣ App.vue
+ ┃  ┃  ┗ main.js
+ ┃  ┣ .gitignore
+ ┃  ┣ index.html
+ ┃  ┣ jsconfig.json
+ ┃  ┣ package-lock.json
+ ┃  ┣ package.json
+ ┃  ┣ README.md
+ ┃  ┗ vite.config.js
+ ┣ backend
+ ┃  ┣ prisma
+ ┃  ┃  ┣ schema.prisma
+ ┃  ┃  ┗ seed.js
+ ┃  ┣ src
+ ┃  ┃  ┣ controllers
+ ┃  ┃  ┃  ┣ auth.js
+ ┃  ┃  ┃  ┣ comments.js
+ ┃  ┃  ┃  ┣ communities.js
+ ┃  ┃  ┃  ┣ friends.js
+ ┃  ┃  ┃  ┣ leaderboard.js
+ ┃  ┃  ┃  ┣ messages.js
+ ┃  ┃  ┃  ┣ posts.js
+ ┃  ┃  ┃  ┣ search.js
+ ┃  ┃  ┃  ┣ tasks.js
+ ┃  ┃  ┃  ┣ upload.js
+ ┃  ┃  ┃  ┗ users.js
+ ┃  ┃  ┣ middleware
+ ┃  ┃  ┃  ┣ auth.js
+ ┃  ┃  ┃  ┣ errorHandler.js
+ ┃  ┃  ┃  ┗ validateRequest.js
+ ┃  ┃  ┣ routes
+ ┃  ┃  ┃  ┣ auth.js
+ ┃  ┃  ┃  ┣ comments.js
+ ┃  ┃  ┃  ┣ communities.js
+ ┃  ┃  ┃  ┣ friends.js
+ ┃  ┃  ┃  ┣ leaderboard.js
+ ┃  ┃  ┃  ┣ messages.js
+ ┃  ┃  ┃  ┣ posts.js
+ ┃  ┃  ┃  ┣ referrals.js
+ ┃  ┃  ┃  ┣ search.js
+ ┃  ┃  ┃  ┣ tasks.js
+ ┃  ┃  ┃  ┣ upload.js
+ ┃  ┃  ┃  ┗ users.js
+ ┃  ┃  ┣ services
+ ┃  ┃  ┃  ┣ cache.js
+ ┃  ┃  ┃  ┣ emailService.js
+ ┃  ┃  ┃  ┣ levelSystem.js
+ ┃  ┃  ┃  ┣ logger.js
+ ┃  ┃  ┃  ┣ monitoring.js
+ ┃  ┃  ┃  ┣ referralService.js
+ ┃  ┃  ┃  ┣ socket.js
+ ┃  ┃  ┃  ┗ twitterVerificationService.js
+ ┃  ┃  ┗ db.js
+ ┃  ┣ .env
+ ┃  ┣ .gitignore
+ ┃  ┣ package-lock.json
+ ┃  ┣ package.json
+ ┃  ┗ server.js
+ ┗ frontend
+    ┣ public
+    ┃  ┣ favicon.png
+    ┃  ┗ favicon.svg
+    ┣ src
+    ┃  ┣ assets
+    ┃  ┃  ┣ auth-bg-2.jpg
+    ┃  ┃  ┣ auth-bg.png
+    ┃  ┃  ┣ background.jpg
+    ┃  ┃  ┣ chat-background.png
+    ┃  ┃  ┣ communities-card-bg.png
+    ┃  ┃  ┣ facebook-logo.png
+    ┃  ┃  ┣ leaderboard-card-bg.png
+    ┃  ┃  ┣ logo.png
+    ┃  ┃  ┣ logo.svg
+    ┃  ┃  ┣ main.css
+    ┃  ┃  ┣ message-chat-bg.png
+    ┃  ┃  ┣ messages-card-bg.png
+    ┃  ┃  ┣ task-card-bg.png
+    ┃  ┃  ┣ telegram-logo.png
+    ┃  ┃  ┣ user-placeholder-image.jpg
+    ┃  ┃  ┣ w.svg
+    ┃  ┃  ┣ whatsapp-logo.png
+    ┃  ┃  ┣ x-logo.png
+    ┃  ┃  ┗ youtube-logo.png
+    ┃  ┣ components
+    ┃  ┃  ┣ icons
+    ┃  ┃  ┃  ┣ activity.svg
+    ┃  ┃  ┃  ┣ analytics.svg
+    ┃  ┃  ┃  ┣ arrow-flat-lines-up.svg
+    ┃  ┃  ┃  ┣ arrow-left.svg
+    ┃  ┃  ┃  ┣ arrow-right.svg
+    ┃  ┃  ┃  ┣ arrows-out-simple.svg
+    ┃  ┃  ┃  ┣ bell-lined.svg
+    ┃  ┃  ┃  ┣ bell-ringing.svg
+    ┃  ┃  ┃  ┣ binoculars-filled.svg
+    ┃  ┃  ┃  ┣ calendar-dots.svg
+    ┃  ┃  ┃  ┣ candy-jar-coloured.svg
+    ┃  ┃  ┃  ┣ candy-jar-lined.svg
+    ┃  ┃  ┃  ┣ candy-jar.svg
+    ┃  ┃  ┃  ┣ candy-machine.png
+    ┃  ┃  ┃  ┣ caret-down.svg
+    ┃  ┃  ┃  ┣ chat-centered-dots.svg
+    ┃  ┃  ┃  ┣ chat-tear-drop.svg
+    ┃  ┃  ┃  ┣ chats-tear-drop.svg
+    ┃  ┃  ┃  ┣ check-fat.svg
+    ┃  ┃  ┃  ┣ check-filled.svg
+    ┃  ┃  ┃  ┣ check-line.svg
+    ┃  ┃  ┃  ┣ chevron-rank.svg
+    ┃  ┃  ┃  ┣ clock-filled.svg
+    ┃  ┃  ┃  ┣ clock-user.svg
+    ┃  ┃  ┃  ┣ community-filled.svg
+    ┃  ┃  ┃  ┣ community-line.svg
+    ┃  ┃  ┃  ┣ copy.svg
+    ┃  ┃  ┃  ┣ crown.svg
+    ┃  ┃  ┃  ┣ diamond.svg
+    ┃  ┃  ┃  ┣ done-filled.svg
+    ┃  ┃  ┃  ┣ dots-three-vertical.svg
+    ┃  ┃  ┃  ┣ dots-three.svg
+    ┃  ┃  ┃  ┣ filter-lined.svg
+    ┃  ┃  ┃  ┣ friends-filled.svg
+    ┃  ┃  ┃  ┣ friends-line.svg
+    ┃  ┃  ┃  ┣ gear.svg
+    ┃  ┃  ┃  ┣ gumball.png
+    ┃  ┃  ┃  ┣ gumballs-filled.svg
+    ┃  ┃  ┃  ┣ gumballs-lined.svg
+    ┃  ┃  ┃  ┣ heart-lined.svg
+    ┃  ┃  ┃  ┣ home-filled.svg
+    ┃  ┃  ┃  ┣ home-line.svg
+    ┃  ┃  ┃  ┣ home-outlined.svg
+    ┃  ┃  ┃  ┣ house-lined.svg
+    ┃  ┃  ┃  ┣ image-square.svg
+    ┃  ┃  ┃  ┣ magnifying-glass.svg
+    ┃  ┃  ┃  ┣ map-pin-line.svg
+    ┃  ┃  ┃  ┣ medal-star.svg
+    ┃  ┃  ┃  ┣ message-filled.svg
+    ┃  ┃  ┃  ┣ message-line.svg
+    ┃  ┃  ┃  ┣ note-pencil.svg
+    ┃  ┃  ┃  ┣ paperclip-lined.svg
+    ┃  ┃  ┃  ┣ performance.svg
+    ┃  ┃  ┃  ┣ play-filled.svg
+    ┃  ┃  ┃  ┣ prohibit-lined.svg
+    ┃  ┃  ┃  ┣ ranking-filled.svg
+    ┃  ┃  ┃  ┣ ranking-line.svg
+    ┃  ┃  ┃  ┣ ranking-rank.svg
+    ┃  ┃  ┃  ┣ read-checks.svg
+    ┃  ┃  ┃  ┣ retry-filled.svg
+    ┃  ┃  ┃  ┣ scales-lined.svg
+    ┃  ┃  ┃  ┣ share-fat.svg
+    ┃  ┃  ┃  ┣ share.svg
+    ┃  ┃  ┃  ┣ shield.svg
+    ┃  ┃  ┃  ┣ smiley-sticker.svg
+    ┃  ┃  ┃  ┣ sort-down.svg
+    ┃  ┃  ┃  ┣ sort-up.svg
+    ┃  ┃  ┃  ┣ sprout.svg
+    ┃  ┃  ┃  ┣ task-button.svg
+    ┃  ┃  ┃  ┣ trophy.svg
+    ┃  ┃  ┃  ┣ user-minus.svg
+    ┃  ┃  ┃  ┣ users-four.svg
+    ┃  ┃  ┃  ┣ users-lined.svg
+    ┃  ┃  ┃  ┗ wallet-filled.svg
+    ┃  ┃  ┣ ChatArea.vue
+    ┃  ┃  ┣ CommentItem.vue
+    ┃  ┃  ┣ CommentSection.vue
+    ┃  ┃  ┣ CommunitiesCard.vue
+    ┃  ┃  ┣ CommunitiesSidebar.vue
+    ┃  ┃  ┣ CommunityCreateModal.vue
+    ┃  ┃  ┣ CommunityEditModal.vue
+    ┃  ┃  ┣ CommunityMobileHeader.vue
+    ┃  ┃  ┣ CommunityProfile.vue
+    ┃  ┃  ┣ ConversationSidebar.vue
+    ┃  ┃  ┣ CreatePostBox.vue
+    ┃  ┃  ┣ ExploreCommunities.vue
+    ┃  ┃  ┣ FeedPostCard.vue
+    ┃  ┃  ┣ FriendsProfileContent.vue
+    ┃  ┃  ┣ FriendsSidebar.vue
+    ┃  ┃  ┣ GroupInfoModal.vue
+    ┃  ┃  ┣ GumballLogo.vue
+    ┃  ┃  ┣ Header.vue
+    ┃  ┃  ┣ MessagesCard.vue
+    ┃  ┃  ┣ NavigationBar.vue
+    ┃  ┃  ┣ ProfileContent.vue
+    ┃  ┃  ┣ ReferralsDashboard.vue
+    ┃  ┃  ┣ ReferralShareSheet.vue
+    ┃  ┃  ┣ TaskCreator.vue
+    ┃  ┃  ┣ TaskItem.vue
+    ┃  ┃  ┣ TaskModal.vue
+    ┃  ┃  ┣ TasksCard.vue
+    ┃  ┃  ┣ TasksDashboard.vue
+    ┃  ┃  ┗ UserRankCard.vue
+    ┃  ┣ composables
+    ┃  ┃  ┣ useSocketConnector.js
+    ┃  ┃  ┣ useTaskFiltering.js
+    ┃  ┃  ┗ useUserTaskFiltering.js
+    ┃  ┣ router
+    ┃  ┃  ┗ index.js
+    ┃  ┣ services
+    ┃  ┃  ┣ api.js
+    ┃  ┃  ┣ referralAPI.js
+    ┃  ┃  ┣ search.js
+    ┃  ┃  ┗ socket.js
+    ┃  ┣ stores
+    ┃  ┃  ┣ auth.js
+    ┃  ┃  ┣ communities.js
+    ┃  ┃  ┣ leaderboard.js
+    ┃  ┃  ┣ messages.js
+    ┃  ┃  ┣ posts.js
+    ┃  ┃  ┣ search.js
+    ┃  ┃  ┣ tasks.js
+    ┃  ┃  ┗ users.js
+    ┃  ┣ utils
+    ┃  ┃  ┣ avatar.js
+    ┃  ┃  ┣ media.js
+    ┃  ┃  ┣ pinnedTaskHelpers.js
+    ┃  ┃  ┗ userTaskFilters.js
+    ┃  ┣ views
+    ┃  ┃  ┣ ChatView.vue
+    ┃  ┃  ┣ CommunitiesView.vue
+    ┃  ┃  ┣ CommunityView.vue
+    ┃  ┃  ┣ CreateAccountView.vue
+    ┃  ┃  ┣ EarningsView.vue
+    ┃  ┃  ┣ EditProfileView.vue
+    ┃  ┃  ┣ EmailVerificationView.vue
+    ┃  ┃  ┣ ForgotPasswordView.vue
+    ┃  ┃  ┣ FriendsView.vue
+    ┃  ┃  ┣ HomeView.vue
+    ┃  ┃  ┣ LeaderboardView.vue
+    ┃  ┃  ┣ LogInView.vue
+    ┃  ┃  ┣ MessagesView.vue
+    ┃  ┃  ┣ ProfileView.vue
+    ┃  ┃  ┣ ResetPasswordView.vue
+    ┃  ┃  ┣ SearchView.vue
+    ┃  ┃  ┣ SignUpView.vue
+    ┃  ┃  ┣ TasksView.vue
+    ┃  ┃  ┗ UserProfileView.vue
+    ┃  ┣ App.vue
+    ┃  ┗ main.js
+    ┣ .env
+    ┣ .gitignore
+    ┣ index.html
+    ┣ jsconfig.json
+    ┣ package-lock.json
+    ┣ package.json
+    ┣ README.md
+    ┗ vite.config.js

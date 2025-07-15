@@ -1,4 +1,4 @@
-// src/services/socket.js - FIXED FRONTEND SOCKET SERVICE
+// src/services/socket.js - COMPLETE SIMPLIFIED VERSION
 import { io } from 'socket.io-client'
 
 class SocketService {
@@ -13,6 +13,7 @@ class SocketService {
     this.taskFailedCallback = null
     this.connectionPromise = null
     this.messagesStore = null
+    // 🔥 SIMPLIFIED: Removed complex unread count callback system
   }
 
   // CRITICAL: Set messages store reference
@@ -26,7 +27,7 @@ class SocketService {
     // Import auth store dynamically to avoid circular dependencies
     const { useAuthStore } = await import('@/stores/auth')
     const authStore = useAuthStore()
-    
+
     if (!authStore.isLoggedIn) {
       console.log('🚫 Socket: Skipping connection - not logged in')
       return false
@@ -89,7 +90,7 @@ class SocketService {
 
       this.setupEventListeners()
       this.startPingInterval()
-      
+
       console.log('✅ Socket connected successfully')
       return true
 
@@ -100,28 +101,114 @@ class SocketService {
     }
   }
 
-  // CRITICAL: Enhanced event listeners with messages store integration
+  // 🔥 SIMPLIFIED: Enhanced event listeners without complex unread callbacks
   setupEventListeners() {
     if (!this.socket) return
 
     console.log('🎧 Setting up socket event listeners')
 
-    // Connection events
+    // 🔥 ENHANCED: User status events with better error handling and logging
+    this.socket.on('user:online', (data) => {
+      console.log('🟢 Socket: User came online', {
+        userId: data.userId,
+        timestamp: new Date().toISOString()
+      })
+
+      try {
+        if (this.messagesStore && this.messagesStore.handleUserOnline) {
+          this.messagesStore.handleUserOnline(data.userId)
+        } else {
+          // Fallback: try to get store dynamically
+          this._tryGetMessagesStore().then(store => {
+            if (store && store.handleUserOnline) {
+              console.log('📤 Using fallback store for user online event')
+              store.handleUserOnline(data.userId)
+            } else {
+              console.warn('⚠️ No messages store available for user online event')
+            }
+          })
+        }
+      } catch (error) {
+        console.error('❌ Error handling user online event:', error)
+      }
+    })
+
+    this.socket.on('user:offline', (data) => {
+      console.log('🔴 Socket: User went offline', {
+        userId: data.userId,
+        timestamp: new Date().toISOString()
+      })
+
+      try {
+        if (this.messagesStore && this.messagesStore.handleUserOffline) {
+          this.messagesStore.handleUserOffline(data.userId)
+        } else {
+          // Fallback: try to get store dynamically
+          this._tryGetMessagesStore().then(store => {
+            if (store && store.handleUserOffline) {
+              console.log('📤 Using fallback store for user offline event')
+              store.handleUserOffline(data.userId)
+            } else {
+              console.warn('⚠️ No messages store available for user offline event')
+            }
+          })
+        }
+      } catch (error) {
+        console.error('❌ Error handling user offline event:', error)
+      }
+    })
+
+    // 🔥 NEW: Add connection event logging for debugging
     this.socket.on('connect', () => {
-      console.log('✅ Socket: Connected with ID:', this.socket.id)
+      console.log('✅ Socket: Connected with ID:', this.socket.id, {
+        timestamp: new Date().toISOString(),
+        url: this.socket.io.uri
+      })
       this.isConnected = true
       this.reconnectAttempts = 0
       this.connectionPromise = null
-      
+
+      // 🔥 NEW: Request initial online users list
+      this.socket.emit('get_online_users')
+
       // Re-join all current conversations
       this._rejoinConversations()
     })
 
+    // 🔥 NEW: Handle initial online users list
+    this.socket.on('online_users_list', (data) => {
+      console.log('👥 Socket: Received online users list:', data.users?.length || 0)
+
+      try {
+        if (data.users && Array.isArray(data.users)) {
+          data.users.forEach(userId => {
+            if (this.messagesStore && this.messagesStore.updateUserOnlineStatus) {
+              this.messagesStore.updateUserOnlineStatus(userId, true, 'initial_list')
+            }
+          })
+        }
+      } catch (error) {
+        console.error('❌ Error processing online users list:', error)
+      }
+    })
+
+    // 🔥 ENHANCED: Better disconnect handling
     this.socket.on('disconnect', (reason) => {
-      console.log('❌ Socket: Disconnected -', reason)
+      console.log('❌ Socket: Disconnected -', reason, {
+        timestamp: new Date().toISOString(),
+        wasConnected: this.isConnected
+      })
       this.isConnected = false
       this.stopPingInterval()
-      
+
+      // 🔥 NEW: Clear online status when disconnected
+      if (this.messagesStore && this.messagesStore.userOnlineStatus) {
+        console.log('🧹 Clearing online status due to disconnect')
+        this.messagesStore.userOnlineStatus.clear()
+        this.messagesStore.onlineUsers.clear()
+        this.messagesStore.triggerUpdate('online')
+      }
+
       if (reason === 'io server disconnect') {
         setTimeout(() => this.connect(), 1000)
       }
@@ -132,14 +219,14 @@ class SocketService {
       this.reconnectAttempts++
       this.isConnected = false
       this.connectionPromise = null
-      
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         console.error('❌ Socket: Max reconnection attempts reached')
         this.disconnect()
       }
     })
 
-    // CRITICAL: Enhanced message events with store integration
+    // 🔥 SIMPLIFIED: Message events with natural reactivity
     this.socket.on('message:new', (data) => {
       console.log('📨 Socket: New message received:', {
         id: data.id,
@@ -147,7 +234,7 @@ class SocketService {
         content: data.content?.substring(0, 50) + '...',
         sender: data.sender?.username
       })
-      
+
       try {
         // CRITICAL: Forward to messages store
         if (this.messagesStore && this.messagesStore.handleIncomingMessage) {
@@ -155,7 +242,7 @@ class SocketService {
           this.messagesStore.handleIncomingMessage(data)
         } else {
           console.error('❌ Messages store not available or missing handler')
-          
+
           // Fallback: try to get store dynamically
           this._tryGetMessagesStore().then(store => {
             if (store && store.handleIncomingMessage) {
@@ -164,10 +251,19 @@ class SocketService {
             }
           })
         }
-        
+
+        // 🔥 CRITICAL FIX: Auto-send delivery confirmation for received messages
+        if (this.socket?.connected && data.id) {
+          // Small delay to ensure message is processed
+          setTimeout(() => {
+            console.log(`✅ Auto-confirming delivery for message ${data.id}`)
+            this.markMessageAsDelivered(data.id, data.conversationId)
+          }, 100)
+        }
+
         // Show notification for other users' messages
         this._showMessageNotification(data)
-        
+
       } catch (error) {
         console.error('❌ Error processing new message:', error)
       }
@@ -175,7 +271,7 @@ class SocketService {
 
     this.socket.on('message:status_updated', (data) => {
       console.log('📱 Socket: Message status update received:', data)
-      
+
       try {
         if (this.messagesStore && this.messagesStore.handleMessageStatusUpdate) {
           this.messagesStore.handleMessageStatusUpdate(data)
@@ -194,11 +290,11 @@ class SocketService {
     // Conversation events
     this.socket.on('conversation:created', (data) => {
       console.log('💬 Socket: New conversation created', data.id)
-      
+
       try {
         if (this.messagesStore && this.messagesStore.conversations) {
           this.messagesStore.conversations.unshift(data)
-          this.messagesStore.triggerUpdate()
+          this.messagesStore.triggerUpdate('unread')
           this.joinConversation(data.id)
         }
       } catch (error) {
@@ -208,16 +304,16 @@ class SocketService {
 
     this.socket.on('conversation:updated', (data) => {
       console.log('🔄 Socket: Conversation updated', data.id)
-      
+
       try {
         if (this.messagesStore && this.messagesStore.conversations) {
           const index = this.messagesStore.conversations.findIndex(c => c.id === data.id)
           if (index !== -1) {
-            this.messagesStore.conversations[index] = { 
-              ...this.messagesStore.conversations[index], 
-              ...data 
+            this.messagesStore.conversations[index] = {
+              ...this.messagesStore.conversations[index],
+              ...data
             }
-            this.messagesStore.triggerUpdate()
+            this.messagesStore.triggerUpdate('unread')
           }
         }
       } catch (error) {
@@ -225,22 +321,38 @@ class SocketService {
       }
     })
 
-    // Conversation status updates
+    // 🔥 SIMPLIFIED: Conversation status updates
     this.socket.on('conversation:status_updated', (data) => {
       console.log('💬 Socket: Conversation status updated', data)
-      
+
       try {
-        if (this.messagesStore && this.messagesStore.conversations) {
-          const { conversationId, status, count } = data
-          const conversation = this.messagesStore.conversations.find(c => c.id === conversationId)
-          
-          if (conversation && status === 'read') {
-            conversation.unreadCount = Math.max(0, (conversation.unreadCount || 0) - (count || 1))
-            this.messagesStore.triggerUpdate()
-          }
+        if (this.messagesStore && this.messagesStore.handleConversationStatusUpdate) {
+          this.messagesStore.handleConversationStatusUpdate(data)
         }
       } catch (error) {
         console.error('❌ Error handling conversation status update:', error)
+      }
+    })
+
+    // 🔥 SIMPLIFIED: Basic unread count update events
+    this.socket.on('unread_count:updated', (data) => {
+      console.log('📊 Socket: Unread count update received:', data)
+
+      try {
+        // Update messages store if available
+        if (this.messagesStore) {
+          if (data.conversationId) {
+            // Update specific conversation
+            this.messagesStore.updateUnreadCount(data.conversationId, data.count, 'socket_event')
+          } else if (data.totalCount !== undefined) {
+            // Global unread count update - refresh all conversations
+            this.messagesStore.refreshUnreadCounts?.()
+          }
+          // Trigger natural Vue reactivity
+          this.messagesStore.triggerUpdate('unread')
+        }
+      } catch (error) {
+        console.error('❌ Error handling unread count update:', error)
       }
     })
 
@@ -256,7 +368,7 @@ class SocketService {
     // Typing events
     this.socket.on('typing:start', (data) => {
       console.log('⌨️ Socket: User started typing', data.user?.username)
-      
+
       try {
         if (this.messagesStore && this.messagesStore.handleTypingStart) {
           this.messagesStore.handleTypingStart(data)
@@ -268,38 +380,13 @@ class SocketService {
 
     this.socket.on('typing:stop', (data) => {
       console.log('⌨️ Socket: User stopped typing', data.user?.username)
-      
+
       try {
         if (this.messagesStore && this.messagesStore.handleTypingStop) {
           this.messagesStore.handleTypingStop(data)
         }
       } catch (error) {
         console.error('❌ Error handling typing stop:', error)
-      }
-    })
-
-    // User status events
-    this.socket.on('user:online', (data) => {
-      console.log('🟢 Socket: User came online', data.userId)
-      
-      try {
-        if (this.messagesStore && this.messagesStore.handleUserOnline) {
-          this.messagesStore.handleUserOnline(data.userId)
-        }
-      } catch (error) {
-        console.error('❌ Error handling user online:', error)
-      }
-    })
-
-    this.socket.on('user:offline', (data) => {
-      console.log('🔴 Socket: User went offline', data.userId)
-      
-      try {
-        if (this.messagesStore && this.messagesStore.handleUserOffline) {
-          this.messagesStore.handleUserOffline(data.userId)
-        }
-      } catch (error) {
-        console.error('❌ Error handling user offline:', error)
       }
     })
 
@@ -368,17 +455,17 @@ class SocketService {
   startTyping(conversationId) {
     if (this.socket?.connected) {
       this.socket.emit('typing:start', { conversationId })
-      
+
       // Clear existing timer
       if (this.typingTimers.has(conversationId)) {
         clearTimeout(this.typingTimers.get(conversationId))
       }
-      
+
       // Auto-stop typing after 3 seconds
       const timer = setTimeout(() => {
         this.stopTyping(conversationId)
       }, 3000)
-      
+
       this.typingTimers.set(conversationId, timer)
     }
   }
@@ -387,7 +474,7 @@ class SocketService {
     if (this.socket?.connected) {
       this.socket.emit('typing:stop', { conversationId })
     }
-    
+
     // Clear timer
     if (this.typingTimers.has(conversationId)) {
       clearTimeout(this.typingTimers.get(conversationId))
@@ -395,7 +482,7 @@ class SocketService {
     }
   }
 
-  // Message status updates
+  // 🔥 SIMPLIFIED: Message status updates
   markMessageAsRead(messageId, conversationId) {
     if (this.socket?.connected) {
       console.log(`📖 Marking message ${messageId} as read`)
@@ -410,12 +497,28 @@ class SocketService {
     }
   }
 
+  // 🔥 SIMPLIFIED: Mark conversation as read (bulk update)
+  markConversationAsRead(conversationId) {
+    if (this.socket?.connected) {
+      console.log(`📖 Marking conversation ${conversationId} as read`)
+      this.socket.emit('conversation:mark_read', { conversationId })
+    }
+  }
+
+  // 🔥 SIMPLIFIED: Request unread count refresh
+  requestUnreadCountRefresh() {
+    if (this.socket?.connected) {
+      console.log('📊 Requesting unread count refresh from server')
+      this.socket.emit('unread_count:refresh')
+    }
+  }
+
   // Enhanced notification system
   async _showMessageNotification(messageData) {
     try {
       const { useAuthStore } = await import('@/stores/auth')
       const authStore = useAuthStore()
-      
+
       // Don't show notification for own messages
       if (messageData.senderId === authStore.currentUser?.id) {
         return
@@ -430,7 +533,7 @@ class SocketService {
       if (Notification.permission === 'granted') {
         const sender = messageData.sender
         const senderName = `${sender.firstName || ''} ${sender.lastName || ''}`.trim() || sender.username
-        
+
         new Notification(`New message from ${senderName}`, {
           body: messageData.content || 'Sent a file',
           icon: sender.avatarUrl || '/default-avatar.png',
@@ -489,22 +592,42 @@ class SocketService {
   // Enhanced disconnect
   disconnect() {
     console.log('🔌 Socket: Disconnecting...')
-    
+
     // Clear all timers
     this.stopPingInterval()
     this.typingTimers.forEach((timer, conversationId) => {
       this.stopTyping(conversationId)
     })
     this.typingTimers.clear()
-    
+
     if (this.socket) {
       this.socket.disconnect()
       this.socket = null
     }
-    
+
     this.isConnected = false
     this.reconnectAttempts = 0
     this.connectionPromise = null
+  }
+
+  // 🔥 NEW: Add debugging method to check online status
+  checkOnlineStatus() {
+    if (this.socket?.connected) {
+      console.log('🔍 Requesting online status check...')
+      this.socket.emit('check_online_status')
+    } else {
+      console.warn('⚠️ Cannot check online status - socket not connected')
+    }
+  }
+
+  // 🔥 NEW: Add method to manually refresh online users
+  refreshOnlineUsers() {
+    if (this.socket?.connected) {
+      console.log('🔄 Refreshing online users list...')
+      this.socket.emit('get_online_users')
+    } else {
+      console.warn('⚠️ Cannot refresh online users - socket not connected')
+    }
   }
 }
 

@@ -7,6 +7,13 @@ import { useAuthStore } from '@/stores/auth'
 import ConversationSidebar from '@/components/ConversationSidebar.vue'
 import ChatArea from '@/components/ChatArea.vue'
 
+defineProps({
+  class: {
+    type: String,
+    default: ''
+  }
+})
+
 const route = useRoute()
 const messagesStore = useMessagesStore()
 const authStore = useAuthStore()
@@ -21,24 +28,6 @@ const currentConversation = computed(() => messagesStore.currentConversation)
 // Methods
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768 // md breakpoint
-}
-
-const handleConversationSelected = (conversation) => {
-  if (isMobile.value) {
-    currentMobileView.value = 'chat'
-  }
-}
-
-const handleNewConversation = (conversation) => {
-  if (isMobile.value) {
-    currentMobileView.value = 'chat'
-  }
-}
-
-const handleBackToSidebar = () => {
-  if (isMobile.value) {
-    currentMobileView.value = 'sidebar'
-  }
 }
 
 // Handle conversation query parameter
@@ -69,105 +58,139 @@ watch(() => route.query.conversation, (newConversationId) => {
   }
 })
 
-// Lifecycle
+const handleConversationSelected = (conversation) => {
+  if (isMobile.value) {
+    currentMobileView.value = 'chat'
+  }
+}
+
+const handleNewConversation = (conversation) => {
+  if (isMobile.value) {
+    currentMobileView.value = 'chat'
+  }
+}
+
+const handleBackToSidebar = () => {
+  console.log('📱 MessagesView: Going back to sidebar')
+  
+  if (isMobile.value) {
+    // Clear current conversation when going back to sidebar on mobile
+    messagesStore.clearCurrentConversation?.()
+    currentMobileView.value = 'sidebar'
+  }
+}
+
+// Updated onMounted with better mobile handling
 onMounted(async () => {
+  console.log('📱 MessagesView: Mounting with mobile check')
+  
   // Check initial screen size
   checkMobile()
   
   // Add resize listener
   window.addEventListener('resize', checkMobile)
   
-  // Debug info
-  console.log('Attempting socket connection...')
-  console.log('Current URL:', window.location.origin)
-  console.log('Socket URL should be:', window.location.hostname + ':3000')
-  
   // Initialize messages store if needed
   if (!messagesStore.isInitialized()) {
-    console.log('Messages not initialized, initializing now...')
-    messagesStore.initializeSocket()
+    console.log('📱 MessagesView: Initializing messages store...')
+    
+    // Initialize socket and fetch conversations
+    if (messagesStore.initializeSocket) {
+      await messagesStore.initializeSocket()
+    }
     await messagesStore.fetchConversations()
+    
+    console.log('📱 MessagesView: Messages store initialized')
   } else {
-    console.log('Messages already initialized from login')
+    console.log('📱 MessagesView: Messages already initialized')
   }
   
-  // Handle conversation query parameter after initialization
-  await handleConversationParam()
+  // Handle conversation query parameter after everything is ready
+  if (route.query.conversation) {
+    // Small delay to ensure everything is properly loaded
+    setTimeout(() => {
+      handleConversationParam()
+    }, 100)
+  }
 })
 
 onUnmounted(() => {
+  console.log('🧹 MessagesView: Leaving messages, clearing current conversation')
+  
+  // Remove resize listener
   window.removeEventListener('resize', checkMobile)
   
-  // Check if reset method exists before calling it
-  if (typeof messagesStore.reset === 'function') {
-    messagesStore.reset()
-  } else {
-    // Alternative cleanup - just clear current conversation
-    if (typeof messagesStore.clearCurrentConversation === 'function') {
-      messagesStore.clearCurrentConversation()
-    }
-    console.log('MessagesStore reset method not found, skipping cleanup')
+  // Simple reset - just clear the current conversation so user sees the list next time
+  if (messagesStore.clearCurrentConversation) {
+    messagesStore.clearCurrentConversation()
   }
+  
+  // Reset mobile view to sidebar
+  currentMobileView.value = 'sidebar'
+  
+  console.log('✅ MessagesView: Simple cleanup complete')
 })
 </script>
 
 <!-- Rest of template stays the same -->
 <template>
-  <!-- Desktop Layout (md and above) -->
-  <div class="hidden md:flex h-full p-3 text-white">
-    <!-- Sidebar -->
-    <ConversationSidebar 
-      :is-mobile="false"
-      @conversation-selected="handleConversationSelected"
-      @new-conversation="handleNewConversation"
-    />
-    
-    <!-- Chat Area -->
-    <ChatArea 
-      :is-mobile="false"
-      @back="handleBackToSidebar"
-    />
-  </div>
-
-  <!-- Mobile Layout (smaller than md) -->
-  <div class="md:hidden h-full text-white">
-    <!-- Mobile Sidebar View -->
-    <div 
-      v-if="currentMobileView === 'sidebar'"
-      class="h-full"
-    >
+  <div class="h-full text-white">
+    <!-- Desktop Layout (md and above) -->
+    <div class="hidden md:flex h-full p-3">
+      <!-- Sidebar -->
       <ConversationSidebar 
-        :is-mobile="true"
+        :is-mobile="false"
         @conversation-selected="handleConversationSelected"
         @new-conversation="handleNewConversation"
       />
-    </div>
-
-    <!-- Mobile Chat View -->
-    <div 
-      v-else-if="currentMobileView === 'chat'"
-      class="h-full"
-    >
+      
+      <!-- Chat Area -->
       <ChatArea 
-        :is-mobile="true"
+        :is-mobile="false"
         @back="handleBackToSidebar"
       />
     </div>
-  </div>
 
-  <!-- Error Toast -->
-  <div 
-    v-if="messagesStore.error" 
-    class="fixed bottom-4 left-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm"
-  >
-    <div class="flex items-center justify-between">
-      <p class="text-sm">{{ messagesStore.error }}</p>
-      <button 
-        @click="messagesStore.clearError?.()"
-        class="text-white/70 hover:text-white ml-3"
+    <!-- Mobile Layout (smaller than md) -->
+    <div class="md:hidden h-full">
+      <!-- Mobile Sidebar View -->
+      <div 
+        v-if="currentMobileView === 'sidebar'"
+        class="h-full"
       >
-        ×
-      </button>
+        <ConversationSidebar 
+          :is-mobile="true"
+          @conversation-selected="handleConversationSelected"
+          @new-conversation="handleNewConversation"
+        />
+      </div>
+
+      <!-- Mobile Chat View -->
+      <div 
+        v-else-if="currentMobileView === 'chat'"
+        class="h-full"
+      >
+        <ChatArea 
+          :is-mobile="true"
+          @back="handleBackToSidebar"
+        />
+      </div>
+    </div>
+
+    <!-- Error Toast -->
+    <div 
+      v-if="messagesStore.error" 
+      class="fixed bottom-4 left-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm"
+    >
+      <div class="flex items-center justify-between">
+        <p class="text-sm">{{ messagesStore.error }}</p>
+        <button 
+          @click="messagesStore.clearError?.()"
+          class="text-white/70 hover:text-white ml-3"
+        >
+          ×
+        </button>
+      </div>
     </div>
   </div>
 </template>

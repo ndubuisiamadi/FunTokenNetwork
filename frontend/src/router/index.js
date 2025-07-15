@@ -94,12 +94,12 @@ const router = createRouter({
       component: MessagesView,
       meta: { requiresAuth: true, requiresCompleteProfile: true }
     },
-    // {
-    //   path: '/chat/:id',
-    //   name: 'chat',
-    //   component: ChatView,
-    //   meta: { requiresAuth: true, requiresCompleteProfile: true }
-    // },
+    {
+      path: '/chat/:id',
+      name: 'chat',
+      component: ChatView,
+      meta: { requiresAuth: true, requiresCompleteProfile: true }
+    },
     {
       path: '/communities',
       name: 'communities',
@@ -164,16 +164,11 @@ const router = createRouter({
   ],
 })
 
-// Enhanced navigation guard
+// 🔥 FIX: Enhanced navigation guard to prevent multiple next() calls
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-
-  if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    // If user is logged in and trying to access guest-only routes, redirect to home
-    next('/')
-  } else {
-    next()
-  }
+  
+  // 🔥 CRITICAL: Use early returns to prevent multiple next() calls
   
   // Initialize auth state from localStorage if not already done
   if (!authStore.isAuthenticated && localStorage.getItem('authToken')) {
@@ -188,30 +183,31 @@ router.beforeEach(async (to, from, next) => {
   const requiresCompleteProfile = to.matched.some(record => record.meta.requiresCompleteProfile)
   const allowIncompleteProfile = to.matched.some(record => record.meta.allowIncompleteProfile)
 
-  // If not authenticated and trying to access protected route
-  if (requiresAuth && !authStore.isLoggedIn) {
-    return next('/login')
-  }
-  
-  // If authenticated and trying to access guest-only routes
+  // Handle guest-only routes (login, signup, etc.)
   if (requiresGuest && authStore.isLoggedIn) {
     if (authStore.hasIncompleteProfile) {
-      return next('/create-account')
+      return next('/create-account') // 🔥 EARLY RETURN
     } else {
-      return next('/')
+      return next('/') // 🔥 EARLY RETURN
     }
   }
 
-  // Check profile completion for authenticated users on protected routes
+  // Handle auth-required routes
+  if (requiresAuth && !authStore.isLoggedIn) {
+    return next('/login') // 🔥 EARLY RETURN
+  }
+
+  // Handle profile completion requirements
   if (authStore.isLoggedIn && requiresCompleteProfile && authStore.hasIncompleteProfile) {
-    return next('/create-account')
+    return next('/create-account') // 🔥 EARLY RETURN
   }
 
-  // If user has complete profile but trying to access create-account
+  // Handle complete profile trying to access create-account
   if (authStore.isLoggedIn && to.path === '/create-account' && !authStore.hasIncompleteProfile && !allowIncompleteProfile) {
-    return next('/')
+    return next('/') // 🔥 EARLY RETURN
   }
 
+  // 🔥 SINGLE FINAL NEXT() CALL
   next()
 })
 

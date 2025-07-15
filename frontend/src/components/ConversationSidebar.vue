@@ -1,3 +1,4 @@
+// src/components/ConversationSidebar.vue - FIXED VERSION (Script section only)
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
@@ -34,18 +35,19 @@ const groupAvatarFile = ref(null)
 const avatarInput = ref(null)
 const uploadingAvatar = ref(false)
 
-// ENHANCED: Force reactive conversations with watcher
 const conversations = computed(() => {
-  // This will trigger when messagesStore.lastConversationUpdate changes
   return messagesStore.currentConversations
 })
 
 const currentConversation = computed(() => messagesStore.currentConversation)
 
-// ENHANCED: Reactive unread counts with watchers
-const directUnreadCount = computed(() => messagesStore.directUnreadCount)
-const groupUnreadCount = computed(() => messagesStore.groupUnreadCount)
+const directUnreadCount = computed(() => {
+  return messagesStore.directChatsWithUnread || 0
+})
 
+const groupUnreadCount = computed(() => {
+  return messagesStore.groupChatsWithUnread || 0
+})
 
 const filteredFriends = computed(() => {
   if (!friendsSearchQuery.value.trim()) {
@@ -68,26 +70,6 @@ const canCreateConversation = computed(() => {
   }
 })
 
-watch(conversations, (newConversations, oldConversations) => {
-  if (newConversations && oldConversations) {
-    console.log('🔄 ConversationSidebar: Conversations updated', {
-      count: newConversations.length,
-      hasChanges: newConversations !== oldConversations
-    })
-  }
-}, { deep: true })
-
-// NEW: Watch for unread count changes
-watch([directUnreadCount, groupUnreadCount], ([newDirect, newGroup], [oldDirect, oldGroup]) => {
-  if (newDirect !== oldDirect || newGroup !== oldGroup) {
-    console.log('🔄 ConversationSidebar: Unread counts updated', {
-      direct: `${oldDirect} → ${newDirect}`,
-      group: `${oldGroup} → ${newGroup}`
-    })
-  }
-})
-
-// Methods
 const formatUnreadCount = (count) => {
   return count > 99 ? '99+' : count.toString()
 }
@@ -120,14 +102,38 @@ const formatTime = (date) => {
 }
 
 const selectConversation = async (conversation) => {
-  console.log('🎯 ConversationSidebar: Selecting conversation', conversation.id)
-  const result = await messagesStore.selectConversation(conversation.id)
-  if (result.success) {
-    emit('conversationSelected', conversation)
+  console.log('🎯 ConversationSidebar: Selecting conversation', {
+    id: conversation.id,
+    name: getConversationName(conversation),
+    unreadCount: conversation.unreadCount || 0,
+    hasMessages: !!messagesStore.messages[conversation.id]
+  })
+  
+  try {
+    const result = await messagesStore.selectConversation(conversation.id)
+    
+    if (result.success) {
+      console.log('✅ ConversationSidebar: Conversation selected successfully', {
+        messagesLoaded: result.messagesLoaded
+      })
+      
+      emit('conversationSelected', conversation)
+      
+      if (props.isMobile) {
+        setTimeout(() => {
+          emit('conversationSelected', conversation)
+        }, 100)
+      }
+    } else {
+      console.error('❌ ConversationSidebar: Failed to select conversation:', result.error)
+    }
+  } catch (error) {
+    console.error('❌ ConversationSidebar: Error selecting conversation:', error)
   }
 }
 
-// For creating new conversations (from the modal), keep the original logic:
+// ... keep all existing methods (createConversation, handleSearch, etc.) ...
+
 const createConversation = async () => {
   if (!canCreateConversation.value || creatingConversation.value) return
 
@@ -135,7 +141,6 @@ const createConversation = async () => {
   let groupAvatarUrl = null
 
   try {
-    // Upload group avatar if provided
     if (groupAvatarFile.value) {
       uploadingAvatar.value = true
       
@@ -296,7 +301,6 @@ const getConversationAvatar = (conversation) => {
   return conversation.otherParticipant?.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg'
 }
 
-// ENHANCED: Better conversation preview with real-time updates
 const getConversationPreview = (conversation) => {
   if (!conversation.lastMessage && (!conversation.lastMessageData?.mediaUrls || conversation.lastMessageData.mediaUrls.length === 0)) {
     return 'No messages yet'
@@ -315,12 +319,45 @@ const getConversationPreview = (conversation) => {
   return conversation.lastMessage || 'No messages yet'
 }
 
-// NEW: Force refresh conversations periodically as fallback
-let refreshInterval = null
+const getConversationUnreadCount = (conversation) => {
+  return conversation.unreadCount || 0
+}
 
+// 🔥 FIXED: Use store's real-time online status instead of stale data
 const isOnline = (conversation) => {
   if (conversation.isGroup) return false
-  return conversation.otherParticipant?.isOnline || false
+  
+  if (!conversation.otherParticipant?.id) return false
+  
+  // 🔥 NEW: Get real-time online status from store
+  return messagesStore.isUserOnline(conversation.otherParticipant.id)
+}
+
+// 🔥 NEW: Get real-time online status for any user (for friend selection)
+const isUserOnlineById = (userId) => {
+  return messagesStore.isUserOnline(userId)
+}
+
+const getMessageStatus = (message, currentUserId) => {
+  if (!message || message.senderId !== currentUserId) {
+    return null
+  }
+
+  if (message.status === 'sending' || message.isOptimistic) {
+    return 'sending'
+  }
+
+  if (message.status === 'failed' || message.error) {
+    return 'failed'
+  }
+
+  if (message.isRead) {
+    return 'read'
+  } else if (message.isDelivered) {
+    return 'delivered'
+  } else {
+    return 'sent'
+  }
 }
 
 const isLastMessageFromSender = (conversation) => {
@@ -333,39 +370,34 @@ const getLastMessageStatus = (conversation) => {
   if (!isLastMessageFromSender(conversation)) return null
   
   const lastMessage = conversation.lastMessageData || {}
-  return lastMessage.status || 'sent'
+  const currentUserId = authStore.currentUser?.id
+  
+  return getMessageStatus(lastMessage, currentUserId)
 }
 
 const handleConversationClick = async (conversation) => {
+  console.log('👆 Conversation clicked:', conversation.id)
+  
   if (props.isMobile) {
-    // Navigate to dedicated chat route on mobile
     router.push(`/chat/${conversation.id}`)
   } else {
-    // Desktop behavior - select conversation in current view
-    await messagesStore.selectConversation(conversation.id)
-    emit('conversation-selected', conversation)
+    await selectConversation(conversation)
   }
 }
 
 onMounted(() => {
-  console.log('🔄 ConversationSidebar: Component mounted, setting up real-time updates')
+  console.log('🔄 ConversationSidebar: Component mounted')
   
-  // Set up periodic refresh as fallback (every 30 seconds)
-  refreshInterval = setInterval(() => {
-    if (!messagesStore.loading && conversations.value.length > 0) {
-      console.log('🔄 ConversationSidebar: Periodic conversation refresh')
-      // Only refresh if we're not actively in a conversation to avoid disruption
-      if (!currentConversation.value) {
-        messagesStore.fetchConversations()
-      }
-    }
-  }, 30000)
+  // Only ensure conversations are loaded, don't do any periodic checks
+  if (authStore.isLoggedIn && messagesStore.conversations.length === 0) {
+    console.log('📋 ConversationSidebar: Loading conversations for sidebar')
+    messagesStore.fetchConversations().catch(console.error)
+  }
 })
 
 onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-  }
+  console.log('🧹 ConversationSidebar: Component unmounted')
+  // No cleanup needed - let messages store handle everything
 })
 </script>
 
@@ -376,7 +408,7 @@ onUnmounted(() => {
       <!-- Mobile Header -->
       <div v-if="isMobile" class="flex items-center justify-between my-2">
         <h1 class="text-[1.8em]! font-semibold text-[#00BFFF]">{{ messagesStore.selectedChatType === 'direct' ? 'Chats' : 'Groups' }}</h1>
-        <!-- Chat Type Tabs with enhanced unread badges -->
+        <!-- Chat Type Tabs with badges -->
         <div class="flex bg-[#2C2F36] rounded-full p-1">
           <button
             @click="messagesStore.selectedChatType = 'direct'"
@@ -392,10 +424,10 @@ onUnmounted(() => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
               </svg>
               
+              <!-- Direct chats badge -->
               <div 
                 v-if="directUnreadCount > 0"
                 class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
-                :key="`direct-${directUnreadCount}`"
               >
                 {{ formatUnreadCount(directUnreadCount) }}
               </div>
@@ -415,10 +447,10 @@ onUnmounted(() => {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
               </svg>
+              <!-- Group chats badge -->
               <div 
                 v-if="groupUnreadCount > 0"
                 class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
-                :key="`group-${groupUnreadCount}`"
               >
                 {{ formatUnreadCount(groupUnreadCount) }}
               </div>
@@ -436,7 +468,7 @@ onUnmounted(() => {
 
         <div class="flex gap-2 items-center">
           
-          <!-- Chat Type Tabs -->
+          <!-- Desktop Chat Type Tabs with badges -->
           <div class="flex bg-[#2C2F36] rounded-full p-1">
             <button
               @click="messagesStore.selectedChatType = 'direct'"
@@ -452,6 +484,7 @@ onUnmounted(() => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 
+                <!-- Direct chats badge -->
                 <div 
                   v-if="directUnreadCount > 0"
                   class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
@@ -474,6 +507,7 @@ onUnmounted(() => {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
+                <!-- Group chats badge -->
                 <div 
                   v-if="groupUnreadCount > 0"
                   class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
@@ -556,11 +590,11 @@ onUnmounted(() => {
     
     <!-- Conversations List -->
     <div v-else class="flex-1 overflow-y-auto scrollbar-hide">
-      <ul class="divide-y divide-white/5" :key="`conversations-${messagesStore.lastConversationUpdate}`">
+      <ul class="divide-y divide-white/5">
         <li 
           v-for="conversation in conversations" 
-          :key="`${conversation.id}-${conversation.lastActivity}-${conversation.unreadCount}`"
-          @click="selectConversation(conversation)"
+          :key="conversation.id"
+          @click="handleConversationClick(conversation)"
           :class="[
             'flex items-center gap-3 py-4 px-3 hover:bg-[#2C2F36] cursor-pointer transition-colors',
             currentConversation?.id === conversation.id ? 'md:bg-[#2C2F36]' : ''
@@ -593,35 +627,71 @@ onUnmounted(() => {
               </p>
               <!-- Message Status for Sender -->
               <div v-if="isLastMessageFromSender(conversation)" class="flex-shrink-0">
-                <div v-if="getLastMessageStatus(conversation) === 'sending'" 
-                     class="w-3 h-3 border border-white/30 border-t-transparent rounded-full animate-spin"
-                     title="Sending..."></div>
-                <svg v-else-if="getLastMessageStatus(conversation) === 'sent'" class="w-3 h-3 text-white/50" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <div v-else-if="getLastMessageStatus(conversation) === 'delivered'" class="flex">
-                  <svg class="w-3 h-3 text-white/70" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                  <svg class="w-3 h-3 text-white/70 -ml-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-                <svg v-else-if="getLastMessageStatus(conversation) === 'read'" class="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <svg v-else-if="getLastMessageStatus(conversation) === 'failed'" class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
+  <!-- Sending status -->
+  <div 
+    v-if="getLastMessageStatus(conversation) === 'sending'" 
+    class="w-3 h-3 border border-white/30 border-t-transparent rounded-full animate-spin"
+    title="Sending..."
+  ></div>
+  
+  <!-- Failed status -->
+  <svg 
+    v-else-if="getLastMessageStatus(conversation) === 'failed'" 
+    class="w-3 h-3 text-red-400" 
+    fill="none" 
+    stroke="currentColor" 
+    viewBox="0 0 24 24"
+    title="Failed to send"
+  >
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  
+  <!-- Sent status - Single gray tick -->
+  <svg 
+    v-else-if="getLastMessageStatus(conversation) === 'sent'" 
+    class="w-3 h-3 text-white/50" 
+    fill="currentColor" 
+    viewBox="0 0 20 20"
+    title="Sent"
+  >
+    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+  </svg>
+  
+  <!-- Delivered status - Two gray ticks -->
+  <div 
+    v-else-if="getLastMessageStatus(conversation) === 'delivered'" 
+    class="flex"
+    title="Delivered"
+  >
+    <svg class="w-3 h-3 text-white/70" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <svg class="w-3 h-3 text-white/70 -ml-1" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+    </svg>
+  </div>
+  
+  <!-- Read status - Two blue ticks -->
+  <div 
+    v-else-if="getLastMessageStatus(conversation) === 'read'" 
+    class="flex"
+    title="Read"
+  >
+    <svg class="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <svg class="w-3 h-3 text-blue-400 -ml-1" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+    </svg>
+  </div>
+</div>
               
-              <!-- ENHANCED: Unread Count with animation -->
+              <!-- Unread Count Badge -->
               <div 
-                v-if="conversation.unreadCount > 0"
+                v-if="getConversationUnreadCount(conversation) > 0"
                 class="bg-[#055CFF] text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold transition-all duration-200"
-                :key="`unread-${conversation.id}-${conversation.unreadCount}`"
               >
-                {{ formatUnreadCount(conversation.unreadCount) }}
+                {{ formatUnreadCount(getConversationUnreadCount(conversation)) }}
               </div>
              </div>
           </div>
