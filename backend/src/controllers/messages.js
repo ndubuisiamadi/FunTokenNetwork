@@ -1,4 +1,4 @@
-// src/controllers/messages.js - FIXED UNREAD COUNT VERSION
+// src/controllers/messages.js - FIXED STATUS UPDATES VERSION
 const { validationResult } = require('express-validator')
 const prisma = require('../db')
 const multer = require('multer')
@@ -65,7 +65,7 @@ const getConversationWithDetails = async (conversationId, currentUserId) => {
       throw new Error('Conversation not found')
     }
 
-    // 🔥 ENHANCED: Calculate unread count more accurately
+    // Calculate unread count
     const unreadCount = await prisma.message.count({
       where: {
         conversationId,
@@ -111,7 +111,7 @@ const getConversationWithDetails = async (conversationId, currentUserId) => {
       createdAt: conversation.createdAt,
       lastActivity: conversation.lastActivity,
       participants: conversation.participants,
-      unreadCount, // 🔥 CRITICAL: Include accurate unread count
+      unreadCount,
       lastMessage: lastMessage?.content || null,
       lastMessageTime: lastMessage?.createdAt || conversation.createdAt,
       lastMessageData: lastMessage ? {
@@ -123,7 +123,6 @@ const getConversationWithDetails = async (conversationId, currentUserId) => {
         isRead: lastMessage.isRead,
         isDelivered: lastMessage.isDelivered
       } : null,
-      // Add otherParticipant for direct messages
       otherParticipant
     }
 
@@ -166,7 +165,6 @@ const createConversation = async (req, res) => {
       return res.status(400).json({ message: 'At least one participant is required' })
     }
 
-    // Define allParticipantIds BEFORE using it
     const allParticipantIds = [userId, ...participantIds.filter(id => id !== userId)]
 
     // For direct chats, check if conversation already exists
@@ -278,7 +276,7 @@ const getMessages = async (req, res) => {
       take: limitNum
     })
 
-    // 🔥 FIXED: Add proper status to each message
+    // Add proper status to each message
     const messagesWithStatus = messages.map(message => ({
       ...message,
       status: getMessageStatusFromDb(message, userId)
@@ -300,14 +298,14 @@ const getMessages = async (req, res) => {
   }
 }
 
-// 🔥 ENHANCED: Update message status with unread count updates
+// 🔥 FIXED: Enhanced message status update with immediate emission
 const updateMessageStatus = async (req, res) => {
   try {
     const { messageId } = req.params
     const { status } = req.body // 'delivered' or 'read'
     const userId = req.user.id
 
-    console.log(`🔄 Updating message ${messageId} status to ${status} for user ${userId}`)
+    console.log(`🔄 API: Updating message ${messageId} status to ${status} for user ${userId}`)
 
     // Verify message exists and user has access
     const message = await prisma.message.findFirst({
@@ -328,6 +326,9 @@ const updateMessageStatus = async (req, res) => {
               }
             }
           }
+        },
+        sender: { 
+          select: { id: true, username: true }
         }
       }
     })
@@ -350,37 +351,45 @@ const updateMessageStatus = async (req, res) => {
       updateData.isDelivered = true // Read implies delivered
     }
 
-    await prisma.message.update({
+    const updatedMessage = await prisma.message.update({
       where: { id: messageId },
       data: updateData
     })
 
-    console.log(`✅ Message ${messageId} status updated to ${status} in database`)
+    console.log(`✅ API: Message ${messageId} status updated to ${status} in database`)
 
-    // Emit socket events to all conversation participants
+    // 🔥 FIXED: Immediate socket emission with direct sender notification
     const io = req.app.get('io')
     if (io) {
       const conversationId = message.conversationId
       
-      // Emit to conversation room
+      // 🔥 CRITICAL: Send status update directly to the MESSAGE SENDER
+      if (io.sendToUser) {
+        const senderNotified = io.sendToUser(message.senderId, 'message:status_updated', {
+          messageId,
+          conversationId,
+          status,
+          updatedBy: userId,
+          timestamp: new Date().toISOString()
+        })
+        
+        if (senderNotified) {
+          console.log(`📤 API: Status update sent directly to sender ${message.sender.username}`)
+        } else {
+          console.log(`⚠️ API: Sender ${message.sender.username} is offline - update queued`)
+        }
+      }
+      
+      // Also emit to conversation room for other participants
       io.to(`conversation:${conversationId}`).emit('message:status_updated', {
         messageId,
         conversationId,
         status,
-        updatedBy: userId
+        updatedBy: userId,
+        timestamp: new Date().toISOString()
       })
       
-      // Also emit directly to message sender
-      if (io.sendToUser) {
-        io.sendToUser(message.senderId, 'message:status_updated', {
-          messageId,
-          conversationId,
-          status,
-          updatedBy: userId
-        })
-      }
-      
-      // 🔥 NEW: Emit unread count update if message was marked as read
+      // Update unread counts if message was marked as read
       if (status === 'read' && io.emitUnreadCountUpdate) {
         setTimeout(async () => {
           await io.emitUnreadCountUpdate(userId, conversationId)
@@ -388,30 +397,31 @@ const updateMessageStatus = async (req, res) => {
         }, 100)
       }
       
-      console.log(`📡 Message status update emitted for ${messageId} → ${status}`)
+      console.log(`📡 API: Message status update emitted for ${messageId} → ${status}`)
     }
 
     res.json({ 
       message: 'Message status updated successfully',
       status,
       messageId,
-      conversationId: message.conversationId
+      conversationId: message.conversationId,
+      timestamp: new Date().toISOString()
     })
 
   } catch (error) {
-    console.error('❌ Update message status error:', error)
+    console.error('❌ API: Update message status error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// 🔥 ENHANCED: Bulk update with unread count updates
+// 🔥 FIXED: Enhanced bulk update with immediate emission
 const updateConversationMessageStatus = async (req, res) => {
   try {
     const { conversationId } = req.params
     const { status, messageIds } = req.body
     const userId = req.user.id
 
-    console.log(`📖 Bulk updating messages in conversation ${conversationId} to ${status}`)
+    console.log(`📖 API: Bulk updating messages in conversation ${conversationId} to ${status}`)
 
     // Verify user has access to conversation
     const participant = await prisma.conversationParticipant.findFirst({
@@ -443,32 +453,53 @@ const updateConversationMessageStatus = async (req, res) => {
       data: updateData
     })
 
-    console.log(`✅ Updated ${updatedMessages.count} messages to ${status}`)
+    console.log(`✅ API: Updated ${updatedMessages.count} messages to ${status}`)
 
-    // Emit socket events
+    // 🔥 FIXED: Immediate socket emissions
     const io = req.app.get('io')
     if (io) {
+      // Get all affected messages to notify their senders
+      if (status === 'read' || status === 'delivered') {
+        const affectedMessages = await prisma.message.findMany({
+          where: whereClause,
+          select: { 
+            id: true, 
+            senderId: true,
+            conversationId: true
+          },
+          distinct: ['senderId'] // Get unique senders
+        })
+
+        // 🔥 CRITICAL: Notify each sender directly
+        const uniqueSenders = [...new Set(affectedMessages.map(m => m.senderId))]
+        uniqueSenders.forEach(senderId => {
+          if (io.sendToUser) {
+            const senderNotified = io.sendToUser(senderId, 'message:status_updated', {
+              conversationId,
+              status,
+              bulkUpdate: true,
+              count: updatedMessages.count,
+              updatedBy: userId,
+              timestamp: new Date().toISOString()
+            })
+            
+            if (senderNotified) {
+              console.log(`📤 API: Bulk status update sent to sender ${senderId}`)
+            }
+          }
+        })
+      }
+
       // Emit to conversation room
       io.to(`conversation:${conversationId}`).emit('conversation:status_updated', {
         conversationId,
         status,
         updatedBy: userId,
-        count: updatedMessages.count
+        count: updatedMessages.count,
+        timestamp: new Date().toISOString()
       })
       
-      // If marking as read, also emit individual message updates if specific IDs provided
-      if (status === 'read' && messageIds) {
-        messageIds.forEach(messageId => {
-          io.to(`conversation:${conversationId}`).emit('message:status_updated', {
-            messageId,
-            conversationId,
-            status: 'read',
-            updatedBy: userId
-          })
-        })
-      }
-      
-      // 🔥 NEW: Emit unread count updates
+      // Update unread counts if messages were marked as read
       if (status === 'read' && io.emitUnreadCountUpdate) {
         setTimeout(async () => {
           await io.emitUnreadCountUpdate(userId, conversationId)
@@ -476,23 +507,24 @@ const updateConversationMessageStatus = async (req, res) => {
         }, 100)
       }
       
-      console.log(`📡 Bulk status update emitted: ${updatedMessages.count} messages → ${status}`)
+      console.log(`📡 API: Bulk status update emitted: ${updatedMessages.count} messages → ${status}`)
     }
 
     res.json({ 
       message: 'Messages status updated successfully',
       count: updatedMessages.count,
       conversationId,
-      status
+      status,
+      timestamp: new Date().toISOString()
     })
 
   } catch (error) {
-    console.error('❌ Bulk update message status error:', error)
+    console.error('❌ API: Bulk update message status error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// 🔥 ENHANCED: Send message with proper unread count updates
+// 🔥 FIXED: Enhanced sendMessage with immediate socket emission
 const sendMessage = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -504,7 +536,7 @@ const sendMessage = async (req, res) => {
     const { content, mediaUrls = [], messageType = 'text' } = req.body
     const userId = req.user.id
 
-    console.log(`📤 CONTROLLER: Sending message to conversation ${conversationId}:`, {
+    console.log(`📤 API: Sending message to conversation ${conversationId}:`, {
       content: content?.substring(0, 50) + '...',
       mediaUrls: mediaUrls.length,
       messageType,
@@ -525,7 +557,7 @@ const sendMessage = async (req, res) => {
       return res.status(403).json({ message: 'Access denied to this conversation' })
     }
 
-    // 🔥 FIXED: Create message with proper initial status
+    // Create message with initial "sent" status
     const message = await prisma.message.create({
       data: {
         content: content?.trim() || null,
@@ -533,7 +565,7 @@ const sendMessage = async (req, res) => {
         messageType,
         senderId: userId,
         conversationId,
-        // 🔥 IMPORTANT: Start with sent status, not delivered
+        // Start with "sent" status - will be updated to "delivered" when recipients receive it
         isDelivered: false,
         isRead: false
       },
@@ -550,7 +582,7 @@ const sendMessage = async (req, res) => {
       }
     })
 
-    console.log(`✅ CONTROLLER: Message created with ID: ${message.id} - Status: SENT`)
+    console.log(`✅ API: Message created with ID: ${message.id} - Status: SENT`)
 
     // Update conversation with last message info
     await prisma.conversation.update({
@@ -561,12 +593,12 @@ const sendMessage = async (req, res) => {
       }
     })
 
-    // CRITICAL: Emit socket event to all conversation participants
+    // 🔥 FIXED: Immediate socket emission without delays
     const io = req.app.get('io')
     if (io && io.emitNewMessage) {
-      console.log(`📡 CONTROLLER: Emitting socket event for message ${message.id}`)
+      console.log(`📡 API: Immediately emitting socket event for message ${message.id}`)
       
-      // 🔥 FIXED: Emit message with correct initial status
+      // Emit message with correct initial status
       await io.emitNewMessage({
         id: message.id,
         content: message.content,
@@ -577,16 +609,17 @@ const sendMessage = async (req, res) => {
         conversationId: message.conversationId,
         createdAt: message.createdAt,
         isRead: false,
-        isDelivered: false, // Will be updated when delivered
-        isEdited: message.isEdited
+        isDelivered: false, // Will be updated when recipients receive it
+        isEdited: message.isEdited,
+        timestamp: message.createdAt
       })
       
-      console.log(`✅ CONTROLLER: Socket event emitted successfully`)
+      console.log(`✅ API: Socket event emitted successfully`)
     } else {
-      console.warn('⚠️ CONTROLLER: Socket.io not available - real-time features disabled')
+      console.warn('⚠️ API: Socket.io not available - real-time features disabled')
     }
 
-    // 🔥 FIXED: Return message with correct status
+    // Return message with correct status
     res.status(201).json({
       message: 'Message sent successfully',
       message: {
@@ -596,21 +629,21 @@ const sendMessage = async (req, res) => {
       }
     })
 
-    console.log(`🎉 CONTROLLER: Message send complete for conversation ${conversationId}`)
+    console.log(`🎉 API: Message send complete for conversation ${conversationId}`)
 
   } catch (error) {
-    console.error('❌ CONTROLLER: Send message error:', error)
+    console.error('❌ API: Send message error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// 🔥 ENHANCED: Get conversations with accurate unread counts
+// Get conversations with accurate unread counts
 const getConversations = async (req, res) => {
   try {
     const userId = req.user.id
     const { page = 1, limit = 20 } = req.query
 
-    console.log(`📋 CONTROLLER: Getting conversations for user ${userId}`)
+    console.log(`📋 API: Getting conversations for user ${userId}`)
 
     const conversations = await prisma.conversation.findMany({
       where: {
@@ -654,12 +687,12 @@ const getConversations = async (req, res) => {
       take: parseInt(limit)
     })
 
-    console.log(`📊 CONTROLLER: Found ${conversations.length} conversations`)
+    console.log(`📊 API: Found ${conversations.length} conversations`)
 
     // Process conversations with proper unread counts
     const processedConversations = await Promise.all(
       conversations.map(async (conversation) => {
-        // 🔥 CRITICAL: Calculate accurate unread count
+        // Calculate accurate unread count
         const unreadCount = await prisma.message.count({
           where: {
             conversationId: conversation.id,
@@ -696,7 +729,7 @@ const getConversations = async (req, res) => {
             isRead: lastMessage.isRead,
             isDelivered: lastMessage.isDelivered
           } : null,
-          unreadCount, // 🔥 CRITICAL: Include accurate unread count
+          unreadCount, // Include accurate unread count
           participants: conversation.participants.map(p => ({
             id: p.id,
             userId: p.userId,
@@ -709,11 +742,11 @@ const getConversations = async (req, res) => {
       })
     )
 
-    console.log(`✅ CONTROLLER: Processed ${processedConversations.length} conversations with unread counts`)
+    console.log(`✅ API: Processed ${processedConversations.length} conversations with unread counts`)
 
-    // 🔥 LOG: Debug total unread count
+    // Debug total unread count
     const totalUnread = processedConversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0)
-    console.log(`📊 CONTROLLER: Total unread count: ${totalUnread}`)
+    console.log(`📊 API: Total unread count: ${totalUnread}`)
 
     res.json({
       conversations: processedConversations,
@@ -724,12 +757,12 @@ const getConversations = async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('❌ CONTROLLER: Get conversations error:', error)
+    console.error('❌ API: Get conversations error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// 🔥 ENHANCED: Mark as read with unread count updates
+// Mark conversation as read with proper unread count handling
 const markAsRead = async (req, res) => {
   try {
     const { conversationId } = req.params
@@ -767,7 +800,7 @@ const markAsRead = async (req, res) => {
 
     console.log(`Marked conversation ${conversationId} as read for user ${userId} (${updatedMessages.count} messages)`)
 
-    // 🔥 NEW: Emit unread count updates
+    // Emit unread count updates
     const io = req.app.get('io')
     if (io && io.emitUnreadCountUpdate) {
       setTimeout(async () => {
@@ -1063,7 +1096,7 @@ const getOnlineUsers = async (req, res) => {
   }
 }
 
-// 🔥 ENHANCED: Get total unread count for navigation badge
+// Get total unread count for navigation badge
 const getTotalUnreadCount = async (req, res) => {
   try {
     const userId = req.user.id
@@ -1081,7 +1114,7 @@ const getTotalUnreadCount = async (req, res) => {
       }
     })
 
-    console.log(`📊 CONTROLLER: Total unread count for user ${userId}: ${unreadCount}`)
+    console.log(`📊 API: Total unread count for user ${userId}: ${unreadCount}`)
 
     res.json({ unreadCount })
 

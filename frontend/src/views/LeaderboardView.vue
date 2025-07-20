@@ -36,7 +36,7 @@
           >
             <div class="flex items-center justify-center gap-2">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                <path d="M2 10a8 8 0 818-8v8h8a8 8 0 11-16 0z" />
                 <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
               </svg>
               My Stats
@@ -147,7 +147,6 @@
                 <!-- Rank Change -->
                 <div class="flex items-center">
                   <component 
-                    v-if="user.rankChange !== 0" 
                     :is="getRankChangeIconComponent(user.rankChange)"
                     :class="['w-4 h-4', getRankChangeColor(user.rankChange)]"
                   />
@@ -274,7 +273,6 @@
                     #{{ user.rank || user.globalRank || '?' }}
                   </span>
                   <component 
-                    v-if="user.rankChange !== 0" 
                     :is="getRankChangeIconComponent(user.rankChange)"
                     :class="['ml-1 w-4 h-4', getRankChangeColor(user.rankChange)]"
                   />
@@ -313,13 +311,6 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Achievements -->
-              <!-- <div class="flex gap-1">
-                <svg v-for="achievement in user.achievements" :key="achievement" class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              </div> -->
             </div>
           </div>
 
@@ -364,7 +355,7 @@ const showLevelFilter = ref(false)
 const activeTab = ref('leaderboard')
 const searchTimeout = ref(null)
 
-// Define SVG icon components
+// Simple SVG icon components for time periods
 const AllTimeIcon = {
   template: `
     <svg fill="currentColor" viewBox="0 0 20 20">
@@ -390,6 +381,7 @@ const WeeklyIcon = {
   `
 }
 
+// Rank change arrow components - only the essential ones
 const ArrowUpIcon = {
   template: `
     <svg fill="currentColor" viewBox="0 0 20 20">
@@ -406,16 +398,23 @@ const ArrowDownIcon = {
   `
 }
 
+// Fix: Add the missing ArrowRightIcon (for no change)
+const ArrowRightIcon = {
+  template: `
+    <svg fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+    </svg>
+  `
+}
+
 // Computed properties
-// Fix the displayUsers computed property
 const displayUsers = computed(() => {
   if (searchQuery.value.trim()) {
     return leaderboardStore.searchResults || []
   }
-  return leaderboardStore.sortedUsers.slice(0, 30) // Use sortedUsers instead of users
+  return leaderboardStore.sortedUsers.slice(0, 30)
 })
 
-// Also fix the search to use sortedUsers
 const handleSearch = () => {
   clearTimeout(searchTimeout.value)
   searchTimeout.value = setTimeout(async () => {
@@ -434,7 +433,7 @@ const handleSearch = () => {
   }, 300)
 }
 
-// Updated period options with icon components
+// Period options with icon components
 const periodOptions = [
   { value: 'all', label: 'All Time', iconComponent: AllTimeIcon },
   { value: 'monthly', label: 'This Month', iconComponent: MonthlyIcon },
@@ -483,10 +482,11 @@ const formatNumber = (num) => {
   return num.toString()
 }
 
+// Fix: Proper rank change functions
 const getRankChangeIconComponent = (change) => {
   if (change > 0) return ArrowUpIcon
   if (change < 0) return ArrowDownIcon
-  return ArrowRightIcon
+  return ArrowRightIcon // Fixed: Now properly defined
 }
 
 const getRankChangeColor = (change) => {

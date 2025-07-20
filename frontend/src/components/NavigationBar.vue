@@ -209,7 +209,7 @@ onUnmounted(() => {
     </nav>
     
     <!-- Mobile Navigation (Bottom Bar) -->
-    <nav class="sm:hidden bottom-0 left-0 right-0 z-50 rounded-t-2xl
+    <nav class="sm:hidden rounded-t-2xl
     bg-[#030712]/20 backdrop-blur-xl lg:border lg:border-white/20 lg:shadow-2xl
      border-t border-white/10 px-4 py-2 ">
         <div class="flex justify-center">

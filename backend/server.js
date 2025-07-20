@@ -43,6 +43,18 @@ try {
   console.warn('Error:', error.message)
 }
 
+// 🚀 Initialize ranking scheduler
+let rankingScheduler
+try {
+  const { rankingScheduler: scheduler } = require('./src/services/rankingScheduler')
+  rankingScheduler = scheduler
+  rankingScheduler.init()
+  console.log('✅ Ranking scheduler initialized')
+} catch (error) {
+  console.warn('⚠️  Ranking scheduler not found, continuing without automated rankings')
+  console.warn('Error:', error.message)
+}
+
 // Create necessary directories
 const createDirectories = () => {
   const dirs = [

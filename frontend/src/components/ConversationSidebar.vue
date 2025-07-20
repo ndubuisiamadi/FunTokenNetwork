@@ -5,6 +5,7 @@ import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { friendsAPI, uploadAPI } from '@/services/api'
 import { useRouter } from 'vue-router'
+import { getConversationPreviewStatus, shouldShowMessageStatus } from '@/utils/messageStatus'
 
 const router = useRouter()
 
@@ -323,19 +324,24 @@ const getConversationUnreadCount = (conversation) => {
   return conversation.unreadCount || 0
 }
 
-// 🔥 FIXED: Use store's real-time online status instead of stale data
+// 🔥 FIXED: Use store's real-time online status
 const isOnline = (conversation) => {
   if (conversation.isGroup) return false
   
   if (!conversation.otherParticipant?.id) return false
   
-  // 🔥 NEW: Get real-time online status from store
+  // 🔥 CRITICAL: Use the store's isUserOnline method directly
   return messagesStore.isUserOnline(conversation.otherParticipant.id)
 }
 
-// 🔥 NEW: Get real-time online status for any user (for friend selection)
+// 🔥 FIXED: Direct access to store's online status
 const isUserOnlineById = (userId) => {
   return messagesStore.isUserOnline(userId)
+}
+
+// 🔥 NEW: Get detailed online info for tooltips/debugging
+const getUserOnlineInfo = (userId) => {
+  return messagesStore.getUserOnlineInfo(userId)
 }
 
 const getMessageStatus = (message, currentUserId) => {
@@ -363,16 +369,12 @@ const getMessageStatus = (message, currentUserId) => {
 const isLastMessageFromSender = (conversation) => {
   const lastMessage = conversation.lastMessageData || {}
   const currentUserId = authStore.currentUser?.id
-  return lastMessage.senderId === currentUserId
+  return shouldShowMessageStatus(lastMessage, currentUserId)
 }
 
 const getLastMessageStatus = (conversation) => {
-  if (!isLastMessageFromSender(conversation)) return null
-  
-  const lastMessage = conversation.lastMessageData || {}
-  const currentUserId = authStore.currentUser?.id
-  
-  return getMessageStatus(lastMessage, currentUserId)
+  const authStore = useAuthStore()
+  return getConversationPreviewStatus(conversation, authStore.currentUser?.id)
 }
 
 const handleConversationClick = async (conversation) => {

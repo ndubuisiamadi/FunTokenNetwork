@@ -90,21 +90,40 @@ model User {
 
   UserTask UserTask[]
   
-  // INDEXES FOR SEARCH PERFORMANCE
+  // 🚀 OPTIMIZED INDEXES FOR RANKING PERFORMANCE
   @@index([firstName])           // Index for firstName searches
   @@index([lastName])            // Index for lastName searches  
   @@index([firstName, lastName]) // Compound index for full name searches
   @@index([gumballs])            // For gumball-based queries
   @@index([gumballs, createdAt]) // For ordering search results
   @@index([level, gumballs])     // For level system queries
-  @@index([globalRank])          // For ranking queries
+  
+  // 🚀 RANKING SYSTEM INDEXES
+  @@index([globalRank])          // Global ranking queries
+  @@index([weeklyRank])          // Weekly ranking queries  
+  @@index([monthlyRank])         // Monthly ranking queries
+  @@index([globalRank, gumballs]) // Global leaderboard with tiebreaker
+  @@index([weeklyRank, gumballs]) // Weekly leaderboard with tiebreaker
+  @@index([monthlyRank, gumballs]) // Monthly leaderboard with tiebreaker
+  @@index([gumballs, globalRank]) // Reverse for efficient rank calculation
+  @@index([level, globalRank])   // Level-filtered rankings
+  @@index([level, weeklyRank])   // Level-filtered weekly rankings
+  @@index([level, monthlyRank])  // Level-filtered monthly rankings
+  
+  // 🚀 SEARCH & FILTER OPTIMIZATION
+  @@index([firstName, globalRank]) // Search with ranking
+  @@index([lastName, globalRank])  // Search with ranking
+  @@index([username, globalRank])  // Username search with ranking
+  @@index([level, gumballs, globalRank]) // Multi-filter optimization
+  
+  // 🚀 GENERAL PERFORMANCE INDEXES
   @@index([isOnline])            // For online status queries
   @@index([createdAt])           // For chronological queries
   @@index([lastSeen])            // For activity tracking
-  @@index([referredBy])          // For referral chain queries (referralCode already has @unique)
+  @@index([referredBy])          // For referral chain queries
   @@index([referralCode])
   @@index([profileCompleted])
-  @@index([twitterUserId]) // Index for quick lookups
+  @@index([twitterUserId])       // Index for quick lookups
   @@map("users")
   
 }

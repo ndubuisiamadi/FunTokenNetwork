@@ -65,7 +65,7 @@ const isFullscreenLayout = computed(() => hideNavbar.value && hideHeader.value)
     <!-- Normal layout with header/navbar -->
     <div class="flex flex-col flex-1 overflow-hidden" >
       <Header v-if="!hideHeader" class="px-3 pt-3"/>
-      <RouterView class="flex-1 p-3 overflow-hidden"/>
+      <RouterView class="p-3 overflow-hidden"/>
       <NavBar v-if="isMobile" class=""/>
     </div>
   </template>

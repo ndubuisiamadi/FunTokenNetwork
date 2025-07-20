@@ -3,8 +3,7 @@
     <!-- Current User Rank -->
     <div class="bg-[#212121] rounded-2xl p-5 border border-white/10">
       <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-        
-        <img src="@/components/icons/ranking-rank.svg" class="size-6">
+        <img src="@/components/icons/ranking-rank.svg" class="size-6" alt="Ranking">
         Your Rank
       </h3>
       
@@ -28,33 +27,84 @@
         <div class="grid grid-cols-2 gap-4">
           <div class="bg-[#1a1a1a] rounded-lg p-3 text-center">
             <div class="flex items-center justify-center gap-1 min-h-[28px]">
+              <!-- Weekly Rank Change -->
               <span 
-                v-if="(userRankInfo.user.weeklyRankChange || 0) !== 0"
+                v-if="getWeeklyChange() !== 0"
                 class="text-lg font-bold"
-                :class="getRankChangeColor(userRankInfo.user.weeklyRankChange || 0)"
+                :class="getRankChangeColor(getWeeklyChange())"
               >
-                {{ formatRankChange(userRankInfo.user.weeklyRankChange || 0) }}
+                {{ formatRankChange(getWeeklyChange()) }}
               </span>
-              <component 
-                :is="getRankChangeIconComponent(userRankInfo.user.weeklyRankChange || 0)"
-                :class="['w-5 h-5', getRankChangeColor(userRankInfo.user.weeklyRankChange || 0)]"
-              />
+              
+              <!-- Always show arrow icon -->
+              <svg 
+                v-if="getWeeklyChange() > 0"
+                class="w-5 h-5 text-green-400" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
+                <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              
+              <svg 
+                v-else-if="getWeeklyChange() < 0"
+                class="w-5 h-5 text-red-400" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
+                <path fill-rule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              
+              <svg 
+                v-else
+                class="w-5 h-5 text-gray-400" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
+                <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+              </svg>
             </div>
             <p class="text-xs text-white/60">Weekly Change</p>
           </div>
+          
           <div class="bg-[#1a1a1a] rounded-lg p-3 text-center">
             <div class="flex items-center justify-center gap-1 min-h-[28px]">
+              <!-- Monthly Rank Change -->
               <span 
-                v-if="(userRankInfo.user.monthlyRankChange || 0) !== 0"
+                v-if="getMonthlyChange() !== 0"
                 class="text-lg font-bold"
-                :class="getRankChangeColor(userRankInfo.user.monthlyRankChange || 0)"
+                :class="getRankChangeColor(getMonthlyChange())"
               >
-                {{ formatRankChange(userRankInfo.user.monthlyRankChange || 0) }}
+                {{ formatRankChange(getMonthlyChange()) }}
               </span>
-              <component 
-                :is="getRankChangeIconComponent(userRankInfo.user.monthlyRankChange || 0)"
-                :class="['w-5 h-5', getRankChangeColor(userRankInfo.user.monthlyRankChange || 0)]"
-              />
+              
+              <!-- Always show arrow icon -->
+              <svg 
+                v-if="getMonthlyChange() > 0"
+                class="w-5 h-5 text-green-400" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
+                <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              
+              <svg 
+                v-else-if="getMonthlyChange() < 0"
+                class="w-5 h-5 text-red-400" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
+                <path fill-rule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              
+              <svg 
+                v-else
+                class="w-5 h-5 text-gray-400" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+              >
+                <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+              </svg>
             </div>
             <p class="text-xs text-white/60">Monthly Change</p>
           </div>
@@ -70,8 +120,7 @@
     <!-- Top Achievers -->
     <div class="bg-[#212121] rounded-2xl p-5 border border-white/10">
       <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
-        
-        <img src="@/components/icons/chevron-rank.svg" class="size-6">
+        <img src="@/components/icons/chevron-rank.svg" class="size-6" alt="Trophy">
         Top 3 This Week
       </h3>
       
@@ -116,29 +165,17 @@ const props = defineProps({
   }
 })
 
-// Define SVG icon components
-const ArrowUpIcon = {
-  template: `
-    <svg fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-    </svg>
-  `
+// 🔧 BULLETPROOF: Safe getters that handle null/undefined
+const getWeeklyChange = () => {
+  if (!props.userRankInfo?.user) return 0
+  const change = props.userRankInfo.user.weeklyRankChange
+  return typeof change === 'number' ? change : 0
 }
 
-const ArrowDownIcon = {
-  template: `
-    <svg fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-    </svg>
-  `
-}
-
-const DashIcon = {
-  template: `
-    <svg fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-    </svg>
-  `
+const getMonthlyChange = () => {
+  if (!props.userRankInfo?.user) return 0
+  const change = props.userRankInfo.user.monthlyRankChange
+  return typeof change === 'number' ? change : 0
 }
 
 // Methods
@@ -152,12 +189,6 @@ const formatRankChange = (change) => {
   if (change === 0) return ''
   if (change > 0) return `+${change}`
   return change.toString()
-}
-
-const getRankChangeIconComponent = (change) => {
-  if (change > 0) return ArrowUpIcon
-  if (change < 0) return ArrowDownIcon
-  return DashIcon // Return dash icon for no change
 }
 
 const getRankChangeColor = (change) => {

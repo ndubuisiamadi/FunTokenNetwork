@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { uploadAPI } from '@/services/api'
 import GroupInfoModal from '@/components/GroupInfoModal.vue'
 import NewMessagesDivider from '@/components/NewMessagesDivider.vue'
+import { getMessageStatus, shouldShowMessageStatus } from '@/utils/messageStatus'
 
 const router = useRouter()
 const messagesStore = useMessagesStore()
@@ -166,6 +167,11 @@ const markMessagesAsRead = async () => {
   } catch (error) {
     console.error('Failed to mark messages as read:', error)
   }
+}
+
+const getMessageStatusForDisplay = (message) => {
+  const authStore = useAuthStore()
+  return getMessageStatus(message, authStore.currentUser?.id)
 }
 
 const loadMoreMessages = async () => {
@@ -339,16 +345,17 @@ const getConversationAvatar = (conversation) => {
   return conversation.otherParticipant?.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg'
 }
 
+// 🔥 FIXED: Use store's real-time online status instead of stale data
 const isOnline = (conversation) => {
   if (conversation.isGroup) return false
   
   if (!conversation.otherParticipant?.id) return false
   
-  // 🔥 NEW: Get real-time online status from store instead of stale data
+  // 🔥 CRITICAL: Get real-time online status from store
   return messagesStore.isUserOnline(conversation.otherParticipant.id)
 }
 
-// 🔥 ENHANCED: Update getConversationStatus to use real-time data
+// 🔥 ENHANCED: Get conversation status with real-time online data
 const getConversationStatus = (conversation) => {
   if (conversation.isGroup) {
     const memberCount = conversation.participants?.length || 0
@@ -1048,17 +1055,17 @@ onUnmounted(() => {
             </div>
             
             <!-- Message status for sender -->
-            <div class="flex-shrink-0 self-end mb-1">
+            <div v-if="shouldShowMessageStatus(message, authStore.currentUser?.id)" class="flex-shrink-0 self-end mb-1">
               <!-- Sending status -->
               <div 
-                v-if="message.status === 'sending'" 
+                v-if="getMessageStatusForDisplay(message) === 'sending'" 
                 class="w-4 h-4 border border-white/30 border-t-transparent rounded-full animate-spin"
                 title="Sending..."
               ></div>
               
               <!-- Failed status -->
               <svg 
-                v-else-if="message.status === 'failed'" 
+                v-else-if="getMessageStatusForDisplay(message) === 'failed'" 
                 class="w-4 h-4 text-red-400" 
                 fill="none" 
                 stroke="currentColor" 
@@ -1070,7 +1077,7 @@ onUnmounted(() => {
               
               <!-- Sent status - Single gray tick -->
               <svg 
-                v-else-if="message.status === 'sent'" 
+                v-else-if="getMessageStatusForDisplay(message) === 'sent'" 
                 class="w-4 h-4 text-white/50" 
                 fill="currentColor" 
                 viewBox="0 0 20 20"
@@ -1081,7 +1088,7 @@ onUnmounted(() => {
               
               <!-- Delivered status - Two gray ticks -->
               <div 
-                v-else-if="message.status === 'delivered'" 
+                v-else-if="getMessageStatusForDisplay(message) === 'delivered'" 
                 class="flex"
                 title="Delivered"
               >
@@ -1095,7 +1102,7 @@ onUnmounted(() => {
               
               <!-- Read status - Two blue ticks -->
               <div 
-                v-else-if="message.status === 'read'" 
+                v-else-if="getMessageStatusForDisplay(message) === 'read'" 
                 class="flex"
                 title="Read"
               >
