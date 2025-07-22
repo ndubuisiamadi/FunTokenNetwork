@@ -1,0 +1,2348 @@
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: 'The mongodb provider does not support $queryRaw',
+    stack: 'Error: The mongodb provider does not support $queryRaw\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:542\n' +
+      '    at Proxy._executeRequest (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10256)\n' +
+      '    at il (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:31:9835)\n' +
+      '    at l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9784)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10078\n' +
+      '    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10058\n' +
+      '    at Object.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1549)\n' +
+      '    at Io.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1913)\n' +
+      '    at Proxy._request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9981)',
+    name: 'Error'
+  },
+  level: 'error',
+  message: 'System health check failed',
+  timestamp: '2025-07-21 16:42:08'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: 'The mongodb provider does not support $queryRaw',
+    stack: 'Error: The mongodb provider does not support $queryRaw\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:542\n' +
+      '    at Proxy._executeRequest (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10256)\n' +
+      '    at il (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:31:9835)\n' +
+      '    at l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9784)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10078\n' +
+      '    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10058\n' +
+      '    at Object.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1549)\n' +
+      '    at Io.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1913)\n' +
+      '    at Proxy._request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9981)',
+    name: 'Error'
+  },
+  level: 'error',
+  message: 'System health check failed',
+  timestamp: '2025-07-21 16:42:16'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: 'The mongodb provider does not support $queryRaw',
+    stack: 'Error: The mongodb provider does not support $queryRaw\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:542\n' +
+      '    at Proxy._executeRequest (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10256)\n' +
+      '    at il (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:31:9835)\n' +
+      '    at l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9784)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10078\n' +
+      '    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10058\n' +
+      '    at Object.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1549)\n' +
+      '    at Io.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1913)\n' +
+      '    at Proxy._request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9981)',
+    name: 'Error'
+  },
+  level: 'error',
+  message: 'System health check failed',
+  timestamp: '2025-07-21 16:42:42'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: 'The mongodb provider does not support $queryRaw',
+    stack: 'Error: The mongodb provider does not support $queryRaw\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:542\n' +
+      '    at Proxy._executeRequest (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10256)\n' +
+      '    at il (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:31:9835)\n' +
+      '    at l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9784)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10078\n' +
+      '    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10058\n' +
+      '    at Object.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1549)\n' +
+      '    at Io.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1913)\n' +
+      '    at Proxy._request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9981)',
+    name: 'Error'
+  },
+  level: 'error',
+  message: 'System health check failed',
+  timestamp: '2025-07-21 16:42:44'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: 'The mongodb provider does not support $queryRaw',
+    stack: 'Error: The mongodb provider does not support $queryRaw\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:542\n' +
+      '    at Proxy._executeRequest (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10256)\n' +
+      '    at il (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:31:9835)\n' +
+      '    at l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9784)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10078\n' +
+      '    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10058\n' +
+      '    at Object.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1549)\n' +
+      '    at Io.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1913)\n' +
+      '    at Proxy._request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9981)',
+    name: 'Error'
+  },
+  level: 'error',
+  message: 'System health check failed',
+  timestamp: '2025-07-21 16:47:48'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: 'The mongodb provider does not support $queryRaw',
+    stack: 'Error: The mongodb provider does not support $queryRaw\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:542\n' +
+      '    at Proxy._executeRequest (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10256)\n' +
+      '    at il (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:31:9835)\n' +
+      '    at l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9784)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10078\n' +
+      '    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n' +
+      '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:10058\n' +
+      '    at Object.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1549)\n' +
+      '    at Io.runInChildSpan (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:1913)\n' +
+      '    at Proxy._request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9981)',
+    name: 'Error'
+  },
+  level: 'error',
+  message: 'System health check failed',
+  timestamp: '2025-07-21 16:50:49'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.userTask.aggregate()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:136:23\n' +
+      '\n' +
+      '  133     completedAt: { gte: last24h }\n' +
+      '  134   } \n' +
+      '  135 }),\n' +
+      '→ 136 prisma.userTask.aggregate({\n' +
+      '        select: {\n' +
+      '          _sum: {\n' +
+      '          ~~~~\n' +
+      '            select: {\n' +
+      '              reward: true\n' +
+      '            }\n' +
+      '          },\n' +
+      '      ?   _count?: true,\n' +
+      '      ?   _min?: true,\n' +
+      '      ?   _max?: true\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          status: "completed"\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown field `_sum` for select statement on model `AggregateUserTask`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.userTask.aggregate()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:136:23\n' +
+      '\n' +
+      '  133     completedAt: { gte: last24h }\n' +
+      '  134   } \n' +
+      '  135 }),\n' +
+      '→ 136 prisma.userTask.aggregate({\n' +
+      '        select: {\n' +
+      '          _sum: {\n' +
+      '          ~~~~\n' +
+      '            select: {\n' +
+      '              reward: true\n' +
+      '            }\n' +
+      '          },\n' +
+      '      ?   _count?: true,\n' +
+      '      ?   _min?: true,\n' +
+      '      ?   _max?: true\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          status: "completed"\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown field `_sum` for select statement on model `AggregateUserTask`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 3)\n' +
+      '    at async getSystemStats (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:127:9)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get system stats',
+  timestamp: '2025-07-21 16:53:53'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.userTask.aggregate()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:136:23\n' +
+      '\n' +
+      '  133     completedAt: { gte: last24h }\n' +
+      '  134   } \n' +
+      '  135 }),\n' +
+      '→ 136 prisma.userTask.aggregate({\n' +
+      '        select: {\n' +
+      '          _sum: {\n' +
+      '          ~~~~\n' +
+      '            select: {\n' +
+      '              reward: true\n' +
+      '            }\n' +
+      '          },\n' +
+      '      ?   _count?: true,\n' +
+      '      ?   _min?: true,\n' +
+      '      ?   _max?: true\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          status: "completed"\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown field `_sum` for select statement on model `AggregateUserTask`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.userTask.aggregate()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:136:23\n' +
+      '\n' +
+      '  133     completedAt: { gte: last24h }\n' +
+      '  134   } \n' +
+      '  135 }),\n' +
+      '→ 136 prisma.userTask.aggregate({\n' +
+      '        select: {\n' +
+      '          _sum: {\n' +
+      '          ~~~~\n' +
+      '            select: {\n' +
+      '              reward: true\n' +
+      '            }\n' +
+      '          },\n' +
+      '      ?   _count?: true,\n' +
+      '      ?   _min?: true,\n' +
+      '      ?   _max?: true\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          status: "completed"\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown field `_sum` for select statement on model `AggregateUserTask`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 3)\n' +
+      '    at async getSystemStats (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:127:9)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get system stats',
+  timestamp: '2025-07-21 16:54:52'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.userTask.aggregate()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:762:23\n' +
+      '\n' +
+      '  759 prisma.task.count({ where: { isActive: true } }),\n' +
+      '  760 prisma.task.count({ where: { isActive: false } }),\n' +
+      "  761 prisma.userTask.count({ where: { status: 'completed' } }),\n" +
+      '→ 762 prisma.userTask.aggregate({\n' +
+      '        select: {\n' +
+      '          _sum: {\n' +
+      '          ~~~~\n' +
+      '            select: {\n' +
+      '              reward: true\n' +
+      '            }\n' +
+      '          },\n' +
+      '      ?   _count?: true,\n' +
+      '      ?   _min?: true,\n' +
+      '      ?   _max?: true\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          status: "completed"\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown field `_sum` for select statement on model `AggregateUserTask`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.userTask.aggregate()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:762:23\n' +
+      '\n' +
+      '  759 prisma.task.count({ where: { isActive: true } }),\n' +
+      '  760 prisma.task.count({ where: { isActive: false } }),\n' +
+      "  761 prisma.userTask.count({ where: { status: 'completed' } }),\n" +
+      '→ 762 prisma.userTask.aggregate({\n' +
+      '        select: {\n' +
+      '          _sum: {\n' +
+      '          ~~~~\n' +
+      '            select: {\n' +
+      '              reward: true\n' +
+      '            }\n' +
+      '          },\n' +
+      '      ?   _count?: true,\n' +
+      '      ?   _min?: true,\n' +
+      '      ?   _max?: true\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          status: "completed"\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown field `_sum` for select statement on model `AggregateUserTask`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 4)\n' +
+      '    at async getTaskStats (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:757:9)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get task stats',
+  timestamp: '2025-07-21 17:31:25'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:319:19\n' +
+      '\n' +
+      '  316 \n' +
+      '  317 // Execute queries\n' +
+      '  318 const [users, total] = await Promise.all([\n' +
+      '→ 319   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:319:19\n' +
+      '\n' +
+      '  316 \n' +
+      '  317 // Execute queries\n' +
+      '  318 const [users, total] = await Promise.all([\n' +
+      '→ 319   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:318:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-21 23:47:10'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.userTask.count()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:219:25\n' +
+      '\n' +
+      '  216     }\n' +
+      '  217   }\n' +
+      '  218 }),\n' +
+      '→ 219 prisma.userTask.count({\n' +
+      '        select: {\n' +
+      '          _count: {\n' +
+      '            select: {\n' +
+      '              _all: true\n' +
+      '            }\n' +
+      '          }\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          isCompleted: true,\n' +
+      '          ~~~~~~~~~~~\n' +
+      '      ?   AND?: UserTaskWhereInput | UserTaskWhereInput[],\n' +
+      '      ?   OR?: UserTaskWhereInput[],\n' +
+      '      ?   NOT?: UserTaskWhereInput | UserTaskWhereInput[],\n' +
+      '      ?   id?: StringFilter | String,\n' +
+      '      ?   userId?: StringFilter | String,\n' +
+      '      ?   taskId?: StringFilter | String,\n' +
+      '      ?   status?: StringFilter | String,\n' +
+      '      ?   startedAt?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   completedAt?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   submissionData?: JsonNullableFilter,\n' +
+      '      ?   verificationData?: JsonNullableFilter,\n' +
+      '      ?   verifiedBy?: StringNullableFilter | String | Null,\n' +
+      '      ?   verificationNote?: StringNullableFilter | String | Null,\n' +
+      '      ?   createdAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   updatedAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   user?: UserScalarRelationFilter | UserWhereInput,\n' +
+      '      ?   task?: TaskScalarRelationFilter | TaskWhereInput\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown argument `isCompleted`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.userTask.count()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:219:25\n' +
+      '\n' +
+      '  216     }\n' +
+      '  217   }\n' +
+      '  218 }),\n' +
+      '→ 219 prisma.userTask.count({\n' +
+      '        select: {\n' +
+      '          _count: {\n' +
+      '            select: {\n' +
+      '              _all: true\n' +
+      '            }\n' +
+      '          }\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          isCompleted: true,\n' +
+      '          ~~~~~~~~~~~\n' +
+      '      ?   AND?: UserTaskWhereInput | UserTaskWhereInput[],\n' +
+      '      ?   OR?: UserTaskWhereInput[],\n' +
+      '      ?   NOT?: UserTaskWhereInput | UserTaskWhereInput[],\n' +
+      '      ?   id?: StringFilter | String,\n' +
+      '      ?   userId?: StringFilter | String,\n' +
+      '      ?   taskId?: StringFilter | String,\n' +
+      '      ?   status?: StringFilter | String,\n' +
+      '      ?   startedAt?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   completedAt?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   submissionData?: JsonNullableFilter,\n' +
+      '      ?   verificationData?: JsonNullableFilter,\n' +
+      '      ?   verifiedBy?: StringNullableFilter | String | Null,\n' +
+      '      ?   verificationNote?: StringNullableFilter | String | Null,\n' +
+      '      ?   createdAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   updatedAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   user?: UserScalarRelationFilter | UserWhereInput,\n' +
+      '      ?   task?: TaskScalarRelationFilter | TaskWhereInput\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown argument `isCompleted`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 4)\n' +
+      '    at async C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:208:11\n' +
+      '    at async getCachedData (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:24:18)\n' +
+      '    at async getSystemStats (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:201:20)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get system stats',
+  timestamp: '2025-07-21 23:47:54'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:383:19\n' +
+      '\n' +
+      '  380 if (level) where.level = level\n' +
+      '  381 \n' +
+      '  382 const [users, total] = await Promise.all([\n' +
+      '→ 383   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:383:19\n' +
+      '\n' +
+      '  380 if (level) where.level = level\n' +
+      '  381 \n' +
+      '  382 const [users, total] = await Promise.all([\n' +
+      '→ 383   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:382:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-21 23:48:23'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:409:19\n' +
+      '\n' +
+      '  406 \n' +
+      '  407 // Execute queries\n' +
+      '  408 const [users, total] = await Promise.all([\n' +
+      '→ 409   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:409:19\n' +
+      '\n' +
+      '  406 \n' +
+      '  407 // Execute queries\n' +
+      '  408 const [users, total] = await Promise.all([\n' +
+      '→ 409   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:408:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-21 23:50:52'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:406:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-21 23:52:25'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:406:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-21 23:52:46'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:406:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-21 23:54:00'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:395:19\n' +
+      '\n' +
+      '  392 \n' +
+      '  393 // Execute queries\n' +
+      '  394 const [users, total] = await Promise.all([\n' +
+      '→ 395   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:395:19\n' +
+      '\n' +
+      '  392 \n' +
+      '  393 // Execute queries\n' +
+      '  394 const [users, total] = await Promise.all([\n' +
+      '→ 395   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:394:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-22 00:03:02'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:410:19\n' +
+      '\n' +
+      '  407 \n' +
+      '  408 // Execute queries\n' +
+      '  409 const [users, total] = await Promise.all([\n' +
+      '→ 410   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:410:19\n' +
+      '\n' +
+      '  407 \n' +
+      '  408 // Execute queries\n' +
+      '  409 const [users, total] = await Promise.all([\n' +
+      '→ 410   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:409:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-22 00:06:01'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:410:19\n' +
+      '\n' +
+      '  407 \n' +
+      '  408 // Execute queries\n' +
+      '  409 const [users, total] = await Promise.all([\n' +
+      '→ 410   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:410:19\n' +
+      '\n' +
+      '  407 \n' +
+      '  408 // Execute queries\n' +
+      '  409 const [users, total] = await Promise.all([\n' +
+      '→ 410   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:409:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-22 13:35:38'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:410:19\n' +
+      '\n' +
+      '  407 \n' +
+      '  408 // Execute queries\n' +
+      '  409 const [users, total] = await Promise.all([\n' +
+      '→ 410   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                UserTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:410:19\n' +
+      '\n' +
+      '  407 \n' +
+      '  408 // Execute queries\n' +
+      '  409 const [users, total] = await Promise.all([\n' +
+      '→ 410   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                UserTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:409:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-22 13:39:52'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllTasks (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:795:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all tasks',
+  timestamp: '2025-07-22 14:05:25'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllTasks (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:795:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all tasks',
+  timestamp: '2025-07-22 14:06:03'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllTasks (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:795:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all tasks',
+  timestamp: '2025-07-22 14:06:16'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.task.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:796:19\n' +
+      '\n' +
+      '  793 }\n' +
+      '  794 \n' +
+      '  795 const [tasks, total] = await Promise.all([\n' +
+      '→ 796   prisma.task.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          include: {\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                UserTask: true,\n' +
+      '                ~~~~~~~~\n' +
+      '        ?       userTasks?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `UserTask` for select statement on model `TaskCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllTasks (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:795:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all tasks',
+  timestamp: '2025-07-22 14:06:56'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.findMany()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:407:19\n' +
+      '\n' +
+      '  404 \n' +
+      '  405 // Execute queries\n' +
+      '  406 const [users, total] = await Promise.all([\n' +
+      '→ 407   prisma.user.findMany({\n' +
+      '          where: {},\n' +
+      '          skip: 0,\n' +
+      '          take: 20,\n' +
+      '          orderBy: {\n' +
+      '            createdAt: "desc"\n' +
+      '          },\n' +
+      '          select: {\n' +
+      '            id: true,\n' +
+      '            username: true,\n' +
+      '            email: true,\n' +
+      '            firstName: true,\n' +
+      '            lastName: true,\n' +
+      '            role: true,\n' +
+      '            level: true,\n' +
+      '            gumballs: true,\n' +
+      '            isEmailVerified: true,\n' +
+      '            createdAt: true,\n' +
+      '            lastSeen: true,\n' +
+      '            avatarUrl: true,\n' +
+      '            _count: {\n' +
+      '              select: {\n' +
+      '                posts: true,\n' +
+      '                userTasks: true,\n' +
+      '                ~~~~~~~~~\n' +
+      '                referrals: true,\n' +
+      '        ?       passwordResetTokens?: true,\n' +
+      '        ?       verificationCodes?: true,\n' +
+      '        ?       comments?: true,\n' +
+      '        ?       likes?: true,\n' +
+      '        ?       commentLikes?: true,\n' +
+      '        ?       sentFriendRequests?: true,\n' +
+      '        ?       receivedFriendRequests?: true,\n' +
+      '        ?       friendships1?: true,\n' +
+      '        ?       friendships2?: true,\n' +
+      '        ?       communities?: true,\n' +
+      '        ?       ownedCommunities?: true,\n' +
+      '        ?       sentMessages?: true,\n' +
+      '        ?       conversations?: true,\n' +
+      '        ?       gumballHistory?: true,\n' +
+      '        ?       rankHistory?: true,\n' +
+      '        ?       notifications?: true,\n' +
+      '        ?       referralRewards?: true,\n' +
+      '        ?       referredRewards?: true,\n' +
+      '        ?       UserTask?: true\n' +
+      '              }\n' +
+      '            }\n' +
+      '          }\n' +
+      '        })\n' +
+      '\n' +
+      'Unknown field `userTasks` for select statement on model `UserCountOutputType`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 0)\n' +
+      '    at async getAllUsers (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:406:28)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get all users',
+  timestamp: '2025-07-22 14:11:32'
+}
+{
+  service: 'social-media-api',
+  version: '1.0.0',
+  error: {
+    message: '\n' +
+      'Invalid `prisma.user.count()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:543:19\n' +
+      '\n' +
+      '  540 }),\n' +
+      '  541 \n' +
+      '  542 // Suspended users\n' +
+      '→ 543 prisma.user.count({\n' +
+      '        select: {\n' +
+      '          _count: {\n' +
+      '            select: {\n' +
+      '              _all: true\n' +
+      '            }\n' +
+      '          }\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          isSuspended: true,\n' +
+      '          ~~~~~~~~~~~\n' +
+      '      ?   AND?: UserWhereInput | UserWhereInput[],\n' +
+      '      ?   OR?: UserWhereInput[],\n' +
+      '      ?   NOT?: UserWhereInput | UserWhereInput[],\n' +
+      '      ?   id?: StringFilter | String,\n' +
+      '      ?   username?: StringFilter | String,\n' +
+      '      ?   email?: StringNullableFilter | String | Null,\n' +
+      '      ?   password?: StringFilter | String,\n' +
+      '      ?   firstName?: StringNullableFilter | String | Null,\n' +
+      '      ?   lastName?: StringNullableFilter | String | Null,\n' +
+      '      ?   role?: StringFilter | String,\n' +
+      '      ?   isEmailVerified?: BoolFilter | Boolean,\n' +
+      '      ?   emailRequired?: BoolFilter | Boolean,\n' +
+      '      ?   profileCompleted?: BoolFilter | Boolean,\n' +
+      '      ?   bio?: StringNullableFilter | String | Null,\n' +
+      '      ?   location?: StringNullableFilter | String | Null,\n' +
+      '      ?   birthDate?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   avatarUrl?: StringNullableFilter | String | Null,\n' +
+      '      ?   bannerUrl?: StringNullableFilter | String | Null,\n' +
+      '      ?   gumballs?: IntFilter | Int,\n' +
+      '      ?   isOnline?: BoolFilter | Boolean,\n' +
+      '      ?   lastSeen?: DateTimeFilter | DateTime,\n' +
+      '      ?   createdAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   updatedAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   level?: StringFilter | String,\n' +
+      '      ?   globalRank?: IntNullableFilter | Int | Null,\n' +
+      '      ?   weeklyRank?: IntNullableFilter | Int | Null,\n' +
+      '      ?   monthlyRank?: IntNullableFilter | Int | Null,\n' +
+      '      ?   rankChange?: IntFilter | Int,\n' +
+      '      ?   weeklyRankChange?: IntNullableFilter | Int | Null,\n' +
+      '      ?   monthlyRankChange?: IntNullableFilter | Int | Null,\n' +
+      '      ?   referralCode?: StringFilter | String,\n' +
+      '      ?   referredBy?: StringNullableFilter | String | Null,\n' +
+      '      ?   totalReferrals?: IntFilter | Int,\n' +
+      '      ?   activeReferrals?: IntFilter | Int,\n' +
+      '      ?   referralEarnings?: IntFilter | Int,\n' +
+      '      ?   twitterUserId?: StringNullableFilter | String | Null,\n' +
+      '      ?   twitterSetupAt?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   referrer?: UserNullableScalarRelationFilter | UserWhereInput | Null,\n' +
+      '      ?   referrals?: UserListRelationFilter,\n' +
+      '      ?   passwordResetTokens?: PasswordResetTokenListRelationFilter,\n' +
+      '      ?   verificationCodes?: EmailVerificationCodeListRelationFilter,\n' +
+      '      ?   posts?: PostListRelationFilter,\n' +
+      '      ?   comments?: CommentListRelationFilter,\n' +
+      '      ?   likes?: LikeListRelationFilter,\n' +
+      '      ?   commentLikes?: CommentLikeListRelationFilter,\n' +
+      '      ?   sentFriendRequests?: FriendRequestListRelationFilter,\n' +
+      '      ?   receivedFriendRequests?: FriendRequestListRelationFilter,\n' +
+      '      ?   friendships1?: FriendshipListRelationFilter,\n' +
+      '      ?   friendships2?: FriendshipListRelationFilter,\n' +
+      '      ?   communities?: CommunityMemberListRelationFilter,\n' +
+      '      ?   ownedCommunities?: CommunityListRelationFilter,\n' +
+      '      ?   sentMessages?: MessageListRelationFilter,\n' +
+      '      ?   conversations?: ConversationParticipantListRelationFilter,\n' +
+      '      ?   gumballHistory?: GumballHistoryListRelationFilter,\n' +
+      '      ?   rankHistory?: RankHistoryListRelationFilter,\n' +
+      '      ?   notifications?: NotificationListRelationFilter,\n' +
+      '      ?   referralRewards?: ReferralRewardListRelationFilter,\n' +
+      '      ?   referredRewards?: ReferralRewardListRelationFilter,\n' +
+      '      ?   UserTask?: UserTaskListRelationFilter\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown argument `isSuspended`. Available options are marked with ?.',
+    stack: 'PrismaClientValidationError: \n' +
+      'Invalid `prisma.user.count()` invocation in\n' +
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:543:19\n' +
+      '\n' +
+      '  540 }),\n' +
+      '  541 \n' +
+      '  542 // Suspended users\n' +
+      '→ 543 prisma.user.count({\n' +
+      '        select: {\n' +
+      '          _count: {\n' +
+      '            select: {\n' +
+      '              _all: true\n' +
+      '            }\n' +
+      '          }\n' +
+      '        },\n' +
+      '        where: {\n' +
+      '          isSuspended: true,\n' +
+      '          ~~~~~~~~~~~\n' +
+      '      ?   AND?: UserWhereInput | UserWhereInput[],\n' +
+      '      ?   OR?: UserWhereInput[],\n' +
+      '      ?   NOT?: UserWhereInput | UserWhereInput[],\n' +
+      '      ?   id?: StringFilter | String,\n' +
+      '      ?   username?: StringFilter | String,\n' +
+      '      ?   email?: StringNullableFilter | String | Null,\n' +
+      '      ?   password?: StringFilter | String,\n' +
+      '      ?   firstName?: StringNullableFilter | String | Null,\n' +
+      '      ?   lastName?: StringNullableFilter | String | Null,\n' +
+      '      ?   role?: StringFilter | String,\n' +
+      '      ?   isEmailVerified?: BoolFilter | Boolean,\n' +
+      '      ?   emailRequired?: BoolFilter | Boolean,\n' +
+      '      ?   profileCompleted?: BoolFilter | Boolean,\n' +
+      '      ?   bio?: StringNullableFilter | String | Null,\n' +
+      '      ?   location?: StringNullableFilter | String | Null,\n' +
+      '      ?   birthDate?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   avatarUrl?: StringNullableFilter | String | Null,\n' +
+      '      ?   bannerUrl?: StringNullableFilter | String | Null,\n' +
+      '      ?   gumballs?: IntFilter | Int,\n' +
+      '      ?   isOnline?: BoolFilter | Boolean,\n' +
+      '      ?   lastSeen?: DateTimeFilter | DateTime,\n' +
+      '      ?   createdAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   updatedAt?: DateTimeFilter | DateTime,\n' +
+      '      ?   level?: StringFilter | String,\n' +
+      '      ?   globalRank?: IntNullableFilter | Int | Null,\n' +
+      '      ?   weeklyRank?: IntNullableFilter | Int | Null,\n' +
+      '      ?   monthlyRank?: IntNullableFilter | Int | Null,\n' +
+      '      ?   rankChange?: IntFilter | Int,\n' +
+      '      ?   weeklyRankChange?: IntNullableFilter | Int | Null,\n' +
+      '      ?   monthlyRankChange?: IntNullableFilter | Int | Null,\n' +
+      '      ?   referralCode?: StringFilter | String,\n' +
+      '      ?   referredBy?: StringNullableFilter | String | Null,\n' +
+      '      ?   totalReferrals?: IntFilter | Int,\n' +
+      '      ?   activeReferrals?: IntFilter | Int,\n' +
+      '      ?   referralEarnings?: IntFilter | Int,\n' +
+      '      ?   twitterUserId?: StringNullableFilter | String | Null,\n' +
+      '      ?   twitterSetupAt?: DateTimeNullableFilter | DateTime | Null,\n' +
+      '      ?   referrer?: UserNullableScalarRelationFilter | UserWhereInput | Null,\n' +
+      '      ?   referrals?: UserListRelationFilter,\n' +
+      '      ?   passwordResetTokens?: PasswordResetTokenListRelationFilter,\n' +
+      '      ?   verificationCodes?: EmailVerificationCodeListRelationFilter,\n' +
+      '      ?   posts?: PostListRelationFilter,\n' +
+      '      ?   comments?: CommentListRelationFilter,\n' +
+      '      ?   likes?: LikeListRelationFilter,\n' +
+      '      ?   commentLikes?: CommentLikeListRelationFilter,\n' +
+      '      ?   sentFriendRequests?: FriendRequestListRelationFilter,\n' +
+      '      ?   receivedFriendRequests?: FriendRequestListRelationFilter,\n' +
+      '      ?   friendships1?: FriendshipListRelationFilter,\n' +
+      '      ?   friendships2?: FriendshipListRelationFilter,\n' +
+      '      ?   communities?: CommunityMemberListRelationFilter,\n' +
+      '      ?   ownedCommunities?: CommunityListRelationFilter,\n' +
+      '      ?   sentMessages?: MessageListRelationFilter,\n' +
+      '      ?   conversations?: ConversationParticipantListRelationFilter,\n' +
+      '      ?   gumballHistory?: GumballHistoryListRelationFilter,\n' +
+      '      ?   rankHistory?: RankHistoryListRelationFilter,\n' +
+      '      ?   notifications?: NotificationListRelationFilter,\n' +
+      '      ?   referralRewards?: ReferralRewardListRelationFilter,\n' +
+      '      ?   referredRewards?: ReferralRewardListRelationFilter,\n' +
+      '      ?   UserTask?: UserTaskListRelationFilter\n' +
+      '        }\n' +
+      '      })\n' +
+      '\n' +
+      'Unknown argument `isSuspended`. Available options are marked with ?.\n' +
+      '    at kn (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:29:1363)\n' +
+      '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7102)\n' +
+      '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+      '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+      '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+      '    at async Promise.all (index 4)\n' +
+      '    at async getUserStats (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\controllers\\admin.js:510:9)',
+    name: 'PrismaClientValidationError'
+  },
+  level: 'error',
+  message: 'Failed to get user stats',
+  timestamp: '2025-07-22 15:32:49'
+}

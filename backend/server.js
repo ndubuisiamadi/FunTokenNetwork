@@ -1,4 +1,4 @@
-// server.js - FIXED VERSION
+// server.js - UPDATED WITH ADMIN DASHBOARD SUPPORT
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
@@ -17,13 +17,15 @@ const app = express()
 app.set('trust proxy', 'loopback, linklocal, uniquelocal')
 const server = createServer(app)
 
-// Configure Socket.io with CORS
+// Configure Socket.io with CORS (including admin dashboard)
 const io = new Server(server, {
   cors: {
     origin: [
-      'http://localhost:5173',
+      'http://localhost:5173',    // Main frontend
+      'http://localhost:5174',    // Admin dashboard
       'http://192.168.0.159:5173', 
-      'http://127.0.0.1:5173'
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174'     // Admin dashboard
     ],
     credentials: true
   }
@@ -89,7 +91,6 @@ app.use(helmet({
   }
 }))
 
-
 // Rate limiting with different limits for different endpoints
 const createRateLimit = (windowMs, max, message) => rateLimit({
   windowMs,
@@ -101,26 +102,29 @@ const createRateLimit = (windowMs, max, message) => rateLimit({
 
 // Only apply rate limiting in production
 if (process.env.NODE_ENV === 'production') {
-// General API rate limit
-app.use('/api/', createRateLimit(15 * 60 * 1000, 1000, 'Too many API requests'))
+  // General API rate limit
+  app.use('/api/', createRateLimit(15 * 60 * 1000, 1000, 'Too many API requests'))
 
-// Stricter limits for auth endpoints
-app.use('/api/auth/login', createRateLimit(15 * 60 * 1000, 5, 'Too many login attempts'))
-app.use('/api/auth/register', createRateLimit(60 * 60 * 1000, 3, 'Too many registration attempts'))
+  // Stricter limits for auth endpoints
+  app.use('/api/auth/login', createRateLimit(15 * 60 * 1000, 5, 'Too many login attempts'))
+  app.use('/api/auth/register', createRateLimit(60 * 60 * 1000, 3, 'Too many registration attempts'))
 
-// Messages rate limit (more generous for real-time chat)
-app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 100, 'Too many message requests'))}
+  // Admin endpoints with special rate limiting
+  app.use('/api/admin/', createRateLimit(15 * 60 * 1000, 200, 'Too many admin requests'))
 
+  // Messages rate limit (more generous for real-time chat)
+  app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 100, 'Too many message requests'))
+}
 
-
-// CORS configuration
-// server.js - Updated CORS configuration
+// CORS configuration - UPDATED TO INCLUDE ADMIN DASHBOARD
 app.use(cors({
   origin: [
-    'http://localhost:5173',
+    'http://localhost:5173',    // Main frontend
+    'http://localhost:5174',    // Admin dashboard
     'http://localhost:5163',
     'http://192.168.0.159:5173',
-    'http://127.0.0.1:5173'
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174'     // Admin dashboard
   ],
   credentials: true
 }));
@@ -202,12 +206,13 @@ app.get('/', (req, res) => {
       'Posts & Social Feed',
       'Friends System',
       'File Uploads',
-      'Leaderboard & Gamification'
+      'Leaderboard & Gamification',
+      'Admin Dashboard'  // Added admin feature
     ]
   })
 })
 
-// API documentation endpoint
+// API documentation endpoint - UPDATED WITH ADMIN ENDPOINTS
 app.get('/api', (req, res) => {
   res.json({
     message: 'Social Media API v2.0',
@@ -220,6 +225,17 @@ app.get('/api', (req, res) => {
           'GET /api/auth/profile',
           'PUT /api/auth/profile'
         ]
+      },
+      admin: {
+        endpoints: [
+          'GET /api/admin/system/health',
+          'GET /api/admin/system/stats',
+          'GET /api/admin/users',
+          'PUT /api/admin/users/:id',
+          'GET /api/admin/tasks',
+          'GET /api/admin/analytics/users'
+        ],
+        description: 'Admin-only endpoints for platform management'
       },
       messages: {
         endpoints: [
@@ -277,7 +293,16 @@ app.get('/api', (req, res) => {
   })
 })
 
-// Safe route loading with error handling
+console.log('Testing admin route import...')
+try {
+  const testAdminRoutes = require('./src/routes/admin')
+  console.log('✅ Admin routes imported successfully:', typeof testAdminRoutes)
+} catch (err) {
+  console.error('❌ Admin routes import failed:', err.message)
+  console.error('Full error:', err)
+}
+
+// Safe route loading with error handling - UPDATED WITH ADMIN ROUTES
 const loadRoutes = () => {
   console.log('🔍 Loading routes...')
   
@@ -292,8 +317,9 @@ const loadRoutes = () => {
     { path: '/api/messages', file: './src/routes/messages', name: 'messages' },
     { path: '/api/leaderboard', file: './src/routes/leaderboard', name: 'leaderboard' },
     { path: '/api/search', file: './src/routes/search', name: 'search' },
-    { path: '/api/tasks', file: './src/routes/tasks', name: 'tasks' }
-
+    { path: '/api/tasks', file: './src/routes/tasks', name: 'tasks' },
+    // 🆕 ADD ADMIN ROUTES
+    { path: '/api/admin', file: './src/routes/admin', name: 'admin' }
   ]
 
   routeConfigs.forEach(({ path, file, name }) => {
@@ -305,7 +331,13 @@ const loadRoutes = () => {
     } catch (error) {
       console.error(`  ❌ Failed to load ${name} routes:`, error.message)
       console.error(`     File: ${file}`)
-      console.error(`     Error: ${error.stack}`)
+      
+      // For admin routes, provide more specific guidance
+      if (name === 'admin') {
+        console.error(`     💡 Make sure you have created /src/routes/admin.js and /src/controllers/admin.js`)
+        console.error(`     💡 Admin dashboard will not be accessible until these files are created`)
+      }
+      
       // Continue loading other routes even if one fails
     }
   })
@@ -464,7 +496,7 @@ process.on('unhandledRejection', (reason, promise) => {
   gracefulShutdown('UNHANDLED_REJECTION')
 })
 
-// Start server
+// Start server - UPDATED WITH ADMIN DASHBOARD INFO
 server.listen(PORT, HOST, () => {
   console.log('\n🚀 ================================')
   console.log('🚀 Social Media API Server Started')
@@ -475,12 +507,14 @@ server.listen(PORT, HOST, () => {
   console.log(`📚 API Docs: http://${HOST}:${PORT}/api`)
   console.log(`📁 Static Files: http://${HOST}:${PORT}/uploads`)
   console.log(`⚡ WebSocket: ws://${HOST}:${PORT}/socket.io`)
+  console.log(`🛡️  Admin API: http://${HOST}:${PORT}/api/admin`)
   console.log(`💾 Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`)
   console.log('🚀 ================================\n')
   
   // Log initial socket server status
   console.log(`📱 Socket.io server ready for connections`)
   console.log(`📱 CORS enabled for: ${process.env.CLIENT_URL || "http://localhost:5173"}`)
+  console.log(`🛡️  Admin dashboard CORS: http://localhost:5174`)
 })
 
 // Export for testing

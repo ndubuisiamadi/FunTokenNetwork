@@ -1,4 +1,4 @@
-// src/middleware/auth.js
+// backend/src/middleware/auth.js
 const jwt = require('jsonwebtoken')
 const prisma = require('../db')
 
@@ -19,8 +19,9 @@ const auth = async (req, res, next) => {
         firstName: true,
         lastName: true,
         avatarUrl: true,
-        gumballs: true
-        // REMOVED: isVerified
+        gumballs: true,
+        role: true,  // 🆕 ADDED - Required for admin authentication
+        email: true  // 🆕 ADDED - May be needed for admin functions
       }
     })
 
@@ -58,7 +59,9 @@ const optionalAuth = async (req, res, next) => {
         firstName: true,
         lastName: true,
         avatarUrl: true,
-        gumballs: true
+        gumballs: true,
+        role: true,  // 🆕 ADDED
+        email: true  // 🆕 ADDED
       }
     })
 

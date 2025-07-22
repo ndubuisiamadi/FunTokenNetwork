@@ -170,10 +170,10 @@ const login = async (req, res) => {
       })
     }
 
-    const { username, password } = req.body
+    const { username, password, adminRequest } = req.body
     const normalizedUsername = username.toLowerCase()
 
-    // Find user by username
+    // Find user by username (keep it simple like your original system)
     const user = await prisma.user.findUnique({
       where: { username: normalizedUsername }
     })
@@ -188,8 +188,21 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password' })
     }
 
-    // Check if email verification is required
-    if (user.emailRequired && !user.isEmailVerified) {
+    // 🆕 ADMIN REQUEST HANDLING
+    if (adminRequest) {
+      // If this is an admin login request, verify admin role
+      if (user.role !== 'admin' && user.role !== 'super_admin') {
+        return res.status(403).json({ 
+          message: 'Admin access required',
+          error: 'Insufficient privileges'
+        })
+      }
+      
+      console.log(`🔐 Admin login: ${user.username} (${user.role})`)
+    }
+
+    // Check if email verification is required (skip for admin requests)
+    if (!adminRequest && user.emailRequired && !user.isEmailVerified) {
       return res.status(403).json({ 
         message: 'Please verify your email before logging in',
         requiresVerification: true,
@@ -203,18 +216,29 @@ const login = async (req, res) => {
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user
 
-    res.json({
-      message: 'Login successful',
-      user: userWithoutPassword,
-      accessToken,
-      refreshToken
-    })
+    // 🆕 Different response for admin vs regular login
+    if (adminRequest) {
+      res.json({
+        message: 'Admin login successful',
+        user: userWithoutPassword,
+        token: accessToken,  // Admin dashboard expects 'token'
+        refreshToken
+      })
+    } else {
+      res.json({
+        message: 'Login successful',
+        user: userWithoutPassword,
+        accessToken,
+        refreshToken
+      })
+    }
 
   } catch (error) {
     console.error('Login error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
+
 
 const logout = async (req, res) => {
   try {

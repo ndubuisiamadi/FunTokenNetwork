@@ -34,11 +34,23 @@ const registerValidation = [
 const loginValidation = [
   body('username')
     .notEmpty()
-    .withMessage('Username is required'),
+    .trim()
+    .isLength({ min: 3, max: 30 })
+    .withMessage('Username is required and must be 3-30 characters'),
+  body('email')
+    .optional()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email'),
   body('password')
-    .notEmpty()
-    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters'),
+  body('adminRequest')
+    .optional()
+    .isBoolean()
+    .withMessage('adminRequest must be a boolean')
 ]
+
 
 const verifyEmailValidation = [
   body('email')

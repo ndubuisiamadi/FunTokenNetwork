@@ -1,24 +1,76 @@
 {
   "name": "admin-dashboard",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
+  "description": "FunTokenNetwork Admin Dashboard - Secure administrative interface",
+  "keywords": [
+    "admin",
+    "dashboard",
+    "vue3",
+    "management"
+  ],
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5174 --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --port 5174",
+    "lint": "eslint . --ext .vue,.js,.jsx,.ts,.tsx --fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "analyze": "npx vite-bundle-analyzer dist",
+    "clean": "rm -rf dist node_modules/.vite",
+    "security-audit": "npm audit --audit-level moderate"
   },
   "dependencies": {
+    "@headlessui/vue": "^1.7.22",
+    "@heroicons/vue": "^2.0.18",
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
+    "chart.js": "^4.5.0",
+    "date-fns": "^3.6.0",
+    "lodash-es": "^4.17.21",
+    "mitt": "^3.0.1",
+    "nprogress": "^0.2.0",
     "pinia": "^3.0.3",
     "tailwindcss": "^4.1.11",
     "vue": "^3.5.17",
+    "vue-chartjs": "^5.3.0",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/eslint-config-prettier": "^9.0.0",
+    "@vue/test-utils": "^2.4.4",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.20.1",
+    "jsdom": "^24.1.0",
+    "prettier": "^3.2.5",
     "vite": "^7.0.0",
-    "vite-plugin-vue-devtools": "^7.7.7"
+    "vite-bundle-analyzer": "^0.7.0",
+    "vite-plugin-vue-devtools": "^7.7.7",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/funtokennetwork-admin"
+  },
+  "author": "FunTokenNetwork Team",
+  "license": "MIT",
+  "config": {
+    "port": 5174,
+    "apiUrl": "http://localhost:3000/api"
+  },
+  "volta": {
+    "node": "20.11.1",
+    "npm": "10.2.4"
   }
 }

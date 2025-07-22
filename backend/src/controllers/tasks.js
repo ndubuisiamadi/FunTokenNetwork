@@ -523,60 +523,169 @@ const checkTwitterSetup = async (req, res) => {
   }
 }
 
+// backend/src/controllers/tasks.js - UPDATED createTask function
 const createTask = async (req, res) => {
   try {
-    const { targetUsername, type, title, description, reward, difficulty } = req.body
+    const { 
+      platform: platformName, 
+      targetUsername, 
+      type, 
+      title, 
+      description, 
+      reward, 
+      difficulty,
+      isActive = true
+    } = req.body
 
-    console.log(`📝 Creating ${type} task for @${targetUsername}`)
+    console.log(`📝 Creating ${type} task for @${targetUsername} on ${platformName}`)
+    console.log('📤 Request body:', req.body)
 
-    let platform = await prisma.platform.findUnique({
-      where: { name: 'Twitter' }
+    // Platform name mapping and validation
+    const platformMappings = {
+      'twitter': {
+        name: 'Twitter',
+        iconUrl: '/src/assets/x-logo.png'
+      },
+      'youtube': {
+        name: 'YouTube', 
+        iconUrl: '/src/assets/youtube-logo.png'
+      },
+      'telegram': {
+        name: 'Telegram',
+        iconUrl: '/src/assets/telegram-logo.png'
+      }
+    }
+
+    const platformConfig = platformMappings[platformName.toLowerCase()]
+    if (!platformConfig) {
+      return res.status(400).json({
+        message: 'Invalid platform',
+        error: `Platform '${platformName}' is not supported. Supported platforms: ${Object.keys(platformMappings).join(', ')}`
+      })
+    }
+
+    // Find or create platform
+    let platform = await prisma.platform.findFirst({
+      where: { 
+        name: { equals: platformConfig.name, mode: 'insensitive' }
+      }
     })
 
     if (!platform) {
+      console.log(`🆕 Creating new platform: ${platformConfig.name}`)
       platform = await prisma.platform.create({
         data: {
-          name: 'Twitter',
-          iconUrl: '/src/assets/x-logo.png',
+          name: platformConfig.name,
+          iconUrl: platformConfig.iconUrl,
           isActive: true
         }
       })
     }
 
+    // Validate task type for platform
+    const validTaskTypes = {
+      'twitter': ['follow', 'like', 'retweet', 'comment'],
+      'youtube': ['subscribe', 'like', 'comment'],
+      'telegram': ['join', 'follow']
+    }
+
+    const allowedTypes = validTaskTypes[platformName.toLowerCase()]
+    if (!allowedTypes || !allowedTypes.includes(type)) {
+      return res.status(400).json({
+        message: 'Invalid task type for platform',
+        error: `Task type '${type}' is not valid for ${platformConfig.name}. Allowed types: ${allowedTypes?.join(', ')}`
+      })
+    }
+
+    // Create the task
     const task = await prisma.task.create({
       data: {
         platformId: platform.id,
         type,
-        title: title || `${type} @${targetUsername}`,
-        description: description || `${type} @${targetUsername} on Twitter`,
+        title: title || generateTaskTitle(type, targetUsername, platformConfig.name),
+        description: description || generateTaskDescription(type, targetUsername, platformConfig.name, reward),
         target: {
           username: targetUsername,
-          handle: `@${targetUsername}`
+          handle: `@${targetUsername}`,
+          platform: platformConfig.name
         },
-        reward: reward || 15000,
+        reward: reward || 1000,
         currency: 'Gumballs',
-        difficulty: difficulty || 2,
-        isActive: true
+        difficulty: difficulty || 1,
+        isActive: isActive !== undefined ? isActive : true
       },
       include: {
-        platform: true
+        platform: {
+          select: {
+            name: true,
+            iconUrl: true
+          }
+        }
       }
     })
 
-    console.log(`✅ Task created: ${task.id}`)
+    console.log(`✅ Task created successfully: ${task.id}`)
 
     res.json({
       message: 'Task created successfully!',
-      task
+      task: {
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        platform: task.platform,
+        type: task.type,
+        reward: task.reward,
+        difficulty: task.difficulty,
+        isActive: task.isActive,
+        target: task.target,
+        createdAt: task.createdAt
+      }
     })
 
   } catch (error) {
-    console.error('Create task error:', error)
+    console.error('❌ Create task error:', error)
+    
+    // Handle specific Prisma errors
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        message: 'Duplicate task detected',
+        error: 'A similar task may already exist'
+      })
+    }
+    
     res.status(500).json({ 
       message: 'Failed to create task',
       error: error.message 
     })
   }
+}
+
+// Helper function to generate task titles
+const generateTaskTitle = (type, username, platform) => {
+  const titleTemplates = {
+    follow: `Follow @${username} on ${platform}`,
+    like: `Like @${username}'s ${platform === 'Twitter' ? 'tweet' : platform === 'YouTube' ? 'video' : 'post'}`,
+    retweet: `Retweet @${username}'s tweet`,
+    comment: `Comment on @${username}'s ${platform === 'Twitter' ? 'tweet' : platform === 'YouTube' ? 'video' : 'post'}`,
+    subscribe: `Subscribe to @${username} on ${platform}`,
+    join: `Join @${username}'s ${platform} channel`
+  }
+  
+  return titleTemplates[type] || `${type} @${username} on ${platform}`
+}
+
+// Helper function to generate task descriptions  
+const generateTaskDescription = (type, username, platform, reward) => {
+  const descriptionTemplates = {
+    follow: `Follow @${username} on ${platform} to complete this task and earn ${reward} Gumballs. Make sure you're following their account.`,
+    like: `Like the specified ${platform === 'Twitter' ? 'tweet' : platform === 'YouTube' ? 'video' : 'post'} from @${username} to earn ${reward} Gumballs.`,
+    retweet: `Retweet the specified tweet from @${username} to earn ${reward} Gumballs. The retweet should be visible on your profile.`,
+    comment: `Leave a meaningful comment on @${username}'s ${platform === 'Twitter' ? 'tweet' : platform === 'YouTube' ? 'video' : 'post'} to earn ${reward} Gumballs.`,
+    subscribe: `Subscribe to @${username}'s ${platform} channel to earn ${reward} Gumballs. Make sure your subscription is public.`,
+    join: `Join @${username}'s ${platform} channel or group to earn ${reward} Gumballs.`
+  }
+  
+  return descriptionTemplates[type] || `Complete the ${type} action for @${username} on ${platform} to earn ${reward} Gumballs.`
 }
 
 const verifyTask = async (req, res) => {

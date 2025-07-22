@@ -1,77 +1,150 @@
+// backend/prisma/seed.js
 const { PrismaClient } = require('@prisma/client')
 const bcrypt = require('bcryptjs')
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // Create sample users
-  const hashedPassword = await bcrypt.hash('password123', 12)
-  
-  const user1 = await prisma.user.create({
-    data: {
-      username: 'johndoe',
-      email: 'john@example.com',
-      password: hashedPassword,
-      firstName: 'John',
-      lastName: 'Doe',
-      bio: 'Hello, I am John!',
-      gumballs: 1500,
-    },
-  })
+  console.log('🌱 Starting database seed...')
+  console.log('📝 Creating admin accounts...')
 
-  const user2 = await prisma.user.create({
-    data: {
-      username: 'janedoe',
-      email: 'jane@example.com', 
-      password: hashedPassword,
-      firstName: 'Jane',
-      lastName: 'Doe',
-      bio: 'Nice to meet you!',
-      gumballs: 2500,
-    },
-  })
+  try {
+    // Helper function to generate referral code
+    const generateReferralCode = (username) => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 6)
+      return `${username.substring(0, 4).toUpperCase()}${timestamp}${random}`.toUpperCase()
+    }
 
-  // Create sample posts
-  await prisma.post.create({
-    data: {
-      content: 'This is my first post!',
-      postType: 'text',
-      userId: user1.id,
-    },
-  })
-
-  await prisma.post.create({
-    data: {
-      content: 'Beautiful sunset today! 🌅',
-      postType: 'photo',
-      mediaUrls: ['https://example.com/sunset.jpg'],
-      userId: user2.id,
-    },
-  })
-
-  // Create sample community
-  await prisma.community.create({
-    data: {
-      name: 'Photography Lovers',
-      description: 'A community for photography enthusiasts',
-      createdById: user1.id,
-      members: {
-        create: [
-          { userId: user1.id, role: 'owner' },
-          { userId: user2.id, role: 'member' },
-        ],
+    // 1. Create Super Admin Account
+    const superAdminPassword = await bcrypt.hash('SuperAdmin123!', 12)
+    const superAdminCode = generateReferralCode('superadmin')
+    
+    const superAdmin = await prisma.user.upsert({
+      where: { username: 'superadmin' },
+      update: {
+        // Update password if user exists
+        password: superAdminPassword,
+        role: 'super_admin',
+        isEmailVerified: true,
+        profileCompleted: true
       },
-    },
-  })
+      create: {
+        username: 'superadmin',
+        email: 'admin@funnetwork.com',
+        password: superAdminPassword,
+        firstName: 'Super',
+        lastName: 'Admin',
+        role: 'super_admin',
+        isEmailVerified: true,
+        profileCompleted: true,
+        referralCode: superAdminCode,
+        gumballs: 10000, // Give some initial gumballs
+        level: 'Master'
+      }
+    })
 
-  console.log('Database seeded successfully!')
+    // 2. Create Regular Admin Account  
+    const adminPassword = await bcrypt.hash('Admin123!', 12)
+    const adminCode = generateReferralCode('admin')
+    
+    const admin = await prisma.user.upsert({
+      where: { username: 'admin' },
+      update: {
+        // Update password if user exists
+        password: adminPassword,
+        role: 'admin',
+        isEmailVerified: true,
+        profileCompleted: true
+      },
+      create: {
+        username: 'admin',
+        email: 'moderator@funnetwork.com',
+        password: adminPassword,
+        firstName: 'Platform',
+        lastName: 'Admin',
+        role: 'admin',
+        isEmailVerified: true,
+        profileCompleted: true,
+        referralCode: adminCode,
+        gumballs: 5000,
+        level: 'Expert'
+      }
+    })
+
+    // 3. Create Test Admin (for development)
+    const testAdminPassword = await bcrypt.hash('test123', 12)
+    const testAdminCode = generateReferralCode('testadmin')
+    
+    const testAdmin = await prisma.user.upsert({
+      where: { username: 'testadmin' },
+      update: {
+        password: testAdminPassword,
+        role: 'admin',
+        isEmailVerified: true,
+        profileCompleted: true
+      },
+      create: {
+        username: 'testadmin',
+        email: 'test@funnetwork.com',
+        password: testAdminPassword,
+        firstName: 'Test',
+        lastName: 'Admin',
+        role: 'admin',
+        isEmailVerified: true,
+        profileCompleted: true,
+        referralCode: testAdminCode,
+        gumballs: 1000,
+        level: 'Advanced'
+      }
+    })
+
+    console.log('✅ Admin accounts created successfully!')
+    console.log('🎯 === ADMIN CREDENTIALS ===')
+    console.log('┌─────────────────────────────────────┐')
+    console.log('│ SUPER ADMIN                         │')
+    console.log('│ Username: superadmin                │')
+    console.log('│ Password: SuperAdmin123!            │')
+    console.log('│ Email: admin@funnetwork.com         │')
+    console.log('│ Role: super_admin                   │')
+    console.log('├─────────────────────────────────────┤')
+    console.log('│ REGULAR ADMIN                       │')
+    console.log('│ Username: admin                     │')
+    console.log('│ Password: Admin123!                 │')
+    console.log('│ Email: moderator@funnetwork.com     │')
+    console.log('│ Role: admin                         │')
+    console.log('├─────────────────────────────────────┤')
+    console.log('│ TEST ADMIN (Development)            │')
+    console.log('│ Username: testadmin                 │')
+    console.log('│ Password: test123                   │')
+    console.log('│ Email: test@funnetwork.com          │')
+    console.log('│ Role: admin                         │')
+    console.log('└─────────────────────────────────────┘')
+    console.log('💡 Use any of these accounts to access the admin dashboard')
+
+    // Log account details for reference
+    console.log(`📊 Super Admin ID: ${superAdmin.id}`)
+    console.log(`📊 Admin ID: ${admin.id}`)
+    console.log(`📊 Test Admin ID: ${testAdmin.id}`)
+
+  } catch (error) {
+    console.error('❌ Error creating admin accounts:', error)
+    
+    if (error.code === 'P2002') {
+      console.log('💡 Admin accounts may already exist. Check database.')
+    }
+    
+    throw error
+  }
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error('❌ Seed process failed:', e)
     process.exit(1)
   })
   .finally(async () => {
+    console.log('🔌 Disconnecting from database...')
     await prisma.$disconnect()
+    console.log('✅ Seed process completed!')
   })

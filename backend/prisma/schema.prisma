@@ -19,6 +19,7 @@ model User {
   password    String
   firstName   String?  @map("first_name")
   lastName    String?  @map("last_name")
+  role        String   @default("user") // user, admin, super_admin
   isEmailVerified Boolean  @default(false) @map("is_email_verified")
   emailRequired   Boolean  @default(false) @map("email_required")
   profileCompleted Boolean @default(false) @map("profile_completed") 
