@@ -7,8 +7,8 @@
     <div class="analytics-header">
   <div class="flex justify-between items-center mb-6">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
-      <p class="text-gray-600 dark:text-gray-400 mt-1">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
+      <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
         Monitor platform performance and user engagement
         <span v-if="!includeAdmins" class="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
           Admins Excluded
@@ -24,13 +24,13 @@
       
       <!-- Admin Filter Toggle -->
       <div class="flex items-center space-x-2">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="text-xs font-medium text-gray-700 dark:text-gray-300">
           Include Admins:
         </label>
         <button
           @click="toggleAdminFilter"
           :class="[
-            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+            'relative inline-flex h-4 w-8 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
             includeAdmins 
               ? 'bg-blue-600' 
               : 'bg-gray-200 dark:bg-gray-700'
@@ -38,7 +38,7 @@
         >
           <span
             :class="[
-              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out',
+              'inline-block size-2 transform rounded-full bg-white transition-transform duration-200 ease-in-out',
               includeAdmins ? 'translate-x-6' : 'translate-x-1'
             ]"
           />
@@ -50,13 +50,13 @@
       
       <!-- Time Range Selector -->
       <div class="flex items-center space-x-3">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="text-xs font-medium text-gray-700 dark:text-gray-300">
           Time Range:
         </label>
         <select 
           v-model="timeRange" 
           @change="loadAnalytics"
-          class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+          class="px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
         >
           <option value="1d">Last 24 Hours</option>
           <option value="7d">Last 7 Days</option>
@@ -67,7 +67,7 @@
         <button 
           @click="loadAnalytics" 
           :disabled="loading"
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          class="px-4 py-2 bg-blue-600 text-xs hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
           <svg v-if="loading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

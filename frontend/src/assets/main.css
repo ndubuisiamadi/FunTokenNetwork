@@ -1,12 +1,38 @@
 @import "tailwindcss";
 
-/* Ensure the app container takes full height */
+:root {
+  /* 1vh unit adjusted to true innerHeight */
+  --vh: 1vh;
+  /* Will get overwritten at runtime by JS */
+  --nav-height: 4rem;  
+}
+
+/* make our app container use the JS‑driven vh, not the CSS vh */
+.app-viewport {
+  height: calc(var(--vh) * 100);
+}
+
+html, body {
+  font-family: Open Sans;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure your content and nav respect the phone’s safe area */
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+  /* iOS Safari older syntax */
+  padding-bottom: constant(safe-area-inset-bottom);
+}
+
+nav {
+  /* Push the nav up by the inset so it sits just above the home bar */
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: constant(safe-area-inset-bottom);
+}
+
 #app {
-  display: flex;
-  flex-direction: row;
   gap: 20px;
-  height: 100vh;
-  width: 100%;
   overflow: hidden;
 }
 
@@ -15,17 +41,6 @@
   #app {
     gap: 0;
   }
-}
-
-/* Ensure body and html take full height */
-html, body {
-  
-  font-family: Open Sans;
-  height: 100vh;
-  width: 100%;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
 }
 
 h1{
@@ -42,36 +57,12 @@ h1{
   display: none; /* Chrome, Safari, Opera */
 }
 
-/* Ensure proper flex behavior */
-.grow {
-  flex-grow: 1;
-  min-height: 0; /* Important for flex children to shrink */
-}
-
-/* Add safe area support for mobile devices */
-/* .safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom);
-} */
-
-/* Ensure mobile nav doesn't interfere with content */
-@media (max-width: 640px) {
-  .main-content {
-    padding-bottom: 80px; 
-  }
-}
-
 /* Mobile-specific improvements */
 @media (max-width: 767px) {
   
   /* Better mobile textarea handling */
   textarea {
     font-size: 16px; /* Prevents zoom on iOS */
-  }
-  
-  /* Ensure mobile chat area takes full height */
-  .mobile-chat-container {
-    height: 100vh;
-    height: 100dvh; /* Use dynamic viewport height when supported */
   }
 }
 
@@ -88,4 +79,3 @@ h1{
 .mobile-slide-leave-to {
   transform: translateX(-100%);
 }
-

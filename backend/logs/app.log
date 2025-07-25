@@ -2346,3 +2346,486 @@
   message: 'Failed to get user stats',
   timestamp: '2025-07-22 15:32:49'
 }
+{
+  error: ReferenceError: userSockets is not defined
+      at Namespace.<anonymous> (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\src\services\socket.js:258:5)
+      at Namespace.emit (node:events:530:35)
+      at Namespace.emitReserved (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\socket.io\dist\typed-events.js:56:22)
+      at Namespace._doConnect (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\socket.io\dist\namespace.js:276:14)
+      at C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\socket.io\dist\namespace.js:238:22
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11),
+  level: 'error',
+  message: 'unhandledRejection: userSockets is not defined\n' +
+    'ReferenceError: userSockets is not defined\n' +
+    '    at Namespace.<anonymous> (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:258:5)\n' +
+    '    at Namespace.emit (node:events:530:35)\n' +
+    '    at Namespace.emitReserved (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\typed-events.js:56:22)\n' +
+    '    at Namespace._doConnect (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\namespace.js:276:14)\n' +
+    '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\namespace.js:238:22\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)',
+  stack: 'ReferenceError: userSockets is not defined\n' +
+    '    at Namespace.<anonymous> (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:258:5)\n' +
+    '    at Namespace.emit (node:events:530:35)\n' +
+    '    at Namespace.emitReserved (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\typed-events.js:56:22)\n' +
+    '    at Namespace._doConnect (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\namespace.js:276:14)\n' +
+    '    at C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\namespace.js:238:22\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)',
+  rejection: true,
+  date: 'Wed Jul 23 2025 11:10:53 GMT+0100 (West Africa Standard Time)',
+  process: {
+    pid: 22424,
+    uid: null,
+    gid: null,
+    cwd: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend',
+    execPath: 'C:\\Program Files\\nodejs\\node.exe',
+    version: 'v22.15.0',
+    argv: [
+      'C:\\Program Files\\nodejs\\node.exe',
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\server.js'
+    ],
+    memoryUsage: {
+      rss: 83886080,
+      heapTotal: 26644480,
+      heapUsed: 23739600,
+      external: 3580607,
+      arrayBuffers: 72364
+    }
+  },
+  os: { loadavg: [ 0, 0, 0 ], uptime: 405019.218 },
+  trace: [
+    {
+      column: 5,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js',
+      function: null,
+      line: 258,
+      method: null,
+      native: false
+    },
+    {
+      column: 35,
+      file: 'node:events',
+      function: 'Namespace.emit',
+      line: 530,
+      method: 'emit',
+      native: false
+    },
+    {
+      column: 22,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\typed-events.js',
+      function: 'Namespace.emitReserved',
+      line: 56,
+      method: 'emitReserved',
+      native: false
+    },
+    {
+      column: 14,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\namespace.js',
+      function: 'Namespace._doConnect',
+      line: 276,
+      method: '_doConnect',
+      native: false
+    },
+    {
+      column: 22,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\socket.io\\dist\\namespace.js',
+      function: null,
+      line: 238,
+      method: null,
+      native: false
+    },
+    {
+      column: 11,
+      file: 'node:internal/process/task_queues',
+      function: 'process.processTicksAndRejections',
+      line: 85,
+      method: 'processTicksAndRejections',
+      native: false
+    }
+  ],
+  service: 'social-media-api',
+  version: '1.0.0',
+  timestamp: '2025-07-23 11:10:53'
+}
+{
+  error: PrismaClientKnownRequestError: 
+  Invalid `prisma.user.update()` invocation in
+  C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\src\services\socket.js:225:27
+  
+    222 // If no more connections, mark offline
+    223 if (userSocketSet.size === 0) {
+    224   userSockets.delete(userId)
+  → 225   await prisma.user.update(
+  Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`
+      at Zn.handleRequestError (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:7459)
+      at Zn.handleAndLogRequestError (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:6784)
+      at Zn.request (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:6491)
+      at async l (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:130:9778)
+      at async MessagingSocketService.handleDisconnect (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\src\services\socket.js:225:9) {
+    code: 'P2010',
+    meta: {
+      modelName: 'User',
+      code: 'unknown',
+      message: 'Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}'
+    },
+    clientVersion: '6.9.0'
+  },
+  level: 'error',
+  message: 'unhandledRejection: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:225:27\n' +
+    '\n' +
+    '  222 // If no more connections, mark offline\n' +
+    '  223 if (userSocketSet.size === 0) {\n' +
+    '  224   userSockets.delete(userId)\n' +
+    '→ 225   await prisma.user.update(\n' +
+    'Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`\n' +
+    'PrismaClientKnownRequestError: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:225:27\n' +
+    '\n' +
+    '  222 // If no more connections, mark offline\n' +
+    '  223 if (userSocketSet.size === 0) {\n' +
+    '  224   userSockets.delete(userId)\n' +
+    '→ 225   await prisma.user.update(\n' +
+    'Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`\n' +
+    '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7459)\n' +
+    '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+    '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+    '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+    '    at async MessagingSocketService.handleDisconnect (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:225:9)',
+  stack: 'PrismaClientKnownRequestError: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:225:27\n' +
+    '\n' +
+    '  222 // If no more connections, mark offline\n' +
+    '  223 if (userSocketSet.size === 0) {\n' +
+    '  224   userSockets.delete(userId)\n' +
+    '→ 225   await prisma.user.update(\n' +
+    'Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`\n' +
+    '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7459)\n' +
+    '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+    '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+    '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+    '    at async MessagingSocketService.handleDisconnect (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:225:9)',
+  rejection: true,
+  date: 'Fri Jul 25 2025 06:54:43 GMT+0100 (West Africa Standard Time)',
+  process: {
+    pid: 2932,
+    uid: null,
+    gid: null,
+    cwd: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend',
+    execPath: 'C:\\Program Files\\nodejs\\node.exe',
+    version: 'v22.15.0',
+    argv: [
+      'C:\\Program Files\\nodejs\\node.exe',
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\server.js'
+    ],
+    memoryUsage: {
+      rss: 88436736,
+      heapTotal: 33988608,
+      heapUsed: 27148728,
+      external: 3630846,
+      arrayBuffers: 122603
+    }
+  },
+  os: { loadavg: [ 0, 0, 0 ], uptime: 562449.953 },
+  trace: [
+    {
+      column: 7459,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.handleRequestError',
+      line: 121,
+      method: 'handleRequestError',
+      native: false
+    },
+    {
+      column: 6784,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.handleAndLogRequestError',
+      line: 121,
+      method: 'handleAndLogRequestError',
+      native: false
+    },
+    {
+      column: 6491,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.request',
+      line: 121,
+      method: 'request',
+      native: false
+    },
+    {
+      column: 9778,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'async l',
+      line: 130,
+      method: null,
+      native: false
+    },
+    {
+      column: 9,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js',
+      function: 'async MessagingSocketService.handleDisconnect',
+      line: 225,
+      method: 'handleDisconnect',
+      native: false
+    }
+  ],
+  service: 'social-media-api',
+  version: '1.0.0',
+  timestamp: '2025-07-25 06:54:44'
+}
+{
+  error: PrismaClientKnownRequestError: 
+  Invalid `prisma.user.update()` invocation in
+  C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\src\services\socket.js:52:23
+  
+    49 userSockets.get(userId).add(socket.id)
+    50 
+    51 // Mark user as online
+  → 52 await prisma.user.update(
+  Transaction failed due to a write conflict or a deadlock. Please retry your transaction
+      at Zn.handleRequestError (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:7459)
+      at Zn.handleAndLogRequestError (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:6784)
+      at Zn.request (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:6491)
+      at async l (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:130:9778)
+      at async MessagingSocketService.handleConnection (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\src\services\socket.js:52:5) {
+    code: 'P2034',
+    meta: { modelName: 'User' },
+    clientVersion: '6.9.0'
+  },
+  level: 'error',
+  message: 'unhandledRejection: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:52:23\n' +
+    '\n' +
+    '  49 userSockets.get(userId).add(socket.id)\n' +
+    '  50 \n' +
+    '  51 // Mark user as online\n' +
+    '→ 52 await prisma.user.update(\n' +
+    'Transaction failed due to a write conflict or a deadlock. Please retry your transaction\n' +
+    'PrismaClientKnownRequestError: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:52:23\n' +
+    '\n' +
+    '  49 userSockets.get(userId).add(socket.id)\n' +
+    '  50 \n' +
+    '  51 // Mark user as online\n' +
+    '→ 52 await prisma.user.update(\n' +
+    'Transaction failed due to a write conflict or a deadlock. Please retry your transaction\n' +
+    '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7459)\n' +
+    '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+    '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+    '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+    '    at async MessagingSocketService.handleConnection (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:52:5)',
+  stack: 'PrismaClientKnownRequestError: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:52:23\n' +
+    '\n' +
+    '  49 userSockets.get(userId).add(socket.id)\n' +
+    '  50 \n' +
+    '  51 // Mark user as online\n' +
+    '→ 52 await prisma.user.update(\n' +
+    'Transaction failed due to a write conflict or a deadlock. Please retry your transaction\n' +
+    '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7459)\n' +
+    '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+    '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+    '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+    '    at async MessagingSocketService.handleConnection (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:52:5)',
+  rejection: true,
+  date: 'Fri Jul 25 2025 11:56:37 GMT+0100 (West Africa Standard Time)',
+  process: {
+    pid: 18304,
+    uid: null,
+    gid: null,
+    cwd: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend',
+    execPath: 'C:\\Program Files\\nodejs\\node.exe',
+    version: 'v22.15.0',
+    argv: [
+      'C:\\Program Files\\nodejs\\node.exe',
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\server.js'
+    ],
+    memoryUsage: {
+      rss: 96608256,
+      heapTotal: 31629312,
+      heapUsed: 29904768,
+      external: 3673712,
+      arrayBuffers: 165469
+    }
+  },
+  os: { loadavg: [ 0, 0, 0 ], uptime: 580561.578 },
+  trace: [
+    {
+      column: 7459,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.handleRequestError',
+      line: 121,
+      method: 'handleRequestError',
+      native: false
+    },
+    {
+      column: 6784,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.handleAndLogRequestError',
+      line: 121,
+      method: 'handleAndLogRequestError',
+      native: false
+    },
+    {
+      column: 6491,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.request',
+      line: 121,
+      method: 'request',
+      native: false
+    },
+    {
+      column: 9778,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'async l',
+      line: 130,
+      method: null,
+      native: false
+    },
+    {
+      column: 5,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js',
+      function: 'async MessagingSocketService.handleConnection',
+      line: 52,
+      method: 'handleConnection',
+      native: false
+    }
+  ],
+  service: 'social-media-api',
+  version: '1.0.0',
+  timestamp: '2025-07-25 11:56:37'
+}
+{
+  error: PrismaClientKnownRequestError: 
+  Invalid `prisma.user.update()` invocation in
+  C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\src\services\socket.js:56:23
+  
+    53 console.log(`👤 User ${userId} joined personal room: user:${userId}`)
+    54 
+    55 // Mark user as online
+  → 56 await prisma.user.update(
+  Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`
+      at Zn.handleRequestError (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:7459)
+      at Zn.handleAndLogRequestError (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:6784)
+      at Zn.request (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:121:6491)
+      at async l (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\node_modules\@prisma\client\runtime\library.js:130:9778)
+      at async MessagingSocketService.handleConnection (C:\Users\Ndubuisi\projects\FunTokenNetwork\backend\src\services\socket.js:56:5) {
+    code: 'P2010',
+    meta: {
+      modelName: 'User',
+      code: 'unknown',
+      message: 'Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}'
+    },
+    clientVersion: '6.9.0'
+  },
+  level: 'error',
+  message: 'unhandledRejection: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:56:23\n' +
+    '\n' +
+    '  53 console.log(`👤 User ${userId} joined personal room: user:${userId}`)\n' +
+    '  54 \n' +
+    '  55 // Mark user as online\n' +
+    '→ 56 await prisma.user.update(\n' +
+    'Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`\n' +
+    'PrismaClientKnownRequestError: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:56:23\n' +
+    '\n' +
+    '  53 console.log(`👤 User ${userId} joined personal room: user:${userId}`)\n' +
+    '  54 \n' +
+    '  55 // Mark user as online\n' +
+    '→ 56 await prisma.user.update(\n' +
+    'Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`\n' +
+    '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7459)\n' +
+    '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+    '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+    '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+    '    at async MessagingSocketService.handleConnection (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:56:5)',
+  stack: 'PrismaClientKnownRequestError: \n' +
+    'Invalid `prisma.user.update()` invocation in\n' +
+    'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:56:23\n' +
+    '\n' +
+    '  53 console.log(`👤 User ${userId} joined personal room: user:${userId}`)\n' +
+    '  54 \n' +
+    '  55 // Mark user as online\n' +
+    '→ 56 await prisma.user.update(\n' +
+    'Raw query failed. Code: `unknown`. Message: `Kind: Server selection timeout: No available servers. Topology: { Type: ReplicaSetNoPrimary, Set Name: atlas-pmo7mj-shard-0, Max Set Version: 24, Max Election ID: 7fffffff0000000000000098, Servers: [ { Address: ac-2i4gpow-shard-00-02.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-00.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} }, { Address: ac-2i4gpow-shard-00-01.pfcnpbn.mongodb.net:27017, Type: Unknown, Error: Kind: I/O error: timed out, labels: {} } ] }, labels: {"TransientTransactionError"}`\n' +
+    '    at Zn.handleRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7459)\n' +
+    '    at Zn.handleAndLogRequestError (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6784)\n' +
+    '    at Zn.request (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6491)\n' +
+    '    at async l (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9778)\n' +
+    '    at async MessagingSocketService.handleConnection (C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js:56:5)',
+  rejection: true,
+  date: 'Fri Jul 25 2025 12:05:30 GMT+0100 (West Africa Standard Time)',
+  process: {
+    pid: 5576,
+    uid: null,
+    gid: null,
+    cwd: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend',
+    execPath: 'C:\\Program Files\\nodejs\\node.exe',
+    version: 'v22.15.0',
+    argv: [
+      'C:\\Program Files\\nodejs\\node.exe',
+      'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\server.js'
+    ],
+    memoryUsage: {
+      rss: 99500032,
+      heapTotal: 31891456,
+      heapUsed: 30179632,
+      external: 3652825,
+      arrayBuffers: 144582
+    }
+  },
+  os: { loadavg: [ 0, 0, 0 ], uptime: 581094.484 },
+  trace: [
+    {
+      column: 7459,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.handleRequestError',
+      line: 121,
+      method: 'handleRequestError',
+      native: false
+    },
+    {
+      column: 6784,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.handleAndLogRequestError',
+      line: 121,
+      method: 'handleAndLogRequestError',
+      native: false
+    },
+    {
+      column: 6491,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'Zn.request',
+      line: 121,
+      method: 'request',
+      native: false
+    },
+    {
+      column: 9778,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\node_modules\\@prisma\\client\\runtime\\library.js',
+      function: 'async l',
+      line: 130,
+      method: null,
+      native: false
+    },
+    {
+      column: 5,
+      file: 'C:\\Users\\Ndubuisi\\projects\\FunTokenNetwork\\backend\\src\\services\\socket.js',
+      function: 'async MessagingSocketService.handleConnection',
+      line: 56,
+      method: 'handleConnection',
+      native: false
+    }
+  ],
+  service: 'social-media-api',
+  version: '1.0.0',
+  timestamp: '2025-07-25 12:05:30'
+}

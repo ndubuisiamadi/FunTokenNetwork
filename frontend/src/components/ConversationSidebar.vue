@@ -1,11 +1,10 @@
-// src/components/ConversationSidebar.vue - FIXED VERSION (Script section only)
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { friendsAPI, uploadAPI } from '@/services/api'
 import { useRouter } from 'vue-router'
-import { getConversationPreviewStatus, shouldShowMessageStatus } from '@/utils/messageStatus'
+import { getConversationStatusDisplay, shouldShowMessageStatus } from '@/utils/messageStatus'
 
 const router = useRouter()
 
@@ -36,8 +35,21 @@ const groupAvatarFile = ref(null)
 const avatarInput = ref(null)
 const uploadingAvatar = ref(false)
 
+// Simple computed properties
 const conversations = computed(() => {
-  return messagesStore.currentConversations
+  let filtered = messagesStore.selectedChatType === 'direct' 
+    ? messagesStore.conversations.filter(c => !c.isGroup)
+    : messagesStore.conversations.filter(c => c.isGroup)
+
+  if (messagesStore.searchQuery.trim()) {
+    const query = messagesStore.searchQuery.toLowerCase()
+    filtered = filtered.filter(conv => {
+      const name = getConversationName(conv)
+      return name?.toLowerCase().includes(query)
+    })
+  }
+  
+  return filtered
 })
 
 const currentConversation = computed(() => messagesStore.currentConversation)
@@ -71,6 +83,7 @@ const canCreateConversation = computed(() => {
   }
 })
 
+// Helper functions
 const formatUnreadCount = (count) => {
   return count > 99 ? '99+' : count.toString()
 }
@@ -103,21 +116,10 @@ const formatTime = (date) => {
 }
 
 const selectConversation = async (conversation) => {
-  console.log('🎯 ConversationSidebar: Selecting conversation', {
-    id: conversation.id,
-    name: getConversationName(conversation),
-    unreadCount: conversation.unreadCount || 0,
-    hasMessages: !!messagesStore.messages[conversation.id]
-  })
-  
   try {
     const result = await messagesStore.selectConversation(conversation.id)
     
     if (result.success) {
-      console.log('✅ ConversationSidebar: Conversation selected successfully', {
-        messagesLoaded: result.messagesLoaded
-      })
-      
       emit('conversationSelected', conversation)
       
       if (props.isMobile) {
@@ -125,15 +127,11 @@ const selectConversation = async (conversation) => {
           emit('conversationSelected', conversation)
         }, 100)
       }
-    } else {
-      console.error('❌ ConversationSidebar: Failed to select conversation:', result.error)
     }
   } catch (error) {
     console.error('❌ ConversationSidebar: Error selecting conversation:', error)
   }
 }
-
-// ... keep all existing methods (createConversation, handleSearch, etc.) ...
 
 const createConversation = async () => {
   if (!canCreateConversation.value || creatingConversation.value) return
@@ -167,11 +165,9 @@ const createConversation = async () => {
     )
     
     if (result.success) {
-      console.log('Conversation created successfully!')
       closeNewConversationModal()
       emit('newConversation', result.conversation)
     } else {
-      console.error('Failed to create conversation:', result.error)
       alert('Failed to create conversation: ' + result.error)
     }
   } catch (error) {
@@ -218,11 +214,6 @@ const loadFriends = async () => {
   try {
     const response = await friendsAPI.getFriends()
     availableFriends.value = response.data.friends || []
-    
-    if (availableFriends.value.length === 0) {
-      console.log('No friends found. User needs to add friends first.')
-    }
-    
   } catch (error) {
     console.error('Failed to load friends:', error)
     availableFriends.value = []
@@ -279,29 +270,7 @@ const removeGroupAvatar = () => {
   }
 }
 
-// Helper functions
-const getConversationName = (conversation) => {
-  if (conversation.isGroup) {
-    return conversation.name || 'Group Chat'
-  }
-  
-  const other = conversation.otherParticipant
-  if (other) {
-    return `${other.firstName || ''} ${other.lastName || ''}`.trim() || other.username
-  }
-  
-  return 'Unknown User'
-}
-
-const getConversationAvatar = (conversation) => {
-  if (conversation.isGroup) {
-    return conversation.avatarUrl || 
-           'https://ui-avatars.com/api/?name=' + encodeURIComponent(conversation.name || 'Group') + '&background=055CFF&color=fff&size=40'
-  }
-  
-  return conversation.otherParticipant?.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg'
-}
-
+// Conversation helper functions
 const getConversationPreview = (conversation) => {
   if (!conversation.lastMessage && (!conversation.lastMessageData?.mediaUrls || conversation.lastMessageData.mediaUrls.length === 0)) {
     return 'No messages yet'
@@ -320,66 +289,56 @@ const getConversationPreview = (conversation) => {
   return conversation.lastMessage || 'No messages yet'
 }
 
-const getConversationUnreadCount = (conversation) => {
-  return conversation.unreadCount || 0
-}
-
-// 🔥 FIXED: Use store's real-time online status
 const isOnline = (conversation) => {
-  if (conversation.isGroup) return false
-  
+  if (!conversation || conversation.isGroup) return false
   if (!conversation.otherParticipant?.id) return false
   
-  // 🔥 CRITICAL: Use the store's isUserOnline method directly
+  // 🔥 USE REAL-TIME ONLINE STATUS from messages store
   return messagesStore.isUserOnline(conversation.otherParticipant.id)
 }
 
-// 🔥 FIXED: Direct access to store's online status
-const isUserOnlineById = (userId) => {
-  return messagesStore.isUserOnline(userId)
+const getConversationName = (conversation) => {
+  if (!conversation) return 'Unknown Conversation'
+  
+  if (conversation.isGroup) {
+    return conversation.name || 'Group Chat'
+  }
+  
+  const other = conversation.otherParticipant
+  if (!other) return 'Unknown User'
+  
+  return `${other.firstName || ''} ${other.lastName || ''}`.trim() || other.username || 'Unknown User'
 }
 
-// 🔥 NEW: Get detailed online info for tooltips/debugging
-const getUserOnlineInfo = (userId) => {
-  return messagesStore.getUserOnlineInfo(userId)
+const getConversationAvatar = (conversation) => {
+  if (!conversation) return 'https://randomuser.me/api/portraits/men/32.jpg'
+  
+  if (conversation.isGroup) {
+    return conversation.avatarUrl || 
+           'https://ui-avatars.com/api/?name=' + encodeURIComponent(conversation.name || 'Group') + '&background=055CFF&color=fff&size=40'
+  }
+  
+  return conversation.otherParticipant?.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg'
 }
 
-const getMessageStatus = (message, currentUserId) => {
-  if (!message || message.senderId !== currentUserId) {
-    return null
-  }
-
-  if (message.status === 'sending' || message.isOptimistic) {
-    return 'sending'
-  }
-
-  if (message.status === 'failed' || message.error) {
-    return 'failed'
-  }
-
-  if (message.isRead) {
-    return 'read'
-  } else if (message.isDelivered) {
-    return 'delivered'
-  } else {
-    return 'sent'
-  }
+const getConversationUnreadCount = (conversation) => {
+  if (!conversation) return 0
+  return conversation.unreadCount || 0
 }
 
-const isLastMessageFromSender = (conversation) => {
-  const lastMessage = conversation.lastMessageData || {}
+// SIMPLIFIED: Get status display for conversation preview
+const getConversationStatus = (conversation) => {
   const currentUserId = authStore.currentUser?.id
-  return shouldShowMessageStatus(lastMessage, currentUserId)
+  return getConversationStatusDisplay(conversation.lastMessageData, currentUserId)
 }
 
-const getLastMessageStatus = (conversation) => {
-  const authStore = useAuthStore()
-  return getConversationPreviewStatus(conversation, authStore.currentUser?.id)
+// SIMPLIFIED: Check if status should be shown for last message
+const shouldShowLastMessageStatus = (conversation) => {
+  const currentUserId = authStore.currentUser?.id
+  return shouldShowMessageStatus(conversation.lastMessageData, currentUserId)
 }
 
 const handleConversationClick = async (conversation) => {
-  console.log('👆 Conversation clicked:', conversation.id)
-  
   if (props.isMobile) {
     router.push(`/chat/${conversation.id}`)
   } else {
@@ -388,29 +347,24 @@ const handleConversationClick = async (conversation) => {
 }
 
 onMounted(() => {
-  console.log('🔄 ConversationSidebar: Component mounted')
-  
-  // Only ensure conversations are loaded, don't do any periodic checks
+  // Load conversations if needed
   if (authStore.isLoggedIn && messagesStore.conversations.length === 0) {
-    console.log('📋 ConversationSidebar: Loading conversations for sidebar')
     messagesStore.fetchConversations().catch(console.error)
   }
-})
-
-onUnmounted(() => {
-  console.log('🧹 ConversationSidebar: Component unmounted')
-  // No cleanup needed - let messages store handle everything
 })
 </script>
 
 <template>
   <aside class="w-full md:w-80 bg-[#262624] md:bg-[#030712]/20 flex flex-col" :class="isMobile ? 'h-full' : 'rounded-l-2xl'">
-    <!-- Tab-Style Header -->
+    <!-- Header -->
     <div class="px-3 pb-3 md:p-4 border-b border-white/10">
       <!-- Mobile Header -->
       <div v-if="isMobile" class="flex items-center justify-between my-2">
-        <h1 class="text-[1.8em]! font-semibold text-[#00BFFF]">{{ messagesStore.selectedChatType === 'direct' ? 'Chats' : 'Groups' }}</h1>
-        <!-- Chat Type Tabs with badges -->
+        <h1 class="text-[1.8em]! font-semibold text-[#00BFFF]">
+          {{ messagesStore.selectedChatType === 'direct' ? 'Chats' : 'Groups' }}
+        </h1>
+        
+        <!-- Chat Type Tabs -->
         <div class="flex bg-[#2C2F36] rounded-full p-1">
           <button
             @click="messagesStore.selectedChatType = 'direct'"
@@ -426,7 +380,6 @@ onUnmounted(() => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
               </svg>
               
-              <!-- Direct chats badge -->
               <div 
                 v-if="directUnreadCount > 0"
                 class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
@@ -449,7 +402,7 @@ onUnmounted(() => {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
               </svg>
-              <!-- Group chats badge -->
+              
               <div 
                 v-if="groupUnreadCount > 0"
                 class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
@@ -461,16 +414,14 @@ onUnmounted(() => {
         </div>
       </div>
 
-      
-      <!-- Desktop New Chat Button -->
+      <!-- Desktop Header -->
       <div v-if="!isMobile" class="flex items-center justify-between mb-4">
         <h1 class="!text-3xl font-semibold text-[#00BFFF]">
           {{ messagesStore.selectedChatType === 'direct' ? 'Chats' : 'Groups' }}
         </h1>
 
         <div class="flex gap-2 items-center">
-          
-          <!-- Desktop Chat Type Tabs with badges -->
+          <!-- Desktop Chat Type Tabs -->
           <div class="flex bg-[#2C2F36] rounded-full p-1">
             <button
               @click="messagesStore.selectedChatType = 'direct'"
@@ -486,7 +437,6 @@ onUnmounted(() => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 
-                <!-- Direct chats badge -->
                 <div 
                   v-if="directUnreadCount > 0"
                   class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
@@ -509,7 +459,7 @@ onUnmounted(() => {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
-                <!-- Group chats badge -->
+                
                 <div 
                   v-if="groupUnreadCount > 0"
                   class="bg-white text-[#055CFF] text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold ml-1"
@@ -519,17 +469,17 @@ onUnmounted(() => {
               </div>
             </button>
           </div>
-            <button 
-              @click="openNewConversationModal"
-              class="w-8 h-8 bg-linear-to-tr from-[#055DFF] to-[#00BFFF] hover:bg-[#0550e5] rounded-full flex items-center justify-center transition-colors cursor-pointer" 
-              title="New chat"
-            >
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-              </svg>
-            </button>
-          </div>
-        
+          
+          <button 
+            @click="openNewConversationModal"
+            class="w-8 h-8 bg-linear-to-tr from-[#055DFF] to-[#00BFFF] hover:bg-[#0550e5] rounded-full flex items-center justify-center transition-colors cursor-pointer" 
+            title="New chat"
+          >
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+          </button>
+        </div>
       </div>
       
       <!-- Search -->
@@ -555,16 +505,17 @@ onUnmounted(() => {
         </button>
       </div>
 
+      <!-- Mobile New Chat Button -->
       <button 
-    v-if="isMobile"
-      @click="openNewConversationModal"
-      class="size-12 p-2 bg-linear-to-tr from-[#055DFF] to-[#00BFFF] hover:bg-[#0550e5] rounded-full flex items-center justify-center transition-colors cursor-pointer absolute right-6 bottom-20" 
-      title="New chat"
-    >
-      <svg class=" text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-      </svg>
-    </button>
+        v-if="isMobile"
+        @click="openNewConversationModal"
+        class="size-12 p-2 bg-linear-to-tr from-[#055DFF] to-[#00BFFF] hover:bg-[#0550e5] rounded-full flex items-center justify-center transition-colors cursor-pointer absolute right-6 bottom-20" 
+        title="New chat"
+      >
+        <svg class="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+      </button>
     </div>
     
     <!-- Loading State -->
@@ -609,84 +560,76 @@ onUnmounted(() => {
               class="w-12 h-12 rounded-full object-cover"
             />
             <div 
-              v-if="!conversation.isGroup && isOnline(conversation)"
+              v-if="!conversation.isGroup && conversation.otherParticipant && isOnline(conversation)"
               class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1A1A1A]"
             ></div>
           </div>
           
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between mb-1">
-              <h3 class="font-medium text-sm text-white truncate">{{ getConversationName(conversation) }}</h3>
+              <h3 class="font-medium text-sm text-white truncate">
+                {{ getConversationName(conversation) }}
+              </h3>
               <div class="flex items-center gap-2">
-                <span class="text-[10px] text-white/50">{{ formatTime(conversation.lastMessageTime) }}</span>
+                <span class="text-[10px] text-white/50">
+                  {{ formatTime(conversation.lastMessageTime) }}
+                </span>
               </div>
             </div>
             
-            <!-- Enhanced Preview with real-time updates -->
-             <div class="flex justify-between gap-3 items-center">
+            <div class="flex justify-between gap-3 items-center">
               <p class="text-xs text-white/60 truncate">
                 {{ getConversationPreview(conversation) }}
               </p>
-              <!-- Message Status for Sender -->
-              <div v-if="isLastMessageFromSender(conversation)" class="flex-shrink-0">
-  <!-- Sending status -->
-  <div 
-    v-if="getLastMessageStatus(conversation) === 'sending'" 
-    class="w-3 h-3 border border-white/30 border-t-transparent rounded-full animate-spin"
-    title="Sending..."
-  ></div>
-  
-  <!-- Failed status -->
-  <svg 
-    v-else-if="getLastMessageStatus(conversation) === 'failed'" 
-    class="w-3 h-3 text-red-400" 
-    fill="none" 
-    stroke="currentColor" 
-    viewBox="0 0 24 24"
-    title="Failed to send"
-  >
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-  </svg>
-  
-  <!-- Sent status - Single gray tick -->
-  <svg 
-    v-else-if="getLastMessageStatus(conversation) === 'sent'" 
-    class="w-3 h-3 text-white/50" 
-    fill="currentColor" 
-    viewBox="0 0 20 20"
-    title="Sent"
-  >
-    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-  </svg>
-  
-  <!-- Delivered status - Two gray ticks -->
-  <div 
-    v-else-if="getLastMessageStatus(conversation) === 'delivered'" 
-    class="flex"
-    title="Delivered"
-  >
-    <svg class="w-3 h-3 text-white/70" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-    </svg>
-    <svg class="w-3 h-3 text-white/70 -ml-1" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-    </svg>
-  </div>
-  
-  <!-- Read status - Two blue ticks -->
-  <div 
-    v-else-if="getLastMessageStatus(conversation) === 'read'" 
-    class="flex"
-    title="Read"
-  >
-    <svg class="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-    </svg>
-    <svg class="w-3 h-3 text-blue-400 -ml-1" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-    </svg>
-  </div>
-</div>
+              
+              <!-- SIMPLIFIED: Message Status for Last Message -->
+              <div v-if="shouldShowLastMessageStatus(conversation)" class="flex-shrink-0">
+                <template v-if="getConversationStatus(conversation)">
+                  <div :class="getConversationStatus(conversation).color" :title="getConversationStatus(conversation).tooltip">
+                    
+                    <!-- Loading -->
+                    <div 
+                      v-if="getConversationStatus(conversation).icon === 'clock'"
+                      class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"
+                    ></div>
+                    
+                    <!-- Error -->
+                    <svg 
+                      v-else-if="getConversationStatus(conversation).icon === 'error'"
+                      class="w-3 h-3" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    
+                    <!-- Single tick -->
+                    <svg 
+                      v-else-if="getConversationStatus(conversation).ticks === 1"
+                      class="w-3 h-3" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    
+                    <!-- Double ticks -->
+                    <div 
+                      v-else-if="getConversationStatus(conversation).ticks === 2"
+                      class="flex"
+                    >
+                      <svg class="w-3 h-3" :class="getConversationStatus(conversation).color" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                      <svg class="w-3 h-3 -ml-1" :class="getConversationStatus(conversation).color" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    
+                  </div>
+                </template>
+              </div>
               
               <!-- Unread Count Badge -->
               <div 
@@ -695,7 +638,7 @@ onUnmounted(() => {
               >
                 {{ formatUnreadCount(getConversationUnreadCount(conversation)) }}
               </div>
-             </div>
+            </div>
           </div>
         </li>
       </ul>
@@ -711,7 +654,7 @@ onUnmounted(() => {
         @click.stop
         class="bg-[#1A1A1A] rounded-2xl w-full max-w-lg h-[600px] flex flex-col overflow-hidden"
       >
-        <!-- Fixed Header -->
+        <!-- Modal Header -->
         <div class="flex items-center justify-between px-6 py-3 border-b border-white/10">
           <h3 class="text-xl font-semibold text-white">New Conversation</h3>
           <button 
@@ -722,7 +665,7 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- Scrollable Content -->
+        <!-- Modal Content -->
         <div class="flex-1 overflow-y-auto">
           <div class="p-6 space-y-6">
             <!-- Conversation Type Selector -->
@@ -736,7 +679,7 @@ onUnmounted(() => {
                     : 'bg-[#2C2F36] text-white/70 hover:text-white hover:bg-[#3C3F46]'
                 ]"
               >
-                <svg class="w-5 h-5 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 Direct Chat
@@ -757,7 +700,7 @@ onUnmounted(() => {
               </button>
             </div>
 
-            <!-- Group Settings (only for groups) -->
+            <!-- Group Settings -->
             <div v-if="conversationType === 'group'" class="space-y-4">
               <div class="bg-[#2C2F36] rounded-xl p-4 space-y-4">
                 <h4 class="text-sm font-medium text-white/90">Group Details</h4>
@@ -775,9 +718,9 @@ onUnmounted(() => {
                         class="w-full h-full object-cover"
                       />
                       <svg v-else class="w-8 h-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
                     </div>
                     
                     <button 
@@ -844,7 +787,9 @@ onUnmounted(() => {
               </div>
 
               <div v-else-if="availableFriends.length === 0" class="text-center py-8">
-                <img src="@/components/icons/friends-line.svg" class="w-12 h-12 mx-auto opacity-30">
+                <svg class="w-12 h-12 mx-auto opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
                 <p class="text-sm text-white/60 mb-2">No friends yet</p>
                 <p class="text-xs text-white/40">Add some friends first to start conversations</p>
               </div>
@@ -893,7 +838,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Fixed Footer -->
+        <!-- Modal Footer -->
         <div class="border-t border-white/10 p-6">
           <div class="flex gap-3">
             <button 
@@ -918,7 +863,5 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-
-    
   </aside>
 </template>

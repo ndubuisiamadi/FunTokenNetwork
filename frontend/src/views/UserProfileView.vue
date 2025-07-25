@@ -396,7 +396,7 @@ onMounted(async () => {
 
 <template>
   <!-- Mobile Layout -->
-  <div class="flex flex-col h-full overflow-y-auto text-white md:hidden">
+  <div class="flex flex-col h-full overflow-y-auto p-2 text-white md:hidden">
     <!-- Mobile Profile Content -->
     <div v-if="loading" class="bg-[#212121] rounded-2xl p-4 mb-4">
       <div class="animate-pulse">

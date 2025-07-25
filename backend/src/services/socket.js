@@ -1,616 +1,559 @@
-// src/services/socket.js - FIXED STATUS UPDATES VERSION
+// backend/src/services/socket.js - ENHANCED WITH RELIABILITY FEATURES
+
 const jwt = require('jsonwebtoken')
 const prisma = require('../db')
+const { 
+  MESSAGE_STATUS, 
+  MESSAGE_RELIABILITY_CONFIG,
+  getMessageStatusForRecipient,
+  autoDeliverMessages,
+  batchUpdateMessageStatus,
+  logStatusTransition,
+  validateMessageStatus
+} = require('../utils/messageStatus')
 
-// Store for active socket connections
-const activeConnections = new Map() // userId -> socketId
-const userSockets = new Map() // socketId -> userId
-const typingUsers = new Map() // conversationId -> Set of userIds
+// Enhanced in-memory tracking
+const userSockets = new Map()     // userId -> Set of socketIds
+const messageTimeouts = new Map() // messageId -> timeoutId
+const pendingMessages = new Map() // tempId -> message data
 
-const handleUserOnline = async (io, userId) => {
-  try {
-    console.log(`🟢 User ${userId} came online`)
-    console.log(`✅ User ${userId} online status updated - messages will be delivered naturally`)
-    
-  } catch (error) {
-    console.error('❌ Error handling user online:', error)
+class MessagingSocketService {
+  constructor(io) {
+    this.io = io
+    this.setupHandlers()
+    this.startCleanupTimer()
   }
-}
 
-// Authentication middleware for socket.io
-const authenticateSocket = async (socket, next) => {
-  try {
-    const token = socket.handshake.auth.token
-
-    if (!token) {
-      return next(new Error('Authentication error: No token provided'))
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        avatarUrl: true,
-        isOnline: true
-      }
-    })
-
-    if (!user) {
-      return next(new Error('Authentication error: Invalid token'))
-    }
-
-    // Attach user to socket
-    socket.userId = user.id
-    socket.user = user
-
-    next()
-  } catch (error) {
-    console.error('Socket authentication error:', error.message)
-    next(new Error('Authentication error: Invalid token'))
+  setupHandlers() {
+    this.io.use(this.authenticateSocket.bind(this))
+    this.io.on('connection', this.handleConnection.bind(this))
   }
-}
 
-// Update user online status
-const updateUserOnlineStatus = async (userId, isOnline) => {
-  try {
+  async authenticateSocket(socket, next) {
+    try {
+      const token = socket.handshake.auth.token
+      if (!token) return next(new Error('No token'))
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET)
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { id: true, username: true, firstName: true, lastName: true, avatarUrl: true }
+      })
+
+      if (!user) return next(new Error('Invalid token'))
+
+      socket.userId = user.id
+      socket.user = user
+      next()
+    } catch (error) {
+      next(new Error('Auth failed'))
+    }
+  }
+
+  async handleConnection(socket) {
+    const { userId, user } = socket
+    console.log(`📱 User connected: ${user.username} (${userId})`)
+
+    // Track this connection
+    if (!userSockets.has(userId)) {
+      userSockets.set(userId, new Set())
+    }
+    userSockets.get(userId).add(socket.id)
+
+    // Join user's personal room for notifications
+    socket.join(`user:${userId}`)
+    console.log(`👤 User ${userId} joined personal room: user:${userId}`)
+
+    // Update database - only lastSeen, online status managed by socket tracking
     await prisma.user.update({
       where: { id: userId },
-      data: {
-        isOnline,
-        lastSeen: new Date()
+      data: { lastSeen: new Date() }
+    }).catch(console.error)
+
+    // 🔥 AUTO-DELIVER MESSAGES when user comes online
+    try {
+      const deliveryResult = await autoDeliverMessages(prisma, userId)
+      if (deliveryResult.success && deliveryResult.count > 0) {
+        // Notify all conversations about the delivery updates
+        deliveryResult.conversationIds?.forEach(conversationId => {
+          this.io.to(`conversation:${conversationId}`).emit('messages:auto_delivered', {
+            userId,
+            conversationId,
+            count: deliveryResult.count,
+            timestamp: new Date()
+          })
+        })
       }
-    })
-  } catch (error) {
-    console.error('Error updating user online status:', error)
-  }
-}
-
-// Calculate and emit unread count for a user
-const emitUnreadCountUpdate = async (io, userId, conversationId = null) => {
-  try {
-    console.log(`📊 Calculating unread count for user ${userId}`)
-
-    let unreadData = {}
-
-    if (conversationId) {
-      // Get unread count for specific conversation
-      const unreadCount = await prisma.message.count({
-        where: {
-          conversationId,
-          conversation: {
-            participants: {
-              some: { userId }
-            }
-          },
-          senderId: { not: userId },
-          isRead: false
-        }
-      })
-
-      unreadData = {
-        conversationId,
-        count: unreadCount
-      }
-
-      console.log(`📊 Conversation ${conversationId} unread count for user ${userId}: ${unreadCount}`)
-    } else {
-      // Get total unread count across all conversations
-      const totalUnreadCount = await prisma.message.count({
-        where: {
-          conversation: {
-            participants: {
-              some: { userId }
-            }
-          },
-          senderId: { not: userId },
-          isRead: false
-        }
-      })
-
-      unreadData = {
-        totalCount: totalUnreadCount
-      }
-
-      console.log(`📊 Total unread count for user ${userId}: ${totalUnreadCount}`)
+    } catch (error) {
+      console.error('❌ Auto-delivery failed for user', userId, error)
     }
 
-    // Emit to user's socket
-    const socketId = activeConnections.get(userId)
-    if (socketId) {
-      io.to(socketId).emit('unread_count:updated', unreadData)
-      console.log(`📤 Emitted unread count update to user ${userId}`)
-    }
+    // Broadcast user online status
+    this.io.emit('user:online', {
+      userId: userId,
+      username: user.username,
+      timestamp: new Date()
+    })
+    console.log(`📡 Broadcasted: User ${user.username} is online`)
 
-    return unreadData
+    // Send current online users list to this user
+    const onlineUserIds = Array.from(userSockets.keys())
+    socket.emit('users:online_list', {
+      users: onlineUserIds,
+      timestamp: new Date()
+    })
+    console.log(`📤 Sent online users list to ${user.username}: ${onlineUserIds.length} users`)
 
-  } catch (error) {
-    console.error('❌ Error calculating/emitting unread count:', error)
-    return null
+    // Setup message handlers with reliability
+    socket.on('message:send', async (data) => {
+      await this.handleSendMessage(socket, data)
+    })
+
+    socket.on('message:retry', async (data) => {
+      await this.handleRetryMessage(socket, data)
+    })
+
+    socket.on('conversation:mark_read', async (data) => {
+      await this.handleMarkRead(socket, data)
+    })
+
+    socket.on('conversation:join', async (data) => {
+      await this.handleJoinConversation(socket, data)
+    })
+
+    socket.on('conversation:leave', (data) => {
+      this.handleLeaveConversation(socket, data)
+    })
+
+    socket.on('disconnect', () => {
+      this.handleDisconnect(userId, socket.id)
+    })
   }
-}
 
-// Emit unread count update to all conversation participants
-const emitConversationUnreadUpdate = async (io, conversationId) => {
-  try {
-    console.log(`📊 Updating unread counts for conversation ${conversationId}`)
+  // Enhanced send message with reliability features
+  async handleSendMessage(socket, { conversationId, content, mediaUrls = [], messageType = 'text', tempId }) {
+    const { userId } = socket
 
-    // Get all participants
-    const participants = await prisma.conversationParticipant.findMany({
-      where: { conversationId },
-      include: {
-        user: { select: { id: true, username: true } }
-      }
-    })
+    try {
+      console.log(`📤 Socket: User ${userId} sending message to conversation ${conversationId}`)
 
-    // Calculate and emit unread count for each participant
-    for (const participant of participants) {
-      await emitUnreadCountUpdate(io, participant.userId, conversationId)
-    }
-
-    console.log(`✅ Updated unread counts for ${participants.length} participants`)
-
-  } catch (error) {
-    console.error('❌ Error updating conversation unread counts:', error)
-  }
-}
-
-const emitNewMessage = async (io, messageData) => {
-  try {
-    const conversationId = messageData.conversationId
-
-    console.log(`📡 EMITTING new message to conversation ${conversationId}:`, {
-      messageId: messageData.id,
-      content: messageData.content?.substring(0, 50) + '...',
-      sender: messageData.sender?.username
-    })
-
-    // Get all participants in the conversation
-    const participants = await prisma.conversationParticipant.findMany({
-      where: { conversationId },
-      include: {
-        user: {
-          select: { id: true, username: true }
-        }
-      }
-    })
-
-    console.log(`📤 Found ${participants.length} participants for conversation ${conversationId}`)
-
-    // Emit to conversation room (all connected users in the conversation)
-    io.to(`conversation:${conversationId}`).emit('message:new', {
-      ...messageData,
-      conversationId,
-      timestamp: messageData.createdAt
-    })
-
-    // Track online recipients for potential delivery confirmation
-    const senderId = messageData.senderId
-    const onlineRecipients = []
-
-    // Emit directly to each participant to ensure delivery
-    participants.forEach(participant => {
-      const userId = participant.userId
-      const socketId = activeConnections.get(userId)
-
-      if (userId === senderId) {
-        // Don't deliver to sender
+      // Validate message data
+      if (!content?.trim() && mediaUrls.length === 0) {
+        socket.emit('message:error', { 
+          tempId, 
+          error: 'Message cannot be empty',
+          code: 'EMPTY_MESSAGE'
+        })
         return
       }
 
-      if (socketId) {
-        console.log(`📱 Sending message directly to user ${participant.user.username} (${userId})`)
-        io.to(socketId).emit('message:new', {
-          ...messageData,
+      // Get conversation participants
+      const conversationParticipants = await prisma.conversationParticipant.findMany({
+        where: { conversationId },
+        include: { user: { select: { id: true, username: true } } }
+      })
+
+      if (!conversationParticipants.find(p => p.userId === userId)) {
+        socket.emit('message:error', { 
+          tempId, 
+          error: 'Access denied to conversation',
+          code: 'ACCESS_DENIED'
+        })
+        return
+      }
+
+      // Get next sequence number atomically
+      const conversation = await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { lastSequenceNumber: { increment: 1 } },
+        select: { lastSequenceNumber: true }
+      })
+
+      // Determine initial status based on recipient online status
+      const recipientIds = conversationParticipants
+        .filter(p => p.userId !== userId)
+        .map(p => p.userId)
+      
+      const anyRecipientOnline = recipientIds.some(id => this.isUserOnline(id))
+      const initialStatus = anyRecipientOnline ? MESSAGE_STATUS.DELIVERED : MESSAGE_STATUS.SENT
+
+      // Create message in database
+      const message = await prisma.message.create({
+        data: {
+          content: content?.trim() || null,
+          mediaUrls,
+          messageType,
+          senderId: userId,
           conversationId,
-          timestamp: messageData.createdAt
-        })
+          sequenceNumber: conversation.lastSequenceNumber,
+          status: initialStatus,
+          // statusUpdatedAt: new Date()
+        },
+        include: {
+          sender: {
+            select: { id: true, username: true, firstName: true, lastName: true, avatarUrl: true }
+          }
+        }
+      })
 
-        onlineRecipients.push(userId)
-      } else {
-        console.log(`😴 User ${participant.user.username} (${userId}) is offline - message queued`)
+      logStatusTransition(message.id, 'new', initialStatus, `recipients_online: ${anyRecipientOnline}`)
+
+      // Update conversation
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: {
+          lastMessage: content?.trim() || (mediaUrls.length > 0 ? '📎 Media' : ''),
+          lastActivity: new Date()
+        }
+      })
+
+      // Prepare message data for broadcast
+      const messageData = {
+        id: message.id,
+        content: message.content,
+        mediaUrls: message.mediaUrls,
+        messageType: message.messageType,
+        senderId: message.senderId,
+        sender: message.sender,
+        conversationId: message.conversationId,
+        createdAt: message.createdAt,
+        status: message.status,
+        sequenceNumber: message.sequenceNumber,
+        timestamp: message.createdAt
       }
-    })
 
-    console.log(`📊 Message sent to ${onlineRecipients.length} online recipients - awaiting delivery confirmation`)
+      // Broadcast to conversation room
+      this.io.to(`conversation:${conversationId}`).emit('message:new', messageData)
 
-    console.log(`✅ Message emitted successfully to conversation ${conversationId}`)
+      // Send confirmation to sender
+      socket.emit('message:sent_confirmation', {
+        messageId: message.id,
+        tempId,
+        sequenceNumber: message.sequenceNumber,
+        status: message.status,
+        timestamp: message.createdAt
+      })
 
-  } catch (error) {
-    console.error('❌ Error emitting new message:', error)
-  }
-}
+      // Clear any pending timeout for this tempId
+      if (tempId && messageTimeouts.has(tempId)) {
+        clearTimeout(messageTimeouts.get(tempId))
+        messageTimeouts.delete(tempId)
+      }
 
-// Get online user stats
-const getOnlineStats = () => {
-  return {
-    totalConnections: activeConnections.size,
-    activeConversations: typingUsers.size,
-    timestamp: new Date().toISOString()
-  }
-}
+      console.log(`✅ Socket: Message sent successfully with status: ${message.status}`)
 
-// Setup socket event handlers
-const setupSocketHandlers = (io) => {
-  console.log('🚀 Setting up Socket.IO handlers...')
-
-  // Apply authentication middleware
-  io.use(authenticateSocket)
-
-  io.on('connection', async (socket) => {
-    const { userId, user } = socket
-
-    console.log(`📱 User connected: ${user.username} (${userId}) - Socket: ${socket.id}`)
-
-    // Store active connection
-    if (activeConnections.has(userId)) {
-      console.log(`🔄 User ${user.username} reconnected - updating socket ID`)
+    } catch (error) {
+      console.error('❌ Socket: Send message error:', error)
+      
+      // Send detailed error to client
+      socket.emit('message:error', { 
+        tempId, 
+        error: 'Failed to send message',
+        code: 'SEND_FAILED',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      })
     }
-    activeConnections.set(userId, socket.id)
-    userSockets.set(socket.id, userId)
+  }
 
-    // Update user online status
-    await updateUserOnlineStatus(userId, true)
+  // Handle message retry requests
+  async handleRetryMessage(socket, { messageId, tempId, conversationId }) {
+    const { userId } = socket
 
-    // Send current online count to newly connected user
-    const onlineCount = activeConnections.size
-    socket.emit('online_status_update', {
-      totalOnline: onlineCount,
-      userOnline: true,
-      timestamp: new Date().toISOString()
-    })
+    try {
+      console.log(`🔄 Socket: Retrying message ${messageId || tempId}`)
 
-    // Handle delivery status for incoming user
-    await handleUserOnline(io, userId)
-
-    // Notify other users
-    socket.broadcast.emit('user:online', {
-      userId,
-      username: user.username,
-      timestamp: new Date().toISOString()
-    })
-
-    // Send initial unread count on connection
-    setTimeout(async () => {
-      await emitUnreadCountUpdate(io, userId)
-    }, 500)
-
-    // Handle request for online users list
-    socket.on('get_online_users', () => {
-      console.log(`📋 User ${userId} requested online users list`)
-
-      try {
-        // Get all currently online user IDs
-        const onlineUserIds = Array.from(activeConnections.keys())
-
-        console.log(`📤 Sending online users list: ${onlineUserIds.length} users`)
-
-        socket.emit('online_users_list', {
-          users: onlineUserIds,
-          count: onlineUserIds.length,
-          timestamp: new Date().toISOString()
+      // If we have pending message data, try to send it again
+      if (tempId && pendingMessages.has(tempId)) {
+        const messageData = pendingMessages.get(tempId)
+        pendingMessages.delete(tempId)
+        
+        // Retry the send operation
+        await this.handleSendMessage(socket, {
+          ...messageData,
+          tempId: `retry_${tempId}` // New temp ID for retry
         })
-      } catch (error) {
-        console.error('❌ Error sending online users list:', error)
-        socket.emit('online_users_list', { users: [], count: 0 })
+        return
       }
-    })
 
-    // Handle online status check request
-    socket.on('check_online_status', () => {
-      console.log(`🔍 User ${userId} requested online status check`)
-
-      try {
-        const onlineCount = activeConnections.size
-        const userSocketId = activeConnections.get(userId)
-
-        socket.emit('online_status_response', {
-          isOnline: !!userSocketId,
-          socketId: userSocketId,
-          totalOnline: onlineCount,
-          timestamp: new Date().toISOString()
+      // If message exists in DB but failed, mark it for retry
+      if (messageId) {
+        const message = await prisma.message.findFirst({
+          where: { 
+            id: messageId, 
+            senderId: userId,
+            status: MESSAGE_STATUS.FAILED
+          }
         })
 
-        console.log(`✅ Sent online status response to ${userId}`)
-      } catch (error) {
-        console.error('❌ Error checking online status:', error)
+        if (message) {
+          // Update status back to SENT and try delivery again
+          await prisma.message.update({
+            where: { id: messageId },
+            data: { 
+              status: MESSAGE_STATUS.SENT,
+              // statusUpdatedAt: new Date()
+            }
+          })
+
+          // Check if recipients are online for immediate delivery
+          const participants = await prisma.conversationParticipant.findMany({
+            where: { 
+              conversationId: message.conversationId,
+              userId: { not: userId }
+            }
+          })
+
+          const anyRecipientOnline = participants.some(p => this.isUserOnline(p.userId))
+          
+          if (anyRecipientOnline) {
+            await prisma.message.update({
+              where: { id: messageId },
+              data: { 
+                status: MESSAGE_STATUS.DELIVERED,
+                // statusUpdatedAt: new Date()
+              }
+            })
+          }
+
+          // Notify about status update
+          this.io.to(`conversation:${conversationId}`).emit('message:status_updated', {
+            messageId,
+            status: anyRecipientOnline ? MESSAGE_STATUS.DELIVERED : MESSAGE_STATUS.SENT,
+            timestamp: new Date()
+          })
+
+          socket.emit('message:retry_success', {
+            messageId,
+            status: anyRecipientOnline ? MESSAGE_STATUS.DELIVERED : MESSAGE_STATUS.SENT
+          })
+        }
       }
-    })
 
-    // Join conversation rooms automatically
-    socket.on('conversation:join', async ({ conversationId }) => {
-      console.log(`👥 User ${userId} joining conversation ${conversationId}`)
+    } catch (error) {
+      console.error('❌ Socket: Retry message error:', error)
+      socket.emit('message:retry_failed', { 
+        messageId: messageId || tempId,
+        error: 'Retry failed'
+      })
+    }
+  }
 
+  // Enhanced mark as read with batch processing
+  async handleMarkRead(socket, { conversationId }) {
+    const { userId } = socket
+
+    try {
+      console.log(`📖 Socket: User ${userId} marking conversation ${conversationId} as read`)
+
+      // Batch update all unread messages to READ status
+      const updateResult = await batchUpdateMessageStatus(
+        prisma,
+        conversationId,
+        userId,
+        MESSAGE_STATUS.READ,
+        [MESSAGE_STATUS.FAILED] // Don't mark failed messages as read
+      )
+
+      if (updateResult.success && updateResult.count > 0) {
+        // Broadcast read status to conversation
+        this.io.to(`conversation:${conversationId}`).emit('messages:read', {
+          conversationId,
+          readBy: userId,
+          count: updateResult.count,
+          timestamp: new Date()
+        })
+
+        // Also emit individual status updates for real-time UI
+        this.io.to(`conversation:${conversationId}`).emit('message:status_updated', {
+          conversationId,
+          status: MESSAGE_STATUS.READ,
+          readBy: userId,
+          timestamp: new Date()
+        })
+
+        console.log(`📖 Socket: Marked ${updateResult.count} messages as read`)
+      }
+
+    } catch (error) {
+      console.error('❌ Socket: Mark read error:', error)
+    }
+  }
+
+  // Join conversation room with validation
+  async handleJoinConversation(socket, { conversationId }) {
+    const { userId } = socket
+
+    try {
       // Verify user has access to this conversation
       const participant = await prisma.conversationParticipant.findFirst({
         where: { conversationId, userId }
       })
 
-      if (participant) {
-        socket.join(`conversation:${conversationId}`)
-        console.log(`✅ User ${userId} joined conversation room: ${conversationId}`)
-
-        // Confirm join and send unread count for this conversation
-        socket.emit('conversation:joined', { conversationId })
-        await emitUnreadCountUpdate(io, userId, conversationId)
-      } else {
-        console.log(`❌ User ${userId} denied access to conversation ${conversationId}`)
-        socket.emit('error', { message: 'Access denied to conversation' })
+      if (!participant) {
+        console.warn(`🚫 User ${userId} attempted to join unauthorized conversation ${conversationId}`)
+        return
       }
-    })
 
-    // Leave conversation room
-    socket.on('conversation:leave', ({ conversationId }) => {
-      console.log(`👋 User ${userId} leaving conversation ${conversationId}`)
-      socket.leave(`conversation:${conversationId}`)
-      socket.emit('conversation:left', { conversationId })
-    })
+      console.log(`👥 User ${userId} joining conversation: ${conversationId}`)
+      socket.join(`conversation:${conversationId}`)
 
-    // Handle conversation mark as read
-    socket.on('conversation:mark_read', async ({ conversationId }) => {
-      console.log(`📖 User ${userId} marking conversation ${conversationId} as read`)
-
-      try {
-        // Mark all unread messages in conversation as read
-        const updatedMessages = await prisma.message.updateMany({
-          where: {
-            conversationId,
-            senderId: { not: userId },
-            isRead: false
-          },
-          data: { isRead: true }
-        })
-
-        console.log(`📖 Marked ${updatedMessages.count} messages as read in conversation ${conversationId}`)
-
-        // Emit status update to conversation participants
-        socket.to(`conversation:${conversationId}`).emit('conversation:status_updated', {
+      // Auto-mark messages as delivered when joining if user is online
+      const deliveredCount = await prisma.message.updateMany({
+        where: {
           conversationId,
-          status: 'read',
-          count: updatedMessages.count,
-          updatedBy: userId
-        })
-
-        // Update unread counts
-        await emitUnreadCountUpdate(io, userId, conversationId)
-        await emitUnreadCountUpdate(io, userId) // Total count
-
-      } catch (error) {
-        console.error('❌ Error marking conversation as read:', error)
-        socket.emit('error', { message: 'Failed to mark conversation as read' })
-      }
-    })
-
-    // Handle unread count refresh requests
-    socket.on('unread_count:refresh', async () => {
-      console.log(`📊 User ${userId} requesting unread count refresh`)
-      await emitUnreadCountUpdate(io, userId)
-    })
-
-    // Handle typing events
-    socket.on('typing:start', ({ conversationId }) => {
-      console.log(`⌨️ User ${userId} started typing in conversation ${conversationId}`)
-
-      if (!typingUsers.has(conversationId)) {
-        typingUsers.set(conversationId, new Set())
-      }
-      typingUsers.get(conversationId).add(userId)
-
-      socket.to(`conversation:${conversationId}`).emit('typing:start', {
-        conversationId,
-        user
-      })
-    })
-
-    socket.on('typing:stop', ({ conversationId }) => {
-      console.log(`⌨️ User ${userId} stopped typing in conversation ${conversationId}`)
-
-      if (typingUsers.has(conversationId)) {
-        typingUsers.get(conversationId).delete(userId)
-
-        if (typingUsers.get(conversationId).size === 0) {
-          typingUsers.delete(conversationId)
+          senderId: { not: userId },
+          status: MESSAGE_STATUS.SENT
+        },
+        data: {
+          status: MESSAGE_STATUS.DELIVERED,
+          // statusUpdatedAt: new Date()
         }
-      }
-
-      socket.to(`conversation:${conversationId}`).emit('typing:stop', {
-        conversationId,
-        userId
       })
-    })
 
-    // 🔥 FIXED: Enhanced message status events with proper sender notification
-    socket.on('message:delivered', async ({ messageId, conversationId }) => {
-      console.log(`✅ Message ${messageId} delivered in conversation ${conversationId} by user ${userId}`)
-
-      try {
-        // Update in database
-        const updatedMessage = await prisma.message.update({
-          where: { id: messageId },
-          data: { isDelivered: true },
-          include: {
-            sender: { select: { id: true, username: true } }
-          }
-        })
-
-        console.log(`📤 Notifying sender ${updatedMessage.sender.username} of delivery`)
-
-        // 🔥 CRITICAL: Emit to the MESSAGE SENDER specifically
-        const senderSocketId = activeConnections.get(updatedMessage.senderId)
-        if (senderSocketId) {
-          io.to(senderSocketId).emit('message:status_updated', {
-            messageId,
-            conversationId,
-            status: 'delivered',
-            updatedBy: userId
-          })
-          console.log(`✅ Delivery notification sent to sender ${updatedMessage.sender.username}`)
-        } else {
-          console.log(`⚠️ Sender ${updatedMessage.sender.username} is offline - status update queued`)
-        }
-
-        // Also emit to conversation room for other participants
-        socket.to(`conversation:${conversationId}`).emit('message:status_updated', {
-          messageId,
+      if (deliveredCount.count > 0) {
+        this.io.to(`conversation:${conversationId}`).emit('messages:auto_delivered', {
           conversationId,
-          status: 'delivered',
-          updatedBy: userId
+          userId,
+          count: deliveredCount.count,
+          timestamp: new Date()
         })
-
-      } catch (error) {
-        console.error('❌ Error updating delivered status:', error)
       }
-    })
 
-    socket.on('message:read', async ({ messageId, conversationId }) => {
-      console.log(`👁️ Message ${messageId} read in conversation ${conversationId} by user ${userId}`)
-
-      try {
-        // Update in database
-        const updatedMessage = await prisma.message.update({
-          where: { id: messageId },
-          data: {
-            isRead: true,
-            isDelivered: true
-          },
-          include: {
-            sender: { select: { id: true, username: true } }
-          }
-        })
-
-        console.log(`📤 Notifying sender ${updatedMessage.sender.username} of read status`)
-
-        // 🔥 CRITICAL: Emit to the MESSAGE SENDER specifically
-        const senderSocketId = activeConnections.get(updatedMessage.senderId)
-        if (senderSocketId) {
-          io.to(senderSocketId).emit('message:status_updated', {
-            messageId,
-            conversationId,
-            status: 'read',
-            updatedBy: userId
-          })
-          console.log(`✅ Read notification sent to sender ${updatedMessage.sender.username}`)
-        } else {
-          console.log(`⚠️ Sender ${updatedMessage.sender.username} is offline - status update queued`)
-        }
-
-        // Also emit to conversation room for other participants
-        socket.to(`conversation:${conversationId}`).emit('message:status_updated', {
-          messageId,
-          conversationId,
-          status: 'read',
-          updatedBy: userId
-        })
-
-        // Update unread counts after marking as read
-        await emitUnreadCountUpdate(io, userId, conversationId)
-        await emitUnreadCountUpdate(io, userId) // Total count
-
-      } catch (error) {
-        console.error('❌ Error updating read status:', error)
-      }
-    })
-
-    // Handle ping for keepalive
-    socket.on('ping', () => {
-      socket.emit('pong')
-    })
-
-    // 🔥 ENHANCED: Better disconnect handling
-    socket.on('disconnect', async (reason) => {
-      console.log(`📱 User disconnected: ${user.username} (${userId}) - Reason: ${reason}`)
-
-      // Clean up typing status
-      typingUsers.forEach((userSet, conversationId) => {
-        if (userSet.has(userId)) {
-          userSet.delete(userId)
-          socket.to(`conversation:${conversationId}`).emit('typing:stop', {
-            conversationId,
-            userId
-          })
-        }
-      })
-
-      // Remove from active connections
-      activeConnections.delete(userId)
-      userSockets.delete(socket.id)
-
-      // Update user offline status
-      await updateUserOnlineStatus(userId, false)
-
-      // Notify other users
-      socket.broadcast.emit('user:offline', {
-        userId,
-        username: user.username,
-        reason,
-        timestamp: new Date().toISOString()
-      })
-
-      // Send updated online count to remaining users
-      const remainingOnlineCount = activeConnections.size
-      socket.broadcast.emit('online_count_update', {
-        totalOnline: remainingOnlineCount,
-        timestamp: new Date().toISOString()
-      })
-    })
-
-    // Handle errors
-    socket.on('error', (error) => {
-      console.error(`❌ Socket error for user ${userId}:`, error)
-    })
-  })
-
-  // CRITICAL: Helper functions for emitting events
-  io.sendToUser = (userId, event, data) => {
-    const socketId = activeConnections.get(userId)
-    if (socketId) {
-      io.to(socketId).emit(event, data)
-      return true
+    } catch (error) {
+      console.error('❌ Socket: Join conversation error:', error)
     }
-    return false
   }
 
-  io.sendToConversation = (conversationId, event, data) => {
-    io.to(`conversation:${conversationId}`).emit(event, data)
+  // Leave conversation room
+  handleLeaveConversation(socket, { conversationId }) {
+    const { userId } = socket
+    console.log(`👥 User ${userId} leaving conversation: ${conversationId}`)
+    socket.leave(`conversation:${conversationId}`)
   }
 
-  io.getOnlineUsers = () => {
-    return Array.from(activeConnections.keys())
+  // Enhanced disconnect handling
+  async handleDisconnect(userId, socketId) {
+    console.log(`📱 User ${userId} disconnecting socket ${socketId}`)
+    
+    const userSocketSet = userSockets.get(userId)
+    if (userSocketSet) {
+      userSocketSet.delete(socketId)
+      
+      // If no more connections for this user
+      if (userSocketSet.size === 0) {
+        userSockets.delete(userId)
+        
+        // Update last seen in database
+        await prisma.user.update({
+          where: { id: userId },
+          data: { lastSeen: new Date() }
+        }).catch(console.error)
+
+        // Broadcast user offline status
+        this.io.emit('user:offline', {
+          userId: userId,
+          timestamp: new Date()
+        })
+        console.log(`📡 Broadcasted: User ${userId} went offline`)
+      } else {
+        console.log(`📱 User ${userId} still has ${userSocketSet.size} connections`)
+      }
+    }
   }
 
-  io.isUserOnline = (userId) => {
-    return activeConnections.has(userId)
+  // Cleanup timer for old data
+  startCleanupTimer() {
+    const cleanupInterval = MESSAGE_RELIABILITY_CONFIG.CLEANUP_INTERVAL
+
+    setInterval(() => {
+      try {
+        // Clean up old message timeouts
+        const now = Date.now()
+        for (const [tempId, timeoutId] of messageTimeouts.entries()) {
+          // Clean up timeouts older than 1 minute
+          if (now - parseInt(tempId.split('_')[1]) > 60000) {
+            clearTimeout(timeoutId)
+            messageTimeouts.delete(tempId)
+          }
+        }
+
+        // Clean up old pending messages
+        for (const [tempId, data] of pendingMessages.entries()) {
+          if (now - data.createdAt > 300000) { // 5 minutes old
+            pendingMessages.delete(tempId)
+          }
+        }
+
+        console.log(`🧹 Cleanup: Timeouts: ${messageTimeouts.size}, Pending: ${pendingMessages.size}`)
+      } catch (error) {
+        console.error('❌ Cleanup error:', error)
+      }
+    }, cleanupInterval)
   }
 
-  // CRITICAL: Attach the emitNewMessage function to io
-  io.emitNewMessage = (messageData) => emitNewMessage(io, messageData)
+  // ═══════════════════════════════════════════════════════════════
+  // UTILITY METHODS
+  // ═══════════════════════════════════════════════════════════════
 
-  // Attach unread count functions
-  io.emitUnreadCountUpdate = (userId, conversationId = null) => emitUnreadCountUpdate(io, userId, conversationId)
-  io.emitConversationUnreadUpdate = (conversationId) => emitConversationUnreadUpdate(io, conversationId)
+  // Check if user is online (single source of truth)
+  isUserOnline(userId) {
+    return userSockets.has(userId) && userSockets.get(userId).size > 0
+  }
 
-  console.log('✅ Socket.IO handlers setup complete')
-  console.log(`📊 Active connections tracking: ${activeConnections.size} users`)
+  // Get all online users
+  getOnlineUsers() {
+    return Array.from(userSockets.keys())
+  }
+
+  // Get connection stats for monitoring
+  getConnectionStats() {
+    const stats = {
+      totalUsers: userSockets.size,
+      totalConnections: 0,
+      pendingMessages: pendingMessages.size,
+      activeTimeouts: messageTimeouts.size,
+      users: []
+    }
+
+    userSockets.forEach((sockets, userId) => {
+      stats.totalConnections += sockets.size
+      stats.users.push({
+        userId,
+        connections: sockets.size,
+        socketIds: Array.from(sockets)
+      })
+    })
+
+    return stats
+  }
+
+  // Force deliver messages for a conversation (admin utility)
+  async forceDeliverMessages(conversationId, userId = null) {
+    try {
+      const whereClause = {
+        conversationId,
+        status: MESSAGE_STATUS.SENT
+      }
+
+      if (userId) {
+        whereClause.senderId = { not: userId }
+      }
+
+      const result = await prisma.message.updateMany({
+        where: whereClause,
+        data: {
+          status: MESSAGE_STATUS.DELIVERED,
+          // statusUpdatedAt: new Date()
+        }
+      })
+
+      console.log(`🔧 Force delivered ${result.count} messages in conversation ${conversationId}`)
+      return result
+    } catch (error) {
+      console.error('❌ Force delivery failed:', error)
+      throw error
+    }
+  }
 }
 
-module.exports = {
-  setupSocketHandlers,
-  emitNewMessage,
-  emitUnreadCountUpdate,
-  emitConversationUnreadUpdate,
-  getOnlineStats,
-  // Keep existing exports for compatibility
-  emitConversationCreated: (io, conversation) => {
-    conversation.participants.forEach(participant => {
-      io.sendToUser(participant.userId, 'conversation:created', conversation)
-    })
-  },
-  emitConversationUpdated: (io, conversation) => {
-    conversation.participants.forEach(participant => {
-      io.sendToUser(participant.userId, 'conversation:updated', conversation)
-    })
-  }
-}
+module.exports = { MessagingSocketService }

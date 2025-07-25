@@ -1,4 +1,4 @@
-// src/controllers/auth.js
+// src/controllers/auth.js - SIMPLIFIED ONLINE STATUS VERSION
 const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
@@ -32,7 +32,6 @@ const register = async (req, res) => {
 
     const { username, email, password, firstName, lastName, referralCode } = req.body
 
-    // Normalize username and email
     const normalizedUsername = username.toLowerCase()
     const normalizedEmail = email ? email.toLowerCase() : null
 
@@ -59,7 +58,7 @@ const register = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Generate referral code immediately (to avoid null issues)
+    // Generate referral code
     const generateReferralCode = (username) => {
       const timestamp = Date.now().toString(36)
       const random = Math.random().toString(36).substring(2, 6)
@@ -68,7 +67,7 @@ const register = async (req, res) => {
 
     const userReferralCode = generateReferralCode(normalizedUsername)
 
-    // Create user WITH generated referral code
+    // Create user with simple online status initialization
     const user = await prisma.user.create({
       data: {
         username: normalizedUsername,
@@ -79,13 +78,15 @@ const register = async (req, res) => {
         gumballs: 0,
         isEmailVerified: false,
         emailRequired: !!normalizedEmail,
-        // Provide actual values instead of null
-        referralCode: userReferralCode,  // Generated immediately
-        referredBy: null,                // This will be set by referral tracking
+        referralCode: userReferralCode,
+        referredBy: null,
         totalReferrals: 0,
         activeReferrals: 0,
         referralEarnings: 0,
-        profileCompleted: false          // NEW: Track if profile is completed
+        profileCompleted: false,
+        // Simple initialization - socket will handle actual online status
+        isOnline: false,
+        lastSeen: new Date()
       },
       select: {
         id: true,
@@ -97,28 +98,28 @@ const register = async (req, res) => {
         gumballs: true,
         isEmailVerified: true,
         emailRequired: true,
+        isOnline: true,
+        lastSeen: true,
         createdAt: true
       }
     })
 
-    // MODIFIED: Only track referral relationship, don't award rewards yet
+    console.log(`✅ User registered: ${user.username} (${user.id})`)
+
+    // Track referral if provided
     if (referralCode) {
       try {
-        console.log(`Tracking referral signup for user ${user.username} with code ${referralCode}`)
         await referralService.trackReferralSignup(user.id, referralCode.toUpperCase())
-        console.log(`Referral relationship tracked - rewards will be given after profile completion`)
       } catch (referralError) {
         console.error('Referral tracking failed:', referralError)
-        // Continue with registration even if referral tracking fails
       }
     }
 
-    // Rest of your registration logic (email verification, etc.)
-    // If email provided, send verification code
+    // Handle email verification
     if (normalizedEmail && process.env.ENABLE_EMAIL_VERIFICATION === 'true') {
       try {
         const verificationCode = emailService.generateVerificationCode()
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
         await prisma.emailVerificationCode.create({
           data: {
@@ -129,7 +130,6 @@ const register = async (req, res) => {
           }
         })
 
-        // Send verification email
         await emailService.sendVerificationEmail(normalizedEmail, verificationCode, user.username)
 
         return res.status(201).json({
@@ -146,7 +146,6 @@ const register = async (req, res) => {
         })
       }
     } else {
-      // No email verification required
       return res.status(201).json({
         message: 'User registered successfully.',
         user,
@@ -160,6 +159,7 @@ const register = async (req, res) => {
   }
 }
 
+// Simplified login - let socket handle online status
 const login = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -173,7 +173,6 @@ const login = async (req, res) => {
     const { username, password, adminRequest } = req.body
     const normalizedUsername = username.toLowerCase()
 
-    // Find user by username (keep it simple like your original system)
     const user = await prisma.user.findUnique({
       where: { username: normalizedUsername }
     })
@@ -182,26 +181,22 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password' })
     }
 
-    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' })
     }
 
-    // 🆕 ADMIN REQUEST HANDLING
+    // Admin request handling
     if (adminRequest) {
-      // If this is an admin login request, verify admin role
       if (user.role !== 'admin' && user.role !== 'super_admin') {
         return res.status(403).json({ 
           message: 'Admin access required',
           error: 'Insufficient privileges'
         })
       }
-      
-      console.log(`🔐 Admin login: ${user.username} (${user.role})`)
     }
 
-    // Check if email verification is required (skip for admin requests)
+    // Check email verification
     if (!adminRequest && user.emailRequired && !user.isEmailVerified) {
       return res.status(403).json({ 
         message: 'Please verify your email before logging in',
@@ -210,24 +205,48 @@ const login = async (req, res) => {
       })
     }
 
-    // Generate tokens
+    // Simple lastSeen update - don't touch isOnline, let socket handle it
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastSeen: new Date()
+        // Don't update isOnline here - socket connection will handle it
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        location: true,
+        birthDate: true,
+        avatarUrl: true,
+        bannerUrl: true,
+        gumballs: true,
+        role: true,
+        isEmailVerified: true,
+        isOnline: true,
+        lastSeen: true,
+        createdAt: true
+      }
+    })
+
     const { accessToken, refreshToken } = generateTokens(user.id)
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user
+    console.log(`🔐 User logged in: ${user.username} (socket will handle online status)`)
 
-    // 🆕 Different response for admin vs regular login
     if (adminRequest) {
       res.json({
         message: 'Admin login successful',
-        user: userWithoutPassword,
-        token: accessToken,  // Admin dashboard expects 'token'
+        user: updatedUser,
+        token: accessToken,
         refreshToken
       })
     } else {
       res.json({
         message: 'Login successful',
-        user: userWithoutPassword,
+        user: updatedUser,
         accessToken,
         refreshToken
       })
@@ -239,10 +258,26 @@ const login = async (req, res) => {
   }
 }
 
-
+// Simplified logout - let socket handle online status
 const logout = async (req, res) => {
   try {
-    // In a more complex setup, you might want to blacklist the token
+    const userId = req.user?.id
+
+    if (userId) {
+      console.log(`🔐 User logging out: ${req.user.username}`)
+
+      // Simple lastSeen update - don't touch isOnline, let socket handle it
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          lastSeen: new Date()
+          // Don't update isOnline here - socket disconnection will handle it
+        }
+      }).catch(error => {
+        console.error('Error updating lastSeen on logout:', error)
+      })
+    }
+
     res.json({ message: 'Logged out successfully' })
   } catch (error) {
     console.error('Logout error:', error)
@@ -267,6 +302,8 @@ const getProfile = async (req, res) => {
         bannerUrl: true,
         gumballs: true,
         isEmailVerified: true,
+        isOnline: true,
+        lastSeen: true,
         createdAt: true,
         _count: {
           select: {
@@ -307,14 +344,15 @@ const updateProfile = async (req, res) => {
 
     const { firstName, lastName, bio, location, birthDate, avatarUrl, bannerUrl } = req.body
 
-    // Get current user to check profile completion status
     const currentUser = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: {
         firstName: true,
         lastName: true,
         profileCompleted: true,
-        referredBy: true
+        referredBy: true,
+        isOnline: true,
+        lastSeen: true
       }
     })
 
@@ -332,7 +370,6 @@ const updateProfile = async (req, res) => {
     if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl?.trim() || null
     if (bannerUrl !== undefined) updateData.bannerUrl = bannerUrl?.trim() || null
 
-    // Check if this is the first time completing profile (firstName and lastName are being set)
     const isFirstTimeCompletion = !currentUser.profileCompleted && 
                                   !currentUser.firstName && 
                                   !currentUser.lastName && 
@@ -342,6 +379,9 @@ const updateProfile = async (req, res) => {
     if (isFirstTimeCompletion) {
       updateData.profileCompleted = true
     }
+
+    // Simple lastSeen update
+    updateData.lastSeen = new Date()
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
@@ -359,18 +399,17 @@ const updateProfile = async (req, res) => {
         bannerUrl: true,
         gumballs: true,
         isEmailVerified: true,
+        isOnline: true,
+        lastSeen: true,
         createdAt: true
       }
     })
 
-    // NEW: Process referral rewards after profile completion
+    // Process referral rewards if first time completion
     if (isFirstTimeCompletion && currentUser.referredBy) {
       try {
-        console.log(`Processing referral rewards for completed profile: ${updatedUser.username}`)
         await referralService.processReferralRewards(req.user.id, currentUser.referredBy)
-        console.log(`Referral rewards processed successfully`)
         
-        // Refresh user data to include updated gumballs
         const userWithUpdatedGumballs = await prisma.user.findUnique({
           where: { id: req.user.id },
           select: {
@@ -386,6 +425,8 @@ const updateProfile = async (req, res) => {
             bannerUrl: true,
             gumballs: true,
             isEmailVerified: true,
+            isOnline: true,
+            lastSeen: true,
             createdAt: true
           }
         })
@@ -397,7 +438,6 @@ const updateProfile = async (req, res) => {
         return
       } catch (referralError) {
         console.error('Failed to process referral rewards:', referralError)
-        // Continue with normal response even if referral processing fails
       }
     }
 
@@ -411,7 +451,43 @@ const updateProfile = async (req, res) => {
   }
 }
 
-// Email verification function
+const refreshUser = async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        location: true,
+        birthDate: true,
+        avatarUrl: true,
+        bannerUrl: true,
+        gumballs: true,
+        isEmailVerified: true,
+        isOnline: true,
+        lastSeen: true,
+        createdAt: true
+      }
+    })
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    res.json({ 
+      message: 'User data refreshed successfully',
+      user 
+    })
+  } catch (error) {
+    console.error('Refresh user error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
 const verifyEmail = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -422,33 +498,28 @@ const verifyEmail = async (req, res) => {
     const { email, code } = req.body
     const normalizedEmail = email.toLowerCase()
 
-    console.log(`Verifying email: ${normalizedEmail} with code: ${code}`)
-
-    // Find the verification code
     const verificationRecord = await prisma.emailVerificationCode.findFirst({
       where: {
         email: normalizedEmail,
         code: code,
         isUsed: false,
-        expiresAt: {
-          gt: new Date()
-        }
+        expiresAt: { gt: new Date() }
       },
-      include: {
-        user: true
-      }
+      include: { user: true }
     })
 
     if (!verificationRecord) {
-      console.log('Invalid or expired verification code')
       return res.status(400).json({ message: 'Invalid or expired verification code' })
     }
 
-    // Mark user as verified and mark code as used
+    // Mark as verified and update lastSeen
     const [updatedUser, updatedCode] = await prisma.$transaction([
       prisma.user.update({
         where: { id: verificationRecord.userId },
-        data: { isEmailVerified: true },
+        data: { 
+          isEmailVerified: true,
+          lastSeen: new Date()
+        },
         select: {
           id: true,
           username: true,
@@ -458,6 +529,8 @@ const verifyEmail = async (req, res) => {
           avatarUrl: true,
           gumballs: true,
           isEmailVerified: true,
+          isOnline: true,
+          lastSeen: true,
           createdAt: true
         }
       }),
@@ -467,10 +540,7 @@ const verifyEmail = async (req, res) => {
       })
     ])
 
-    // Generate tokens for auto-login
     const { accessToken, refreshToken } = generateTokens(updatedUser.id)
-
-    console.log('Email verified successfully')
 
     res.json({
       message: 'Email verified successfully!',
@@ -484,7 +554,6 @@ const verifyEmail = async (req, res) => {
   }
 }
 
-// Resend verification code
 const resendVerificationCode = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -495,9 +564,6 @@ const resendVerificationCode = async (req, res) => {
     const { email } = req.body
     const normalizedEmail = email.toLowerCase()
 
-    console.log(`Resending verification code to: ${normalizedEmail}`)
-
-    // Find user with this email
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail }
     })
@@ -512,16 +578,13 @@ const resendVerificationCode = async (req, res) => {
 
     // Invalidate old codes
     await prisma.emailVerificationCode.updateMany({
-      where: {
-        email: normalizedEmail,
-        isUsed: false
-      },
+      where: { email: normalizedEmail, isUsed: false },
       data: { isUsed: true }
     })
 
     // Generate new code
     const verificationCode = emailService.generateVerificationCode()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
     await prisma.emailVerificationCode.create({
       data: {
@@ -532,10 +595,7 @@ const resendVerificationCode = async (req, res) => {
       }
     })
 
-    // Send verification email
     await emailService.sendVerificationEmail(normalizedEmail, verificationCode, user.username)
-
-    console.log('Verification code resent successfully')
 
     res.json({ 
       message: 'Verification code sent! Please check your email.' 
@@ -546,7 +606,6 @@ const resendVerificationCode = async (req, res) => {
   }
 }
 
-// Forgot password function
 const forgotPassword = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -557,36 +616,26 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body
     const normalizedEmail = email.toLowerCase()
 
-    console.log(`🔄 FORGOT PASSWORD - Email: ${normalizedEmail}`)
-
-    // Find user with this email
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       select: { id: true, username: true, email: true }
     })
 
     if (!user) {
-      console.log('❌ User not found')
-      // Don't reveal if email exists or not for security
       return res.json({ 
         message: 'If an account with this email exists, you will receive a password reset link.' 
       })
     }
 
-    console.log(`👤 User found: ${user.username}`)
-
-    // Generate secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex')
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex')
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
 
-    // Invalidate old tokens
     await prisma.passwordResetToken.updateMany({
       where: { userId: user.id, isUsed: false },
       data: { isUsed: true }
     })
 
-    // Create new reset token
     await prisma.passwordResetToken.create({
       data: {
         token: hashedToken,
@@ -595,31 +644,24 @@ const forgotPassword = async (req, res) => {
       }
     })
 
-    console.log('💾 Reset token saved to database')
-
-    // Send reset email
     try {
       await emailService.sendPasswordResetEmail(normalizedEmail, resetToken, user.username)
-      console.log('📤 Reset email sent successfully')
     } catch (emailError) {
-      console.error('📤 Failed to send reset email:', emailError)
+      console.error('Failed to send reset email:', emailError)
       return res.status(500).json({ 
         message: 'Failed to send reset email. Please try again later.' 
       })
     }
 
-    console.log('✅ FORGOT PASSWORD - SUCCESS')
-
     res.json({ 
       message: 'If an account with this email exists, you will receive a password reset link.' 
     })
   } catch (error) {
-    console.error('❌ FORGOT PASSWORD - ERROR:', error)
+    console.error('Forgot password error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// Reset password function
 const resetPassword = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -629,52 +671,35 @@ const resetPassword = async (req, res) => {
 
     const { token, password } = req.body
 
-    console.log(`🔄 RESET PASSWORD - Token: ${token?.substring(0, 8)}...`)
-
-    // Hash the provided token to match database
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
-    console.log('🔒 Token hashed for database lookup')
 
-    // Find valid reset token
     const resetTokenRecord = await prisma.passwordResetToken.findFirst({
       where: {
         token: hashedToken,
         isUsed: false,
-        expiresAt: {
-          gt: new Date()
-        }
+        expiresAt: { gt: new Date() }
       },
       include: {
         user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            firstName: true,
-            lastName: true
-          }
+          select: { id: true, username: true, email: true, firstName: true, lastName: true }
         }
       }
     })
 
-    console.log('🔍 Database lookup completed. Token found:', !!resetTokenRecord)
-
     if (!resetTokenRecord) {
-      console.log('❌ Invalid or expired token')
       return res.status(400).json({ message: 'Invalid or expired reset token' })
     }
 
-    console.log('👤 User for reset:', resetTokenRecord.user.username)
-
-    // Hash new password
     const hashedPassword = await bcrypt.hash(password, 12)
-    console.log('🔒 Password hashed successfully')
 
-    // Use transaction to update password and mark token as used
+    // Update password and lastSeen
     const [updatedUser, updatedToken] = await prisma.$transaction([
       prisma.user.update({
         where: { id: resetTokenRecord.userId },
-        data: { password: hashedPassword },
+        data: { 
+          password: hashedPassword,
+          lastSeen: new Date()
+        },
         select: {
           id: true,
           username: true,
@@ -689,27 +714,21 @@ const resetPassword = async (req, res) => {
       })
     ])
 
-    console.log('💾 Password updated and token marked as used')
-
-    // Send confirmation email
     try {
       await emailService.sendPasswordChangeConfirmationEmail(
         resetTokenRecord.user.email, 
         resetTokenRecord.user.username
       )
-      console.log('📤 Password change confirmation email sent')
     } catch (emailError) {
-      console.error('📤 Failed to send confirmation email:', emailError)
-      // Continue anyway
+      console.error('Failed to send confirmation email:', emailError)
     }
 
-    console.log('✅ RESET PASSWORD - SUCCESS')
     res.json({
       message: 'Password reset successfully! You can now log in with your new password.'
     })
 
   } catch (error) {
-    console.error('❌ RESET PASSWORD - ERROR:', error)
+    console.error('Reset password error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
@@ -720,6 +739,7 @@ module.exports = {
   logout,
   getProfile,
   updateProfile,
+  refreshUser,
   verifyEmail,
   resendVerificationCode,
   forgotPassword,

@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="min-h-screen bg-gray-900 text-white">
+  <div id="app" class=" min-h-screen bg-gray-900 text-white">
     <!-- Loading Screen -->
     <div v-if="authStore.isLoading && !authStore.isAuthenticated" class="min-h-screen flex items-center justify-center">
       <div class="text-center">
@@ -9,7 +9,7 @@
     </div>
 
     <!-- Main Application -->
-    <div v-else class="flex h-screen">
+    <div v-else class="hidden lg:flex h-screen w-full">
       <!-- Navigation Sidebar -->
       <AdminSidebar v-if="showSidebar" />
       
@@ -34,6 +34,8 @@
       </div>
     </div>
 
+    <h2 class="lg:hidden self-center mx-auto p-2 text-center">Please visit the dashboard on your PC</h2>
+
     <!-- Global Notifications -->
     <AdminNotifications />
 
@@ -41,7 +43,7 @@
     <SessionWarningModal v-if="showSessionWarning" @extend="extendSession" @logout="forceLogout" />
 
     <!-- Development Tools -->
-    <DevTools v-if="isDevelopment" />
+    <!-- <DevTools v-if="isDevelopment" /> -->
   </div>
 </template>
 

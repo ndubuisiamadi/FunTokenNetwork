@@ -38,8 +38,9 @@
               collapsed ? 'mx-auto' : 'mr-3',
               isActiveRoute(item.path) ? 'text-white' : 'text-gray-400 group-hover:text-white'
             ]" 
+
           />
-          <span v-if="!collapsed" class="truncate">{{ item.title }}</span>
+          <span v-if="!collapsed" class="truncate text-xs">{{ item.title }}</span>
           <span 
             v-if="!collapsed && item.badge" 
             class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1"
@@ -60,10 +61,11 @@
             :key="item.name"
             :to="item.path"
             :class="[
-              'group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+              'group flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200',
               isActiveRoute(item.path)
                 ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                item.title == 'Content' ? 'hidden' : ''
             ]"
           >
             <component 
@@ -108,7 +110,7 @@
                 isActiveRoute(item.path) ? 'text-white' : 'text-gray-400 group-hover:text-white'
               ]" 
             />
-            <span class="truncate">{{ item.title }}</span>
+            <span class="truncate text-xs">{{ item.title }}</span>
             <span 
               v-if="item.status === 'warning'" 
               class="ml-auto w-2 h-2 bg-yellow-400 rounded-full"

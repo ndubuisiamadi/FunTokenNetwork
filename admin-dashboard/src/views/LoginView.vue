@@ -62,7 +62,7 @@
                 type="text"
                 required
                 :disabled="authStore.isLoading || authStore.isRateLimited()"
-                class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter your admin credentials"
                 autocomplete="username"
               />
@@ -86,7 +86,7 @@
                 :type="showPassword ? 'text' : 'password'"
                 required
                 :disabled="authStore.isLoading || authStore.isRateLimited()"
-                class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter your password"
                 autocomplete="current-password"
               />
@@ -145,7 +145,7 @@
             </svg>
             <div class="text-sm text-gray-300">
               <p class="font-medium mb-1">Security Notice</p>
-              <p class="text-gray-400">
+              <p class="text-gray-400 text-xs">
                 This is a secure admin area. Your session is monitored and all actions are logged.
                 Only authorized administrators should access this system.
               </p>
@@ -156,7 +156,7 @@
 
       <!-- Footer -->
       <div class="text-center mt-6 text-sm text-gray-500">
-        FunTokenNetwork Admin Dashboard v1.0
+        FunNetwork Admin Dashboard v1.0
       </div>
     </div>
   </div>

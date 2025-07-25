@@ -13,7 +13,7 @@
       </button>
 
       <!-- Breadcrumb Navigation -->
-      <nav class="flex items-center space-x-2 text-sm">
+      <nav class="flex items-center space-x-2 text-xs">
         <router-link to="/" class="text-gray-400 hover:text-white transition-colors">
           Admin
         </router-link>
@@ -36,7 +36,7 @@
             @blur="hideSearchResults"
             type="text"
             placeholder="Quick search..."
-            class="w-64 pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            class="w-64 pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 text-xs rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           />
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,9 +100,7 @@
           class="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
           :title="notifications.length > 0 ? `${notifications.length} notifications` : 'No notifications'"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5V7a5 5 0 00-10 0v5l-5 5h5a5 5 0 0010 0z"/>
-          </svg>
+          <img src="@/components/icons/bell-lined.svg" class="size-6">
           <span
             v-if="notifications.length > 0"
             class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"

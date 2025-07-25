@@ -29,7 +29,7 @@ model User {
   avatarUrl   String?  @map("avatar_url")
   bannerUrl   String?  @map("banner_url")
   gumballs    Int      @default(0)
-  isOnline    Boolean  @default(false) @map("is_online")
+  //isOnline    Boolean  @default(false) @map("is_online")
   lastSeen    DateTime @default(now()) @map("last_seen")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -118,7 +118,7 @@ model User {
   @@index([level, gumballs, globalRank]) // Multi-filter optimization
   
   // 🚀 GENERAL PERFORMANCE INDEXES
-  @@index([isOnline])            // For online status queries
+  //@@index([isOnline])            // For online status queries
   @@index([createdAt])           // For chronological queries
   @@index([lastSeen])            // For activity tracking
   @@index([referredBy])          // For referral chain queries
@@ -477,6 +477,7 @@ model Conversation {
   lastActivity DateTime @default(now()) @map("last_activity")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  lastSequenceNumber Int   @default(0) @map("last_sequence_number")
 
   // Relations
   participants ConversationParticipant[]
@@ -511,12 +512,13 @@ model Message {
   content     String?
   mediaUrls   String[] @map("media_urls")
   messageType String   @default("text") @map("message_type") // text, image, video, file, audio
-  isRead      Boolean  @default(false) @map("is_read")
-  isDelivered Boolean  @default(false) @map("is_delivered")
   isEdited    Boolean  @default(false) @map("is_edited")
   editedAt    DateTime? @map("edited_at")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+
+  status          String  @default("sending") @map("status") // sending, sent, delivered, read, failed
+  sequenceNumber  Int     @map("sequence_number")
 
   // Relations
   senderId       String       @map("sender_id") @db.ObjectId
@@ -531,8 +533,9 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@index([senderId])
-  @@index([conversationId, isRead])
   @@index([createdAt])
+  @@index([conversationId, sequenceNumber])
+  @@index([status])
   @@map("messages")
 }
 

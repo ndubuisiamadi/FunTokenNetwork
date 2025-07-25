@@ -82,36 +82,15 @@ const handleBackToSidebar = () => {
 
 // Updated onMounted with better mobile handling
 onMounted(async () => {
-  console.log('📱 MessagesView: Mounting with mobile check')
+  // Force link socket to store
+  const { socketService } = await import('@/services/socket')
+  socketService.setMessagesStore(messagesStore)
   
-  // Check initial screen size
-  checkMobile()
-  
-  // Add resize listener
-  window.addEventListener('resize', checkMobile)
-  
-  // Initialize messages store if needed
-  if (!messagesStore.isInitialized()) {
-    console.log('📱 MessagesView: Initializing messages store...')
-    
-    // Initialize socket and fetch conversations
-    if (messagesStore.initializeSocket) {
-      await messagesStore.initializeSocket()
-    }
-    await messagesStore.fetchConversations()
-    
-    console.log('📱 MessagesView: Messages store initialized')
-  } else {
-    console.log('📱 MessagesView: Messages already initialized')
+  if (!socketService.isSocketConnected()) {
+    await socketService.connect()
   }
   
-  // Handle conversation query parameter after everything is ready
-  if (route.query.conversation) {
-    // Small delay to ensure everything is properly loaded
-    setTimeout(() => {
-      handleConversationParam()
-    }, 100)
-  }
+  await messagesStore.fetchConversations()
 })
 
 onUnmounted(() => {
@@ -136,7 +115,7 @@ onUnmounted(() => {
 <template>
   <div class="h-full text-white">
     <!-- Desktop Layout (md and above) -->
-    <div class="hidden md:flex h-full p-3">
+    <div class="hidden md:flex h-full pt-3 px-3">
       <!-- Sidebar -->
       <ConversationSidebar 
         :is-mobile="false"

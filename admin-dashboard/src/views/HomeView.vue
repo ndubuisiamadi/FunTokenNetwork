@@ -66,9 +66,7 @@
             </div>
           </div>
           <div class="p-3 bg-blue-500/30 rounded-lg">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
+            <img src="@/components/icons/users-lined.svg" class="size-6">
           </div>
         </div>
       </div>
@@ -84,9 +82,7 @@
             </div>
           </div>
           <div class="p-3 bg-green-500/30 rounded-lg">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-            </svg>
+            <img src="@/components/icons/check-fat.svg" class="size-6">
           </div>
         </div>
       </div>
@@ -200,7 +196,7 @@
     </div>
 
     <!-- Quick Actions Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 grid-cols-3 gap-4">
       <router-link 
         to="/tasks"
         class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors group"
@@ -224,9 +220,7 @@
       >
         <div class="flex items-center space-x-3">
           <div class="p-2 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
-            <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
+            <img src="@/components/icons/users-lined.svg" class="size-6">
           </div>
           <div>
             <h4 class="text-white font-medium">Manage Users</h4>
@@ -235,7 +229,7 @@
         </div>
       </router-link>
 
-      <router-link 
+      <!-- <router-link 
         to="/content"
         class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors group"
       >
@@ -250,7 +244,7 @@
             <p class="text-gray-400 text-sm">Content moderation</p>
           </div>
         </div>
-      </router-link>
+      </router-link> -->
 
       <router-link 
         to="/analytics"

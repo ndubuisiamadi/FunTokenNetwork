@@ -209,11 +209,12 @@ onUnmounted(() => {
     </nav>
     
     <!-- Mobile Navigation (Bottom Bar) -->
-    <nav class="sm:hidden rounded-t-2xl
-    bg-[#030712]/20 backdrop-blur-xl lg:border lg:border-white/20 lg:shadow-2xl
-     border-t border-white/10 px-4 py-2 ">
-        <div class="flex justify-center">
-            <div class="flex justify-around items-center gap-2 max-w-sm w-full">
+    <nav class="sm:hidden rounded-t-2xl fixed inset-x-0 bottom-0
+             bg-[#030712]/20 backdrop-blur-xl lg:border lg:border-white/20 lg:shadow-2xl
+             border-t border-white/10"
+            style="padding-bottom: env(safe-area-inset-bottom);">
+        <div class="flex justify-center ">
+            <div class="flex justify-around items-center gap-2 max-w-sm w-full  px-4 py-2">
                 <RouterLink to="/" 
                 class="flex flex-col items-center rounded-full transition-colors duration-200" 
                 :class="[isNotLoggedIn('/') ? 'bg-linear-to-tr from-[#9E03FF] to-[#082CFC] backdrop-blur-xl p-3' : 'hover:bg-white/10 p-3']">

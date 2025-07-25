@@ -121,8 +121,8 @@
 <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
   <div class="flex items-center justify-between">
     <div>
-      <p class="text-gray-400 text-sm font-medium">Problem Users</p>
-      <p class="text-xs text-gray-500 mt-1">Unverified/Suspended</p>
+      <p class="text-gray-400 text-sm font-medium">Unverified Users</p>
+      
       
       <!-- Loading State -->
       <div v-if="statsLoading" class="animate-pulse">
@@ -180,7 +180,7 @@
                 v-model="filters.search"
                 type="text"
                 placeholder="Search by name, email, username..."
-                class="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,7 +195,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-2">Role</label>
             <select 
               v-model="filters.role"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-xs rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Roles</option>
               <option value="user">User</option>
@@ -209,12 +209,11 @@
             <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
             <select 
               v-model="filters.status"
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Status</option>
               <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-              <option value="banned">Banned</option>
+              <option value="suspended">Unverified</option>
             </select>
           </div>
 
@@ -225,7 +224,7 @@
               v-model="filters.level"
               type="text"
               placeholder="Level..."
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -233,7 +232,7 @@
           <div class="flex flex-col sm:flex-row gap-2 sm:col-span-2 lg:col-span-1 lg:items-end">
             <button
               @click="applyFilters"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center whitespace-nowrap"
+              class="px-4 py-2 bg-blue-600 text-xs text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center whitespace-nowrap"
             >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"/>
@@ -242,7 +241,7 @@
             </button>
             <button
               @click="clearFilters"
-              class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors flex items-center justify-center whitespace-nowrap"
+              class="px-4 py-2 bg-gray-600 text-xs text-white rounded-lg hover:bg-gray-500 transition-colors flex items-center justify-center whitespace-nowrap"
             >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

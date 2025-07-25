@@ -1,4 +1,5 @@
-// src/routes/messages.js - FIXED VERSION
+// backend/src/routes/messages.js - CLEANED VERSION (remove problematic routes)
+
 const express = require('express')
 const { body, query, param } = require('express-validator')
 const { auth } = require('../middleware/auth')
@@ -6,7 +7,7 @@ const messagesController = require('../controllers/messages')
 
 const router = express.Router()
 
-// Fixed validation rules for messages routes
+// Validation rules (keep existing ones)
 const createConversationValidation = [
   body('participantIds')
     .isArray({ min: 1 })
@@ -19,9 +20,8 @@ const createConversationValidation = [
     .isBoolean()
     .withMessage('isGroup must be a boolean'),
   body('name')
-    .optional({ nullable: true }) // Allow null values
+    .optional({ nullable: true })
     .custom((value) => {
-      // Only validate if value is not null/undefined
       if (value !== null && value !== undefined) {
         if (typeof value !== 'string') {
           throw new Error('Group name must be a string')
@@ -66,7 +66,6 @@ const paginationValidation = [
     .withMessage('Limit must be between 1 and 100')
 ]
 
-// FIXED: Search validation - proper middleware chain
 const searchValidation = [
   query('q')
     .trim()
@@ -74,12 +73,12 @@ const searchValidation = [
     .withMessage('Search query must be at least 1 character')
 ]
 
-// Routes - FIXED ORDER: Specific routes BEFORE parameterized routes
+// ====== ESSENTIAL ROUTES ONLY (Socket-only approach) ======
 
 // Get all conversations for the current user
 router.get('/conversations', auth, messagesController.getConversations)
 
-// FIXED: Search conversations - BEFORE parameterized routes
+// Search conversations
 router.get('/conversations/search', auth, searchValidation, messagesController.searchConversations)
 
 // Create a new conversation
@@ -91,7 +90,9 @@ router.post('/upload/media', auth, messagesController.uploadMessageMedia)
 // Get online users
 router.get('/users/online', auth, messagesController.getOnlineUsers)
 
-// Parameterized routes - AFTER specific routes
+// Get total unread count
+router.get('/unread-count', auth, messagesController.getTotalUnreadCount)
+
 // Get conversation details
 router.get('/conversations/:conversationId', auth, messagesController.getConversation)
 
@@ -99,25 +100,7 @@ router.get('/conversations/:conversationId', auth, messagesController.getConvers
 router.put('/conversations/:conversationId', auth, messagesController.updateConversation)
 
 // Mark conversation as read
-router.put('/conversations/:conversationId/read', auth, messagesController.markAsRead)
-
-// Update individual message status
-router.put('/messages/:messageId/status', auth, [
-  body('status')
-    .isIn(['delivered', 'read'])
-    .withMessage('Status must be either delivered or read')
-], messagesController.updateMessageStatus)
-
-// Bulk update conversation message status
-router.put('/conversations/:conversationId/messages/status', auth, [
-  body('status')
-    .isIn(['delivered', 'read'])
-    .withMessage('Status must be either delivered or read'),
-  body('messageIds')
-    .optional()
-    .isArray()
-    .withMessage('Message IDs must be an array')
-], messagesController.updateConversationMessageStatus)
+router.put('/conversations/:conversationId/read', auth, messagesController.markConversationAsRead)
 
 // Leave a group conversation
 router.delete('/conversations/:conversationId/leave', auth, messagesController.leaveConversation)
@@ -133,7 +116,5 @@ router.post('/conversations/:conversationId/participants', auth, messagesControl
 
 // Remove participant from group conversation
 router.delete('/conversations/:conversationId/participants/:userId', auth, messagesController.removeParticipant)
-
-router.get('/unread-count', auth, messagesController.getTotalUnreadCount)
 
 module.exports = router

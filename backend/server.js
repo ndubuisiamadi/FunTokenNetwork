@@ -1,4 +1,4 @@
-// server.js - UPDATED WITH ADMIN DASHBOARD SUPPORT
+// server.js - ENHANCED WITH RELIABILITY FEATURES AND SOCKET INTEGRATION
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
@@ -24,25 +24,44 @@ const io = new Server(server, {
       'http://localhost:5173',    // Main frontend
       'http://localhost:5174',    // Admin dashboard
       'http://192.168.0.159:5173', 
+      'http://192.168.235.64:5173', 
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174'     // Admin dashboard
     ],
     credentials: true
-  }
+  },
+  // 🔥 ENHANCED: Reliability-focused socket configuration
+  pingTimeout: 60000,           // 60 seconds before considering connection dead
+  pingInterval: 25000,          // Ping every 25 seconds  
+  connectTimeout: 45000,        // 45 seconds to establish connection
+  maxHttpBufferSize: 10 * 1024 * 1024, // 10MB for large message payloads
+  transports: ['websocket', 'polling'], // Allow fallback to polling
+  allowEIO3: true               // Compatibility with older clients
 });
 
 // Make io available to route handlers
 app.set('io', io)
 
-// Import and setup socket handlers
-let setupSocketHandlers
+// 🔥 ENHANCED: Import and setup socket handlers with error handling
+let messagingSocketService = null
 try {
-  const socketModule = require('./src/services/socket')
-  setupSocketHandlers = socketModule.setupSocketHandlers
-  setupSocketHandlers(io)
+  const { MessagingSocketService } = require('./src/services/socket')
+  messagingSocketService = new MessagingSocketService(io)
+  
+  // 🔥 CRITICAL: Make socket service globally accessible for reliability checks
+  global.socketService = messagingSocketService
+  io.socketService = messagingSocketService
+  
+  console.log('✅ Enhanced messaging socket service initialized')
+  console.log('📊 Socket service features enabled:')
+  console.log('   - Auto-delivery when users come online')
+  console.log('   - Message retry with exponential backoff')
+  console.log('   - Connection state tracking')
+  console.log('   - Failed message recovery')
+  
 } catch (error) {
-  console.warn('⚠️  Socket.IO handlers not found, continuing without real-time features')
-  console.warn('Error:', error.message)
+  console.error('❌ Socket.IO service initialization failed:', error.message)
+  console.warn('⚠️  Continuing without real-time features')
 }
 
 // 🚀 Initialize ranking scheduler
@@ -63,7 +82,8 @@ const createDirectories = () => {
     'uploads',
     'uploads/messages',
     'uploads/avatars',
-    'uploads/media'
+    'uploads/media',
+    'logs'  // 🔥 ADDED: For reliability logging
   ]
   
   dirs.forEach(dir => {
@@ -91,13 +111,17 @@ app.use(helmet({
   }
 }))
 
-// Rate limiting with different limits for different endpoints
+// 🔥 ENHANCED: Rate limiting with reliability considerations
 const createRateLimit = (windowMs, max, message) => rateLimit({
   windowMs,
   max,
   message: { message },
   standardHeaders: true,
   legacyHeaders: false,
+  // 🔥 ENHANCED: Skip rate limiting for socket health checks
+  skip: (req) => {
+    return req.path === '/health' || req.path === '/socket-stats'
+  }
 })
 
 // Only apply rate limiting in production
@@ -112,8 +136,8 @@ if (process.env.NODE_ENV === 'production') {
   // Admin endpoints with special rate limiting
   app.use('/api/admin/', createRateLimit(15 * 60 * 1000, 200, 'Too many admin requests'))
 
-  // Messages rate limit (more generous for real-time chat)
-  app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 100, 'Too many message requests'))
+  // 🔥 ENHANCED: More generous limits for messages (reliability requires retries)
+  app.use('/api/messages/', createRateLimit(1 * 60 * 1000, 200, 'Too many message requests'))
 }
 
 // CORS configuration - UPDATED TO INCLUDE ADMIN DASHBOARD
@@ -123,6 +147,7 @@ app.use(cors({
     'http://localhost:5174',    // Admin dashboard
     'http://localhost:5163',
     'http://192.168.0.159:5173',
+    'http://192.168.235.64:5173',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174'     // Admin dashboard
   ],
@@ -178,7 +203,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   }
 }))
 
-// Health check with detailed information
+// 🔥 ENHANCED: Health check with socket and reliability information
 app.get('/health', (req, res) => {
   const healthCheck = {
     status: 'OK',
@@ -187,35 +212,154 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '1.0.0',
     memory: process.memoryUsage(),
-    socketConnections: io.engine.clientsCount
+    
+    // 🔥 SOCKET HEALTH
+    socket: {
+      connected: io.engine.clientsCount,
+      hasService: !!messagingSocketService,
+      serviceStats: messagingSocketService ? messagingSocketService.getConnectionStats() : null
+    },
+    
+    // 🔥 RELIABILITY FEATURES
+    reliability: {
+      messageStatusConstants: !!global.MESSAGE_STATUS,
+      socketServiceAvailable: !!global.socketService,
+      autoDeliveryEnabled: true,
+      retryEnabled: true
+    }
   }
   
   res.status(200).json(healthCheck)
 })
 
+// 🔥 NEW: Socket statistics endpoint for debugging
+app.get('/socket-stats', (req, res) => {
+  if (!messagingSocketService) {
+    return res.status(503).json({
+      error: 'Socket service not available',
+      connected: io.engine.clientsCount
+    })
+  }
+  
+  const stats = messagingSocketService.getConnectionStats()
+  
+  res.json({
+    timestamp: new Date().toISOString(),
+    ...stats,
+    io: {
+      clientsCount: io.engine.clientsCount,
+      rooms: Object.keys(io.sockets.adapter.rooms).length
+    }
+  })
+})
+
+// 🔥 NEW: Reliability test endpoint (development only)
+if (process.env.NODE_ENV === 'development') {
+  app.get('/test-reliability', async (req, res) => {
+    try {
+      const tests = []
+      
+      // Test socket service availability
+      tests.push({
+        name: 'Socket Service Available',
+        status: !!messagingSocketService,
+        details: messagingSocketService ? 'Socket service initialized' : 'Socket service missing'
+      })
+      
+      // Test message status constants
+      try {
+        const { MESSAGE_STATUS } = require('./src/utils/messageStatus')
+        tests.push({
+          name: 'Message Status Constants',
+          status: !!MESSAGE_STATUS,
+          details: Object.keys(MESSAGE_STATUS).join(', ')
+        })
+      } catch (error) {
+        tests.push({
+          name: 'Message Status Constants',
+          status: false,
+          details: error.message
+        })
+      }
+      
+      // Test database connectivity
+      try {
+        const prisma = require('./src/db')
+        await prisma.user.count()
+        tests.push({
+          name: 'Database Connectivity',
+          status: true,
+          details: 'Database accessible'
+        })
+      } catch (error) {
+        tests.push({
+          name: 'Database Connectivity',
+          status: false,
+          details: error.message
+        })
+      }
+      
+      // Test online user tracking
+      if (messagingSocketService) {
+        const onlineUsers = messagingSocketService.getOnlineUsers()
+        tests.push({
+          name: 'Online User Tracking',
+          status: true,
+          details: `${onlineUsers.length} users online`
+        })
+      }
+      
+      const allPassed = tests.every(test => test.status)
+      
+      res.json({
+        overall: allPassed ? 'PASS' : 'FAIL',
+        timestamp: new Date().toISOString(),
+        tests
+      })
+      
+    } catch (error) {
+      res.status(500).json({
+        overall: 'ERROR',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      })
+    }
+  })
+}
+
 // API root endpoint
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Social Media API Server',
-    version: '2.0.0',
+    version: '2.1.0',  // 🔥 UPDATED: Version bump for reliability features
     docs: '/api',
     health: '/health',
+    socketStats: '/socket-stats',
     features: [
       'Authentication & Authorization',
-      'Real-time Messaging',
+      'Real-time Messaging with Reliability', // 🔥 UPDATED
+      'Message Auto-Retry & Offline Queueing', // 🔥 NEW
+      'Connection State Tracking',              // 🔥 NEW
       'Posts & Social Feed',
       'Friends System',
       'File Uploads',
       'Leaderboard & Gamification',
-      'Admin Dashboard'  // Added admin feature
-    ]
+      'Admin Dashboard'
+    ],
+    // 🔥 NEW: Reliability info
+    reliability: {
+      autoDelivery: 'Messages auto-deliver when users come online',
+      retry: 'Failed messages auto-retry with exponential backoff',
+      offline: 'Messages queued when offline, sent when reconnected',
+      status: '4-state message status tracking (sent → delivered → read)'
+    }
   })
 })
 
-// API documentation endpoint - UPDATED WITH ADMIN ENDPOINTS
+// 🔥 ENHANCED: API documentation endpoint with reliability info
 app.get('/api', (req, res) => {
   res.json({
-    message: 'Social Media API v2.0',
+    message: 'Social Media API v2.1 - Enhanced Reliability',
     documentation: {
       auth: {
         endpoints: [
@@ -245,7 +389,13 @@ app.get('/api', (req, res) => {
           'POST /api/messages/conversations/:id/messages',
           'PUT /api/messages/conversations/:id/read'
         ],
-        realtime: 'Socket.io enabled for real-time messaging'
+        realtime: 'Socket.io enabled for real-time messaging',
+        reliability: {
+          autoDelivery: 'Messages auto-deliver when recipients come online',
+          retry: 'Socket-level retry with exponential backoff',
+          offline: 'Client-side message queuing for offline scenarios',
+          status: 'Enhanced 4-state message status tracking'
+        }
       },
       posts: {
         endpoints: [
@@ -283,12 +433,26 @@ app.get('/api', (req, res) => {
       url: '/socket.io',
       events: [
         'message:new',
+        'message:sent_confirmation',  // 🔥 NEW
+        'message:status_updated',     // 🔥 NEW  
+        'message:error',              // 🔥 NEW
+        'message:retry_success',      // 🔥 NEW
+        'messages:read',
+        'messages:auto_delivered',    // 🔥 NEW
         'conversation:created',
         'typing:start',
         'typing:stop',
         'user:online',
-        'user:offline'
-      ]
+        'user:offline',
+        'users:online_list'           // 🔥 NEW
+      ],
+      reliability: {
+        pingTimeout: '60s',
+        pingInterval: '25s',
+        autoReconnect: true,
+        messageRetry: 'Exponential backoff up to 3 attempts',
+        offlineQueue: 'Client-side localStorage queue'
+      }
     }
   })
 })
@@ -318,7 +482,6 @@ const loadRoutes = () => {
     { path: '/api/leaderboard', file: './src/routes/leaderboard', name: 'leaderboard' },
     { path: '/api/search', file: './src/routes/search', name: 'search' },
     { path: '/api/tasks', file: './src/routes/tasks', name: 'tasks' },
-    // 🆕 ADD ADMIN ROUTES
     { path: '/api/admin', file: './src/routes/admin', name: 'admin' }
   ]
 
@@ -348,9 +511,15 @@ const loadRoutes = () => {
 // Load all routes
 loadRoutes()
 
-// Websocket connection logging
+// 🔥 ENHANCED: Websocket connection logging with reliability info
 io.on('connection', (socket) => {
   console.log(`📱 Socket connected: ${socket.id} (User: ${socket.userId || 'unknown'})`)
+  
+  // Log reliability features status
+  if (messagingSocketService) {
+    const stats = messagingSocketService.getConnectionStats()
+    console.log(`📊 Connection stats: ${stats.totalUsers} users, ${stats.totalConnections} connections`)
+  }
   
   socket.on('disconnect', (reason) => {
     console.log(`📱 Socket disconnected: ${socket.id} (${reason})`)
@@ -363,13 +532,28 @@ app.use('/api', (req, res) => {
     message: 'API endpoint not found',
     path: req.originalUrl,
     method: req.method,
-    available: '/api'
+    available: '/api',
+    // 🔥 HELPFUL: Suggest reliability endpoints for debugging
+    debug: req.originalUrl.includes('socket') || req.originalUrl.includes('reliability') ? {
+      healthCheck: '/health',
+      socketStats: '/socket-stats',
+      reliabilityTest: process.env.NODE_ENV === 'development' ? '/test-reliability' : 'Not available in production'
+    } : undefined
   })
 })
 
-// Global error handler
+// 🔥 ENHANCED: Global error handler with reliability context
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.stack)
+  
+  // Log additional context for socket-related errors
+  if (req.path.includes('message') || req.path.includes('socket')) {
+    console.error('🔌 Socket context:', {
+      socketAvailable: !!messagingSocketService,
+      connectedClients: io.engine.clientsCount,
+      userAgent: req.get('User-Agent')
+    })
+  }
   
   // Handle specific error types
   if (err.name === 'ValidationError') {
@@ -425,6 +609,15 @@ app.use((err, req, res, next) => {
     })
   }
   
+  // 🔥 SOCKET ERRORS
+  if (err.message && err.message.includes('socket')) {
+    return res.status(503).json({
+      message: 'Socket service error',
+      available: !!messagingSocketService,
+      suggestion: 'Check socket connection and retry'
+    })
+  }
+  
   // Default error response
   const statusCode = err.status || err.statusCode || 500
   const message = process.env.NODE_ENV === 'production' 
@@ -444,9 +637,28 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000
 const HOST = process.env.HOST || '0.0.0.0'
 
-// Graceful shutdown handler
+// 🔥 ENHANCED: Graceful shutdown with socket cleanup
 const gracefulShutdown = (signal) => {
   console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`)
+  
+  // 🔥 CLEANUP: Disconnect all sockets gracefully
+  if (messagingSocketService) {
+    console.log('🔌 Disconnecting socket service...')
+    try {
+      // Notify all clients of impending shutdown
+      io.emit('server:shutdown', {
+        message: 'Server shutting down, please reconnect in a moment',
+        timestamp: new Date()
+      })
+      
+      // Give clients time to process shutdown message
+      setTimeout(() => {
+        io.close()
+      }, 1000)
+    } catch (error) {
+      console.error('❌ Socket shutdown error:', error)
+    }
+  }
   
   server.close((err) => {
     if (err) {
@@ -462,6 +674,7 @@ const gracefulShutdown = (signal) => {
       prisma.$disconnect()
         .then(() => {
           console.log('✅ Database disconnected')
+          console.log('✅ Graceful shutdown complete')
           process.exit(0)
         })
         .catch((err) => {
@@ -496,11 +709,11 @@ process.on('unhandledRejection', (reason, promise) => {
   gracefulShutdown('UNHANDLED_REJECTION')
 })
 
-// Start server - UPDATED WITH ADMIN DASHBOARD INFO
+// 🔥 ENHANCED: Start server with comprehensive reliability info
 server.listen(PORT, HOST, () => {
-  console.log('\n🚀 ================================')
+  console.log('\n🚀 ====================================')
   console.log('🚀 Social Media API Server Started')
-  console.log('🚀 ================================')
+  console.log('🚀 ====================================')
   console.log(`📍 Server: http://${HOST}:${PORT}`)
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`)
   console.log(`📊 Health: http://${HOST}:${PORT}/health`)
@@ -508,14 +721,33 @@ server.listen(PORT, HOST, () => {
   console.log(`📁 Static Files: http://${HOST}:${PORT}/uploads`)
   console.log(`⚡ WebSocket: ws://${HOST}:${PORT}/socket.io`)
   console.log(`🛡️  Admin API: http://${HOST}:${PORT}/api/admin`)
+  console.log(`📡 Socket Stats: http://${HOST}:${PORT}/socket-stats`)
+  
+  // 🔥 RELIABILITY STATUS
+  console.log('\n🔧 ====== RELIABILITY FEATURES ======')
+  console.log(`📱 Socket Service: ${messagingSocketService ? '✅ Active' : '❌ Disabled'}`)
+  console.log(`🔄 Auto-Retry: ${messagingSocketService ? '✅ Enabled' : '❌ Disabled'}`)
+  console.log(`📦 Auto-Delivery: ${messagingSocketService ? '✅ Enabled' : '❌ Disabled'}`)
+  console.log(`🔗 Connection Tracking: ${messagingSocketService ? '✅ Enabled' : '❌ Disabled'}`)
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🧪 Reliability Test: http://${HOST}:${PORT}/test-reliability`)
+  }
+  
   console.log(`💾 Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`)
-  console.log('🚀 ================================\n')
+  console.log('🚀 ====================================\n')
   
   // Log initial socket server status
   console.log(`📱 Socket.io server ready for connections`)
   console.log(`📱 CORS enabled for: ${process.env.CLIENT_URL || "http://localhost:5173"}`)
   console.log(`🛡️  Admin dashboard CORS: http://localhost:5174`)
+  
+  if (messagingSocketService) {
+    console.log(`🎯 Reliability features fully operational`)
+  } else {
+    console.warn(`⚠️  Running without reliability features - socket service failed to initialize`)
+  }
 })
 
 // Export for testing
-module.exports = { app, server, io }
+module.exports = { app, server, io, messagingSocketService }

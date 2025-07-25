@@ -1,593 +1,685 @@
-// src/services/socket.js - FIXED MESSAGE STATUS VERSION
+// src/services/socket.js - ENHANCED WITH RELIABILITY FEATURES
 import { io } from 'socket.io-client'
+import { 
+  MESSAGE_STATUS, 
+  MESSAGE_RELIABILITY_CONFIG, 
+  CONNECTION_STATE,
+  messageQueue,
+  scheduleMessageRetry,
+  shouldRetryMessage
+} from '@/utils/messageStatus'
 
-class SocketService {
+class MessagingSocketService {
   constructor() {
     this.socket = null
     this.isConnected = false
-    this.reconnectAttempts = 0
-    this.maxReconnectAttempts = 5
-    this.typingTimers = new Map()
-    this.pingInterval = null
-    this.taskCompletedCallback = null
-    this.taskFailedCallback = null
-    this.connectionPromise = null
+    this.connectionState = CONNECTION_STATE.DISCONNECTED
     this.messagesStore = null
+    
+    // Reliability features
+    this.retryTimeouts = new Map() // tempId -> timeoutId
+    this.pendingMessages = new Map() // tempId -> message data
+    this.connectionCheckInterval = null
+    this.isReconnecting = false
+    this.retryQueue = []
+    
+    // Message sending timeouts
+    this.sendTimeouts = new Map() // tempId -> timeoutId
+    
+    // Start connection monitoring
+    this.startConnectionMonitoring()
   }
 
-  // CRITICAL: Set messages store reference
   setMessagesStore(store) {
     this.messagesStore = store
-    console.log('🔗 Socket service linked to messages store')
+    console.log('🔗 Socket linked to messages store')
   }
 
-  // Enhanced connection with better error handling
+  // ═══════════════════════════════════════════════════════════════
+  // CONNECTION MANAGEMENT WITH RELIABILITY
+  // ═══════════════════════════════════════════════════════════════
+
   async connect() {
-    // Import auth store dynamically to avoid circular dependencies
     const { useAuthStore } = await import('@/stores/auth')
     const authStore = useAuthStore()
 
     if (!authStore.isLoggedIn) {
-      console.log('🚫 Socket: Skipping connection - not logged in')
+      console.log('🚫 Not logged in')
+      this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
       return false
     }
 
     if (this.socket?.connected) {
-      console.log('✅ Socket: Already connected')
+      console.log('✅ Already connected')
+      this.updateConnectionState(CONNECTION_STATE.ONLINE)
       return true
     }
 
-    // Return existing connection promise if already connecting
-    if (this.connectionPromise) {
-      return this.connectionPromise
-    }
-
-    this.connectionPromise = this._performConnection()
-    return this.connectionPromise
-  }
-
-  async _performConnection() {
     const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
     const token = localStorage.getItem('authToken')
 
     if (!token) {
-      console.error('❌ Socket: No auth token found')
+      console.error('❌ No auth token')
+      this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
       return false
     }
 
-    console.log(`🔌 Socket: Connecting to ${serverUrl}`)
-
     try {
+      this.updateConnectionState(CONNECTION_STATE.CONNECTING)
+      
       this.socket = io(serverUrl, {
         auth: { token },
         autoConnect: true,
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
-        maxReconnectionAttempts: this.maxReconnectAttempts,
-        timeout: 20000,
-        forceNew: false,
+        maxReconnectionAttempts: 5,
+        timeout: 10000,
         transports: ['websocket', 'polling']
       })
 
-      // Wait for connection
       await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'))
-        }, 10000)
+        const timeout = setTimeout(() => reject(new Error('Connection timeout')), 10000)
 
         this.socket.once('connect', () => {
           clearTimeout(timeout)
+          this.isConnected = true
+          this.updateConnectionState(CONNECTION_STATE.ONLINE)
           resolve()
         })
 
         this.socket.once('connect_error', (error) => {
           clearTimeout(timeout)
+          this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
           reject(error)
         })
       })
 
       this.setupEventListeners()
-      this.startPingInterval()
-
-      console.log('✅ Socket connected successfully')
+      await this.processQueuedMessages()
+      console.log('✅ Socket connected')
       return true
 
     } catch (error) {
       console.error('❌ Socket connection failed:', error)
-      this.connectionPromise = null
+      this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
       return false
     }
   }
 
-  // 🔥 FIXED: Enhanced event listeners with immediate status updates
   setupEventListeners() {
     if (!this.socket) return
 
-    console.log('🎧 Setting up socket event listeners')
-
-    // Enhanced user online/offline event handlers
-    this.socket.on('user:online', (data) => {
-      console.log('🟢 Socket: User came online', {
-        userId: data.userId,
-        username: data.username,
-        timestamp: new Date().toISOString()
-      })
-
-      try {
-        if (this.messagesStore && this.messagesStore.updateUserOnlineStatus) {
-          this.messagesStore.updateUserOnlineStatus(data.userId, true, 'socket_event')
-        }
-      } catch (error) {
-        console.error('❌ Error handling user online event:', error)
-      }
-    })
-
-    this.socket.on('user:offline', (data) => {
-      console.log('🔴 Socket: User went offline', {
-        userId: data.userId,
-        username: data.username,
-        timestamp: new Date().toISOString()
-      })
-
-      try {
-        if (this.messagesStore && this.messagesStore.updateUserOnlineStatus) {
-          this.messagesStore.updateUserOnlineStatus(data.userId, false, 'socket_event')
-        }
-      } catch (error) {
-        console.error('❌ Error handling user offline event:', error)
-      }
-    })
+    console.log('🔧 Setting up enhanced socket event listeners')
 
     // Connection events
     this.socket.on('connect', () => {
-      console.log('✅ Socket: Connected with ID:', this.socket.id)
+      console.log('✅ Socket connected:', this.socket.id)
       this.isConnected = true
-      this.reconnectAttempts = 0
-      this.connectionPromise = null
-
-      // Request initial online users list
-      this.socket.emit('get_online_users')
-      this._rejoinConversations()
-    })
-
-    this.socket.on('online_users_list', (data) => {
-      console.log('👥 Socket: Received online users list:', {
-        count: data.users?.length || 0,
-        timestamp: data.timestamp
-      })
-
-      try {
-        if (data.users && Array.isArray(data.users)) {
-          if (this.messagesStore && this.messagesStore.updateUserOnlineStatus) {
-            // Process in batches to avoid overwhelming the store
-            const batchSize = 50
-            for (let i = 0; i < data.users.length; i += batchSize) {
-              const batch = data.users.slice(i, i + batchSize)
-              
-              setTimeout(() => {
-                batch.forEach(userId => {
-                  this.messagesStore.updateUserOnlineStatus(userId, true, 'initial_sync')
-                })
-              }, Math.floor(i / batchSize) * 10)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error processing online users list:', error)
-      }
+      this.updateConnectionState(CONNECTION_STATE.ONLINE)
+      this.processQueuedMessages()
     })
 
     this.socket.on('disconnect', (reason) => {
-      console.log('❌ Socket: Disconnected -', reason)
+      console.log('❌ Disconnected:', reason)
       this.isConnected = false
-      this.stopPingInterval()
-
-      if (reason === 'io server disconnect') {
-        setTimeout(() => this.connect(), 1000)
-      }
+      this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
     })
 
-    this.socket.on('connect_error', (error) => {
-      console.error('❌ Socket: Connection error -', error.message)
-      this.reconnectAttempts++
-      this.isConnected = false
-      this.connectionPromise = null
-
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.error('❌ Socket: Max reconnection attempts reached')
-        this.disconnect()
-      }
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 Reconnected after', attemptNumber, 'attempts')
+      this.updateConnectionState(CONNECTION_STATE.ONLINE)
+      this.processQueuedMessages()
     })
 
-    // 🔥 FIXED: Immediate delivery confirmation for incoming messages
-    this.socket.on('message:new', (messageData) => {
-      console.log('📨 Socket: New message received:', {
-        id: messageData.id,
-        conversationId: messageData.conversationId,
-        content: messageData.content?.substring(0, 50) + '...',
-        sender: messageData.sender?.username
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log('🔄 Reconnection attempt', attemptNumber)
+      this.updateConnectionState(CONNECTION_STATE.RECONNECTING)
+    })
+
+    this.socket.on('reconnect_failed', () => {
+      console.log('❌ Reconnection failed')
+      this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
+    })
+
+    // Enhanced message events
+    this.socket.on('message:new', (data) => {
+      console.log('📨 RECEIVED: message:new', {
+        messageId: data.id,
+        conversationId: data.conversationId,
+        senderId: data.senderId,
+        status: data.status
       })
-
-      try {
-        // CRITICAL: Forward to messages store
-        if (this.messagesStore && this.messagesStore.handleIncomingMessage) {
-          console.log('📤 Forwarding message to store')
-          this.messagesStore.handleIncomingMessage(messageData)
-        }
-
-        // 🔥 FIXED: Immediate delivery confirmation (no delay)
-        if (this.socket?.connected && messageData.id && messageData.senderId !== this.getCurrentUserId()) {
-          console.log(`✅ Immediately confirming delivery for message ${messageData.id}`)
-          this.markMessageAsDelivered(messageData.id, messageData.conversationId)
-        }
-
-        // Show notification
-        this._showMessageNotification(messageData)
-
-      } catch (error) {
-        console.error('❌ Error processing new message:', error)
-      }
+      
+      this.messagesStore?.handleNewMessage?.(data)
     })
 
-    // 🔥 FIXED: Immediate status updates (no debouncing)
+    this.socket.on('message:sent_confirmation', (data) => {
+      console.log('📤 RECEIVED: message:sent_confirmation', data)
+      this.handleSentConfirmation(data)
+    })
+
     this.socket.on('message:status_updated', (data) => {
-      console.log('📱 Socket: Message status update received:', data)
-
-      try {
-        if (this.messagesStore && this.messagesStore.handleMessageStatusUpdate) {
-          // Apply immediately instead of queueing
-          this.messagesStore.handleMessageStatusUpdateImmediate(data)
-        }
-      } catch (error) {
-        console.error('❌ Error handling status update:', error)
-      }
+      console.log('📱 RECEIVED: message:status_updated', data)
+      this.messagesStore?.handleMessageStatusUpdate?.(data)
     })
 
-    // Conversation events
-    this.socket.on('conversation:created', (data) => {
-      console.log('💬 Socket: New conversation created', data.id)
-
-      try {
-        if (this.messagesStore && this.messagesStore.conversations) {
-          this.messagesStore.conversations.unshift(data)
-          this.messagesStore.triggerUpdate('unread')
-          this.joinConversation(data.id)
-        }
-      } catch (error) {
-        console.error('❌ Error handling conversation creation:', error)
-      }
+    this.socket.on('messages:read', (data) => {
+      console.log('📖 RECEIVED: messages:read', data)
+      this.messagesStore?.handleMessagesRead?.(data)
     })
 
-    this.socket.on('conversation:updated', (data) => {
-      console.log('🔄 Socket: Conversation updated', data.id)
-
-      try {
-        if (this.messagesStore && this.messagesStore.conversations) {
-          const index = this.messagesStore.conversations.findIndex(c => c.id === data.id)
-          if (index !== -1) {
-            this.messagesStore.conversations[index] = {
-              ...this.messagesStore.conversations[index],
-              ...data
-            }
-            this.messagesStore.triggerUpdate('unread')
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error handling conversation update:', error)
-      }
+    this.socket.on('messages:auto_delivered', (data) => {
+      console.log('📦 RECEIVED: messages:auto_delivered', data)
+      this.messagesStore?.handleMessagesAutoDelivered?.(data)
     })
 
-    // 🔥 FIXED: Immediate conversation status updates
-    this.socket.on('conversation:status_updated', (data) => {
-      console.log('💬 Socket: Conversation status updated', data)
-
-      try {
-        if (this.messagesStore && this.messagesStore.handleConversationStatusUpdate) {
-          this.messagesStore.handleConversationStatusUpdate(data)
-        }
-      } catch (error) {
-        console.error('❌ Error handling conversation status update:', error)
-      }
+    // Enhanced error handling
+    this.socket.on('message:error', (data) => {
+      console.error('📨 RECEIVED: message:error', data)
+      this.handleMessageError(data)
     })
 
-    // 🔥 FIXED: Immediate unread count updates
-    this.socket.on('unread_count:updated', (data) => {
-      console.log('📊 Socket: Unread count update received:', data)
-
-      try {
-        if (this.messagesStore) {
-          if (data.conversationId) {
-            this.messagesStore.updateUnreadCount(data.conversationId, data.count, 'socket_event')
-          } else if (data.totalCount !== undefined) {
-            this.messagesStore.refreshUnreadCounts?.()
-          }
-          this.messagesStore.triggerUpdate('unread')
-        }
-      } catch (error) {
-        console.error('❌ Error handling unread count update:', error)
-      }
+    this.socket.on('message:retry_success', (data) => {
+      console.log('🔄 RECEIVED: message:retry_success', data)
+      this.handleRetrySuccess(data)
     })
 
-    // Conversation room events
-    this.socket.on('conversation:joined', ({ conversationId }) => {
-      console.log(`✅ Successfully joined conversation room: ${conversationId}`)
+    this.socket.on('message:retry_failed', (data) => {
+      console.error('🔄 RECEIVED: message:retry_failed', data)
+      this.handleRetryFailed(data)
     })
 
-    this.socket.on('conversation:left', ({ conversationId }) => {
-      console.log(`👋 Successfully left conversation room: ${conversationId}`)
+    // Online status events
+    this.socket.on('user:online', (data) => {
+      console.log('🟢 RECEIVED: user:online', data.userId)
+      this.messagesStore?.handleUserOnline?.(data)
     })
 
-    // Typing events
-    this.socket.on('typing:start', (data) => {
-      console.log('⌨️ Socket: User started typing', data.user?.username)
-
-      try {
-        if (this.messagesStore && this.messagesStore.handleTypingStart) {
-          this.messagesStore.handleTypingStart(data)
-        }
-      } catch (error) {
-        console.error('❌ Error handling typing start:', error)
-      }
+    this.socket.on('user:offline', (data) => {
+      console.log('🔴 RECEIVED: user:offline', data.userId)
+      this.messagesStore?.handleUserOffline?.(data)
     })
 
-    this.socket.on('typing:stop', (data) => {
-      console.log('⌨️ Socket: User stopped typing', data.user?.username)
-
-      try {
-        if (this.messagesStore && this.messagesStore.handleTypingStop) {
-          this.messagesStore.handleTypingStop(data)
-        }
-      } catch (error) {
-        console.error('❌ Error handling typing stop:', error)
-      }
+    this.socket.on('users:online_list', (data) => {
+      console.log('👥 RECEIVED: users:online_list', data.users.length, 'users')
+      this.messagesStore?.handleOnlineUsersList?.(data)
     })
 
-    // Task events
-    this.socket.on('task_completed', (data) => {
-      console.log('🎉 Socket: Task completed event received:', data)
-      if (this.taskCompletedCallback) {
-        this.taskCompletedCallback(data)
-      }
-    })
-
-    this.socket.on('task_failed', (data) => {
-      console.log('❌ Socket: Task failed event received:', data)
-      if (this.taskFailedCallback) {
-        this.taskFailedCallback(data)
-      }
-    })
-
-    // Handle errors
     this.socket.on('error', (error) => {
-      console.error('❌ Socket: Error -', error)
+      console.error('🔌 Socket error:', error)
+      this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
     })
 
-    console.log('✅ All socket event listeners set up')
+    console.log('✅ Enhanced socket event listeners configured')
   }
 
-  getCurrentUserId() {
+  // ═══════════════════════════════════════════════════════════════
+  // ENHANCED MESSAGE SENDING WITH RELIABILITY
+  // ═══════════════════════════════════════════════════════════════
+
+  sendMessage(conversationId, messageData) {
+    const tempId = messageData.tempId || `temp_${Date.now()}_${Math.random()}`
+    messageData.tempId = tempId
+
+    console.log('📤 Sending message:', tempId, 'to conversation:', conversationId)
+
+    // Store message data for potential retry
+    this.pendingMessages.set(tempId, {
+      conversationId,
+      ...messageData,
+      attempts: 0,
+      firstAttempt: Date.now()
+    })
+
+    // Try to send immediately
+    const success = this.attemptSendMessage(conversationId, messageData)
+    
+    if (success) {
+      // Set timeout for failure detection
+      this.setSendTimeout(tempId)
+    } else {
+      // If can't send now, queue for later
+      this.queueMessage(conversationId, messageData)
+    }
+
+    return success
+  }
+
+  attemptSendMessage(conversationId, messageData) {
+    if (!this.socket?.connected) {
+      console.log('❌ Socket not connected, cannot send message')
+      return false
+    }
+
     try {
-      // Import auth store dynamically to avoid circular dependency
-      return new Promise(async (resolve) => {
-        const { useAuthStore } = await import('@/stores/auth')
-        const authStore = useAuthStore()
-        resolve(authStore.currentUser?.id)
+      this.socket.emit('message:send', {
+        conversationId,
+        ...messageData
       })
+      return true
     } catch (error) {
-      console.error('Error getting current user ID:', error)
-      return null
+      console.error('❌ Failed to emit message:', error)
+      return false
     }
   }
 
-  // Helper method to rejoin conversations after reconnection
-  _rejoinConversations() {
-    if (this.messagesStore && this.messagesStore.conversations?.length > 0) {
-      console.log('🔄 Socket: Rejoining conversations after reconnect')
-      this.messagesStore.conversations.forEach(conv => {
-        this.joinConversation(conv.id)
+  setSendTimeout(tempId) {
+    // Clear any existing timeout
+    if (this.sendTimeouts.has(tempId)) {
+      clearTimeout(this.sendTimeouts.get(tempId))
+    }
+
+    // Set new timeout for failure detection
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Message send timeout:', tempId)
+      this.handleSendTimeout(tempId)
+    }, MESSAGE_RELIABILITY_CONFIG.SEND_TIMEOUT)
+
+    this.sendTimeouts.set(tempId, timeoutId)
+  }
+
+  handleSendTimeout(tempId) {
+    console.log('🚨 Handling send timeout for:', tempId)
+    
+    const messageData = this.pendingMessages.get(tempId)
+    if (!messageData) return
+
+    // Mark as failed and schedule retry
+    this.handleMessageError({
+      tempId,
+      error: 'Send timeout',
+      code: 'TIMEOUT'
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // MESSAGE RETRY LOGIC WITH EXPONENTIAL BACKOFF
+  // ═══════════════════════════════════════════════════════════════
+
+  scheduleRetry(tempId, messageData, error) {
+    if (!shouldRetryMessage({ status: MESSAGE_STATUS.FAILED, retryCount: messageData.attempts })) {
+      console.log('❌ Max retry attempts reached for:', tempId)
+      this.handlePermanentFailure(tempId, messageData)
+      return
+    }
+
+    const retryInfo = scheduleMessageRetry({ 
+      retryCount: messageData.attempts,
+      reliability: messageData.reliability || {}
+    })
+
+    if (!retryInfo.success) {
+      this.handlePermanentFailure(tempId, messageData)
+      return
+    }
+
+    console.log(`🔄 Scheduling retry ${retryInfo.retryCount} for ${tempId} in ${retryInfo.delay}ms`)
+
+    // Update message data
+    messageData.attempts = retryInfo.retryCount
+    messageData.lastError = error
+    messageData.nextRetry = Date.now() + retryInfo.delay
+
+    // Schedule the retry
+    const retryTimeoutId = setTimeout(() => {
+      this.retryMessage(tempId)
+    }, retryInfo.delay)
+
+    this.retryTimeouts.set(tempId, retryTimeoutId)
+
+    // Notify store about retry scheduling
+    this.messagesStore?.handleMessageRetryScheduled?.({
+      tempId,
+      retryCount: retryInfo.retryCount,
+      delay: retryInfo.delay,
+      nextRetry: messageData.nextRetry
+    })
+  }
+
+  retryMessage(tempId) {
+    console.log('🔄 Retrying message:', tempId)
+
+    const messageData = this.pendingMessages.get(tempId)
+    if (!messageData) {
+      console.warn('⚠️ No message data found for retry:', tempId)
+      return
+    }
+
+    // Clean up retry timeout
+    this.retryTimeouts.delete(tempId)
+
+    // Try to send again
+    const success = this.attemptSendMessage(messageData.conversationId, {
+      ...messageData,
+      tempId: `retry_${tempId}_${messageData.attempts}` // New temp ID for retry
+    })
+
+    if (success) {
+      // Set new timeout for this retry attempt
+      this.setSendTimeout(tempId)
+      
+      // Update status to sending
+      this.messagesStore?.handleMessageRetryAttempt?.({
+        tempId,
+        attempt: messageData.attempts,
+        status: MESSAGE_STATUS.SENDING
+      })
+    } else {
+      // If still can't send, schedule another retry
+      this.scheduleRetry(tempId, messageData, 'Retry attempt failed')
+    }
+  }
+
+  handlePermanentFailure(tempId, messageData) {
+    console.error('💀 Permanent failure for message:', tempId)
+    
+    // Clean up
+    this.pendingMessages.delete(tempId)
+    this.retryTimeouts.delete(tempId)
+    this.sendTimeouts.delete(tempId)
+
+    // Notify store about permanent failure
+    this.messagesStore?.handleMessagePermanentFailure?.({
+      tempId,
+      error: 'Max retry attempts exceeded',
+      attempts: messageData.attempts
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // OFFLINE MESSAGE QUEUING
+  // ═══════════════════════════════════════════════════════════════
+
+  queueMessage(conversationId, messageData) {
+    console.log('📥 Queuing message for offline delivery:', messageData.tempId)
+    
+    const success = messageQueue.enqueue({
+      conversationId,
+      ...messageData,
+      status: MESSAGE_STATUS.QUEUED,
+      queuedAt: new Date().toISOString()
+    })
+
+    if (success) {
+      // Notify store about queuing
+      this.messagesStore?.handleMessageQueued?.({
+        tempId: messageData.tempId,
+        queueSize: messageQueue.size()
+      })
+    }
+
+    return success
+  }
+
+  async processQueuedMessages() {
+    if (!this.socket?.connected) return
+
+    const queuedMessages = messageQueue.getQueue()
+    if (queuedMessages.length === 0) return
+
+    console.log(`📤 Processing ${queuedMessages.length} queued messages`)
+
+    for (const message of queuedMessages) {
+      try {
+        const success = this.attemptSendMessage(message.conversationId, {
+          content: message.content,
+          mediaUrls: message.mediaUrls,
+          messageType: message.messageType,
+          tempId: message.tempId
+        })
+
+        if (success) {
+          // Remove from queue and set timeout
+          messageQueue.dequeue(message.tempId)
+          this.setSendTimeout(message.tempId)
+          
+          // Store for potential retry
+          this.pendingMessages.set(message.tempId, {
+            ...message,
+            attempts: 0,
+            firstAttempt: Date.now()
+          })
+
+          console.log('✅ Queued message sent:', message.tempId)
+        }
+      } catch (error) {
+        console.error('❌ Failed to process queued message:', message.tempId, error)
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // EVENT HANDLERS
+  // ═══════════════════════════════════════════════════════════════
+
+  handleSentConfirmation(data) {
+    const { tempId, messageId, status } = data
+    
+    console.log('✅ Message confirmed:', tempId, '→', messageId)
+
+    // Clear timeout and pending data
+    if (this.sendTimeouts.has(tempId)) {
+      clearTimeout(this.sendTimeouts.get(tempId))
+      this.sendTimeouts.delete(tempId)
+    }
+    
+    this.pendingMessages.delete(tempId)
+    messageQueue.dequeue(tempId)
+
+    // Notify store
+    this.messagesStore?.handleSentConfirmation?.(data)
+  }
+
+  handleMessageError(data) {
+    const { tempId, error, code } = data
+    
+    console.error('❌ Message error:', tempId, error, code)
+
+    // Clear send timeout
+    if (this.sendTimeouts.has(tempId)) {
+      clearTimeout(this.sendTimeouts.get(tempId))
+      this.sendTimeouts.delete(tempId)
+    }
+
+    const messageData = this.pendingMessages.get(tempId)
+    if (messageData) {
+      // Schedule retry for retriable errors
+      if (code !== 'ACCESS_DENIED' && code !== 'EMPTY_MESSAGE') {
+        this.scheduleRetry(tempId, messageData, error)
+      } else {
+        // Permanent errors
+        this.handlePermanentFailure(tempId, messageData)
+      }
+    }
+
+    // Notify store about error
+    this.messagesStore?.handleMessageError?.(data)
+  }
+
+  handleRetrySuccess(data) {
+    const { messageId, status } = data
+    console.log('✅ Retry successful:', messageId, status)
+    
+    // Clean up any pending retry data
+    // Note: messageId might not match tempId, need better tracking
+    
+    this.messagesStore?.handleRetrySuccess?.(data)
+  }
+
+  handleRetryFailed(data) {
+    const { messageId } = data
+    console.error('❌ Retry failed:', messageId)
+    
+    this.messagesStore?.handleRetryFailed?.(data)
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // CONNECTION STATE MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════
+
+  updateConnectionState(newState) {
+    if (this.connectionState !== newState) {
+      const oldState = this.connectionState
+      this.connectionState = newState
+      
+      console.log(`🔌 Connection state: ${oldState} → ${newState}`)
+      
+      // Notify store about connection state change
+      this.messagesStore?.handleConnectionStateChange?.({
+        oldState,
+        newState,
+        timestamp: new Date()
       })
     }
   }
 
-  // Enhanced conversation joining
+  startConnectionMonitoring() {
+    if (this.connectionCheckInterval) return
+
+    this.connectionCheckInterval = setInterval(() => {
+      this.checkConnection()
+    }, MESSAGE_RELIABILITY_CONFIG.CONNECTION_CHECK_INTERVAL)
+  }
+
+  checkConnection() {
+    if (!this.socket) return
+
+    const isActuallyConnected = this.socket.connected
+    const reportedConnected = this.isConnected
+
+    if (isActuallyConnected !== reportedConnected) {
+      console.warn('🔍 Connection state mismatch detected')
+      this.isConnected = isActuallyConnected
+      this.updateConnectionState(
+        isActuallyConnected ? CONNECTION_STATE.ONLINE : CONNECTION_STATE.DISCONNECTED
+      )
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // OTHER METHODS (Enhanced)
+  // ═══════════════════════════════════════════════════════════════
+
+  markConversationAsRead(conversationId) {
+    if (!this.socket?.connected) {
+      console.error('❌ Cannot mark as read - socket not connected')
+      return false
+    }
+
+    console.log('📖 Marking as read:', conversationId)
+    
+    try {
+      this.socket.emit('conversation:mark_read', { conversationId })
+      return true
+    } catch (error) {
+      console.error('❌ Failed to mark as read:', error)
+      return false
+    }
+  }
+
   joinConversation(conversationId) {
     if (this.socket?.connected) {
-      console.log('📥 Socket: Joining conversation', conversationId)
+      console.log('📥 JOINING conversation room:', `conversation:${conversationId}`)
       this.socket.emit('conversation:join', { conversationId })
     } else {
-      console.warn('⚠️ Socket: Cannot join conversation - not connected')
+      console.error('❌ Cannot join conversation - socket not connected')
     }
   }
 
   leaveConversation(conversationId) {
     if (this.socket?.connected) {
-      console.log('📤 Socket: Leaving conversation', conversationId)
+      console.log('📤 LEAVING conversation room:', `conversation:${conversationId}`)
       this.socket.emit('conversation:leave', { conversationId })
     }
   }
 
-  // Typing functionality
-  startTyping(conversationId) {
-    if (this.socket?.connected) {
-      this.socket.emit('typing:start', { conversationId })
-
-      // Clear existing timer
-      if (this.typingTimers.has(conversationId)) {
-        clearTimeout(this.typingTimers.get(conversationId))
-      }
-
-      // Auto-stop typing after 3 seconds
-      const timer = setTimeout(() => {
-        this.stopTyping(conversationId)
-      }, 3000)
-
-      this.typingTimers.set(conversationId, timer)
+  // Manual retry for failed messages
+  retryFailedMessage(tempId) {
+    const messageData = this.pendingMessages.get(tempId)
+    if (messageData) {
+      this.retryMessage(tempId)
+      return true
     }
+    return false
   }
 
-  stopTyping(conversationId) {
-    if (this.socket?.connected) {
-      this.socket.emit('typing:stop', { conversationId })
-    }
+  // ═══════════════════════════════════════════════════════════════
+  // CLEANUP AND UTILITIES
+  // ═══════════════════════════════════════════════════════════════
 
-    // Clear timer
-    if (this.typingTimers.has(conversationId)) {
-      clearTimeout(this.typingTimers.get(conversationId))
-      this.typingTimers.delete(conversationId)
-    }
-  }
-
-  // 🔥 FIXED: Immediate message status updates
-  markMessageAsRead(messageId, conversationId) {
-    if (this.socket?.connected) {
-      console.log(`📖 Marking message ${messageId} as read`)
-      this.socket.emit('message:read', { messageId, conversationId })
-    }
-  }
-
-  markMessageAsDelivered(messageId, conversationId) {
-    if (this.socket?.connected) {
-      console.log(`✅ Marking message ${messageId} as delivered`)
-      this.socket.emit('message:delivered', { messageId, conversationId })
-    }
-  }
-
-  // Mark conversation as read (bulk update)
-  markConversationAsRead(conversationId) {
-    if (this.socket?.connected) {
-      console.log(`📖 Marking conversation ${conversationId} as read`)
-      this.socket.emit('conversation:mark_read', { conversationId })
-    }
-  }
-
-  // Request unread count refresh
-  requestUnreadCountRefresh() {
-    if (this.socket?.connected) {
-      console.log('📊 Requesting unread count refresh from server')
-      this.socket.emit('unread_count:refresh')
-    }
-  }
-
-  // Enhanced notification system
-  async _showMessageNotification(messageData) {
-    try {
-      const { useAuthStore } = await import('@/stores/auth')
-      const authStore = useAuthStore()
-
-      // Don't show notification for own messages
-      if (messageData.senderId === authStore.currentUser?.id) {
-        return
-      }
-
-      // Don't show if user is in the conversation
-      if (this.messagesStore?.currentConversation?.id === messageData.conversationId) {
-        return
-      }
-
-      // Check if notifications are permitted
-      if (Notification.permission === 'granted') {
-        const sender = messageData.sender
-        const senderName = `${sender.firstName || ''} ${sender.lastName || ''}`.trim() || sender.username
-
-        new Notification(`New message from ${senderName}`, {
-          body: messageData.content || 'Sent a file',
-          icon: sender.avatarUrl || '/default-avatar.png',
-          tag: `message-${messageData.conversationId}`,
-          silent: false
-        })
-      }
-    } catch (error) {
-      console.error('❌ Error showing notification:', error)
-    }
-  }
-
-  // Ping system
-  startPingInterval() {
-    this.pingInterval = setInterval(() => {
-      if (this.socket?.connected) {
-        this.socket.emit('ping')
-      }
-    }, 30000)
-  }
-
-  stopPingInterval() {
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval)
-      this.pingInterval = null
-    }
-  }
-
-  // Task callbacks
-  setTaskCompletedCallback(callback) {
-    this.taskCompletedCallback = callback
-  }
-
-  setTaskFailedCallback(callback) {
-    this.taskFailedCallback = callback
-  }
-
-  clearTaskCallbacks() {
-    this.taskCompletedCallback = null
-    this.taskFailedCallback = null
-  }
-
-  // Connection status
-  isSocketConnected() {
-    return this.isConnected && this.socket?.connected
-  }
-
-  getConnectionStatus() {
-    return {
-      isConnected: this.isConnected,
-      socketId: this.socket?.id,
-      reconnectAttempts: this.reconnectAttempts
-    }
-  }
-
-  // Enhanced disconnect
   disconnect() {
-    console.log('🔌 Socket: Disconnecting...')
-
-    // Clear all timers
-    this.stopPingInterval()
-    this.typingTimers.forEach((timer, conversationId) => {
-      this.stopTyping(conversationId)
-    })
-    this.typingTimers.clear()
-
+    console.log('🔌 Disconnecting socket service...')
+    
+    // Clear all timeouts
+    this.retryTimeouts.forEach(timeoutId => clearTimeout(timeoutId))
+    this.sendTimeouts.forEach(timeoutId => clearTimeout(timeoutId))
+    this.retryTimeouts.clear()
+    this.sendTimeouts.clear()
+    
+    // Clear connection monitoring
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval)
+      this.connectionCheckInterval = null
+    }
+    
+    // Disconnect socket
     if (this.socket) {
       this.socket.disconnect()
       this.socket = null
     }
 
+    // Update state
     this.isConnected = false
-    this.reconnectAttempts = 0
-    this.connectionPromise = null
+    this.updateConnectionState(CONNECTION_STATE.DISCONNECTED)
+    
+    // Clear data
+    this.pendingMessages.clear()
+    
+    console.log('✅ Socket service disconnected')
   }
 
-  // Debugging methods
-  checkOnlineStatus() {
-    if (this.socket?.connected) {
-      console.log('🔍 Requesting online status check...')
-      this.socket.emit('check_online_status')
-    } else {
-      console.warn('⚠️ Cannot check online status - socket not connected')
+  isSocketConnected() {
+    return this.isConnected && this.socket?.connected
+  }
+
+  getConnectionState() {
+    return this.connectionState
+  }
+
+  getSocketId() {
+    return this.socket?.id || null
+  }
+
+  // Get reliability stats for debugging
+  getReliabilityStats() {
+    return {
+      connectionState: this.connectionState,
+      isConnected: this.isConnected,
+      pendingMessages: this.pendingMessages.size,
+      retryTimeouts: this.retryTimeouts.size,
+      sendTimeouts: this.sendTimeouts.size,
+      queuedMessages: messageQueue.size(),
+      socketId: this.getSocketId()
     }
   }
 
-  refreshOnlineUsers() {
-    if (this.socket?.connected) {
-      console.log('🔄 Refreshing online users list...')
-      this.socket.emit('get_online_users')
-    } else {
-      console.warn('⚠️ Cannot refresh online users - socket not connected')
-    }
+  // Force clear all pending operations (emergency cleanup)
+  clearAllPending() {
+    console.log('🧹 Clearing all pending operations')
+    
+    this.retryTimeouts.forEach(timeoutId => clearTimeout(timeoutId))
+    this.sendTimeouts.forEach(timeoutId => clearTimeout(timeoutId))
+    
+    this.retryTimeouts.clear()
+    this.sendTimeouts.clear()
+    this.pendingMessages.clear()
+    
+    messageQueue.clear()
   }
 }
 
-// Create and export singleton instance
-const socketService = new SocketService()
-
+// Export singleton instance
+const socketService = new MessagingSocketService()
 export { socketService }
 export default socketService
