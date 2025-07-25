@@ -22,8 +22,7 @@ async function migrateMessages() {
         where: { id: messages[i].id },
         data: {
           sequenceNumber: i + 1,
-          deliveryStatus: 'delivered', // existing messages are "delivered"
-          readBy: {}
+          status: 'read', // existing messages are "delivered"
         }
       })
     }
